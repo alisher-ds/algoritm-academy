@@ -9,13 +9,11 @@ import {
   Phone, 
   Send, 
   Clock, 
-  Building, 
   School,
   GraduationCap,
   Award,
   Globe,
-  ArrowRight
-} from "lucide-react";
+  } from "lucide-react";
 import { ECOSYSTEM_DATA } from "@/data/ecosystemData";
 
 export default function AloqaPage() {

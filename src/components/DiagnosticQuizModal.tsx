@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { X, CheckCircle2, ArrowRight, Sparkles, HelpCircle, Loader2 } from "lucide-react";
+import { X, ArrowRight, Sparkles, Loader2 } from "lucide-react";
 import confetti from "canvas-confetti";
 
 interface DiagnosticQuizModalProps {
@@ -17,8 +17,6 @@ export default function DiagnosticQuizModal({
 }: DiagnosticQuizModalProps) {
   const [step, setStep] = useState(1);
   const [interest, setInterest] = useState<string>("");
-  const [grade, setGrade] = useState<string>("");
-  const [goal, setGoal] = useState<string>("");
   const [analyzing, setAnalyzing] = useState(false);
   const [result, setResult] = useState<{
     title: string;
@@ -67,15 +65,13 @@ export default function DiagnosticQuizModal({
       setStep(4);
       try {
         confetti({ particleCount: 80, spread: 60, colors: ["#00c853", "#ffffff"] });
-      } catch (e) {}
+      } catch {}
     }, 1000);
   };
 
   const handleReset = () => {
     setStep(1);
     setInterest("");
-    setGrade("");
-    setGoal("");
     setResult(null);
   };
 
@@ -191,10 +187,7 @@ export default function DiagnosticQuizModal({
                 ].map((item, idx) => (
                   <button
                     key={idx}
-                    onClick={() => {
-                      setGrade(item);
-                      setStep(3);
-                    }}
+                    onClick={() => setStep(3)}
                     className="w-full text-left p-4 rounded-2xl bg-white/5 border border-white/10 hover:border-brand hover:bg-white/10 transition text-sm font-semibold text-white flex items-center justify-between"
                   >
                     <span>{item}</span>
@@ -215,10 +208,7 @@ export default function DiagnosticQuizModal({
                 ].map((item, idx) => (
                   <button
                     key={idx}
-                    onClick={() => {
-                      setGoal(item);
-                      handleCalculate();
-                    }}
+                    onClick={handleCalculate}
                     className="w-full text-left p-4 rounded-2xl bg-white/5 border border-white/10 hover:border-brand hover:bg-white/10 transition text-sm font-semibold text-white flex items-center justify-between"
                   >
                     <span>{item}</span>

@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Utensils, Bus, BookOpen, Activity, ShieldCheck, Sparkles, CheckCircle2 } from "lucide-react";
+import { Utensils, Bus, BookOpen, Activity, ShieldCheck, Sparkles, } from "lucide-react";
 import { ECOSYSTEM_DATA } from "@/data/ecosystemData";
 
 const iconMap: Record<string, React.ReactNode> = {

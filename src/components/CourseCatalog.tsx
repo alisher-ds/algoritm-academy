@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import { 
-  BookOpen, 
   Clock, 
   Calendar, 
   ArrowRight, 

@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { BookOpen, CheckCircle2, Clock, Utensils, ArrowRight, GraduationCap, Sparkles, School } from "lucide-react";
+import { CheckCircle2, Clock, Utensils, ArrowRight, School } from "lucide-react";
 import { ECOSYSTEM_DATA } from "@/data/ecosystemData";
 
 interface SchoolProgramsProps {

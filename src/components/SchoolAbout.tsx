@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { CheckCircle2, ArrowRight, ShieldCheck, Heart, Sparkles, BookOpen, Code, Globe, Cpu } from "lucide-react";
+import { CheckCircle2, ArrowRight, Heart, Sparkles, BookOpen, Globe, Cpu } from "lucide-react";
 
 interface SchoolAboutProps {
   onOpenLeadModal: (target?: string) => void;

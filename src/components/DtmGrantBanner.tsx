@@ -1,5 +1,5 @@
 import React from "react";
-import { TrendingUp, Award, CheckCircle2 } from "lucide-react";
+import { TrendingUp, } from "lucide-react";
 
 export default function DtmGrantBanner() {
   const highlights = [

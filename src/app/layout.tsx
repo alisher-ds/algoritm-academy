@@ -1,16 +1,17 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
+// Production'da aniq domen o'rnating: .env.local -> NEXT_PUBLIC_SITE_URL=https://...
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: "Algoritm Academy — Xususiy Maktab va Akademik Tayyorlov Ekotizimi",
   description: "Qarshi shahridagi zamonaviy 1-11 xususiy maktab hamda Prezident maktabi, Digital SAT, IELTS va Davlat grantlariga professional tayyorlov ekotizimi.",
   icons: {
-    icon: [
-      { url: "/icon.png", type: "image/png" },
-      { url: "/favicon.ico", sizes: "any" },
-    ],
+    icon: [{ url: "/icon.png", type: "image/png" }],
     shortcut: ["/favicon.ico"],
-    apple: [{ url: "/logo.png" }],
+    apple: [{ url: "/apple-icon.png", type: "image/png" }],
   },
   keywords: [
     "Algoritm Academy",

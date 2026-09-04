@@ -5,12 +5,7 @@ import {
   Award, 
   CheckCircle2, 
   Search, 
-  Filter, 
-  Trophy, 
-  GraduationCap, 
-  Sparkles,
-  BookOpen
-} from "lucide-react";
+  } from "lucide-react";
 import { ECOSYSTEM_DATA } from "@/data/ecosystemData";
 
 export default function ResultsSection() {

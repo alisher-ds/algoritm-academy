@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Clock, CheckCircle2, Sun, Utensils, BookOpen, Activity } from "lucide-react";
+import { Clock, } from "lucide-react";
 import { ECOSYSTEM_DATA } from "@/data/ecosystemData";
 
 export default function DailyScheduleSection() {

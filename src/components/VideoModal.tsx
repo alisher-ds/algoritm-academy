@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef, useState, useEffect } from "react";
-import { X, Play, Pause, Volume2, VolumeX, Maximize, RotateCcw, ExternalLink } from "lucide-react";
+import { X, Play, Pause, Volume2, VolumeX, Maximize, ExternalLink } from "lucide-react";
 
 interface VideoModalProps {
   isOpen: boolean;
@@ -166,6 +166,18 @@ export default function VideoModal({
               </div>
 
               <div className="flex items-center gap-2">
+                {instagramUrl && (
+                  <a
+                    href={instagramUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-brand hover:text-slate-950 transition text-[11px] font-bold"
+                    title="Instagram'da ochish"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Instagram</span>
+                  </a>
+                )}
                 <button
                   onClick={toggleFullscreen}
                   className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition"
