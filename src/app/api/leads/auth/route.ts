@@ -1,29 +1,61 @@
 import { NextResponse } from "next/server";
-import { ADMIN_PASSWORD, AUTH_COOKIE, isAuthed, tokenDigest } from "@/lib/adminAuth";
+import {
+  AUTH_COOKIE,
+  SESSION_TTL_SECONDS,
+  createSessionToken,
+  isAdminConfigured,
+  isAuthed,
+  isSameOrigin,
+  sessionCookieOptions,
+  verifyPassword,
+} from "@/lib/adminAuth";
+import { clientIp, rateLimit } from "@/lib/rateLimit";
 
-/** POST /api/leads/auth — parolni tasdiqlaydi va HttpOnly cookie o'rnatadi. */
+export const dynamic = "force-dynamic";
+
+/** POST /api/leads/auth — parolni tasdiqlaydi va imzolangan HttpOnly cookie o'rnatadi. */
 export async function POST(req: Request) {
+  if (!isSameOrigin(req)) {
+    return NextResponse.json({ success: false, error: "So'rov rad etildi" }, { status: 403 });
+  }
+  if (!isAdminConfigured()) {
+    console.error("[auth] ADMIN_PASSWORD o'rnatilmagan — production'da kirish o'chirilgan.");
+    return NextResponse.json(
+      { success: false, error: "Admin paneli sozlanmagan (ADMIN_PASSWORD yo'q)" },
+      { status: 503 }
+    );
+  }
+
+  // Brute-force himoyasi: 15 daqiqada 8 ta urinish.
+  const limit = await rateLimit(`auth:${clientIp(req)}`, 8, 15 * 60);
+  if (!limit.allowed) {
+    return NextResponse.json(
+      { success: false, error: "Juda ko'p urinish. Birozdan so'ng qayta urinib ko'ring." },
+      { status: 429, headers: { "Retry-After": String(limit.retryAfter) } }
+    );
+  }
+
   const body = await req.json().catch(() => null);
   const password =
     body && typeof body === "object" && typeof (body as { password?: unknown }).password === "string"
       ? (body as { password: string }).password
       : "";
 
-  if (!password || password !== ADMIN_PASSWORD) {
+  if (!verifyPassword(password)) {
     return NextResponse.json({ success: false, error: "Parol noto'g'ri" }, { status: 401 });
   }
 
-  const res = NextResponse.json({ success: true });
-  res.cookies.set(AUTH_COOKIE, tokenDigest(ADMIN_PASSWORD), {
-    httpOnly: true,
-    sameSite: "lax",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 7, // 7 kun
-  });
+  const token = createSessionToken();
+  if (!token) {
+    return NextResponse.json({ success: false, error: "Sessiya yaratib bo'lmadi" }, { status: 500 });
+  }
+
+  const res = NextResponse.json({ success: true, expiresIn: SESSION_TTL_SECONDS });
+  res.cookies.set(AUTH_COOKIE, token, sessionCookieOptions(SESSION_TTL_SECONDS));
   return res;
 }
 
 /** GET — adminlik holatini tekshirish. */
 export async function GET(req: Request) {
-  return NextResponse.json({ success: isAuthed(req) });
+  return NextResponse.json({ success: isAuthed(req), configured: isAdminConfigured() });
 }

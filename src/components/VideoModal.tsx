@@ -8,6 +8,7 @@ interface VideoModalProps {
   onClose: () => void;
   videoTitle?: string;
   videoUrl?: string;
+  poster?: string;
   instagramUrl?: string;
 }
 
@@ -16,6 +17,7 @@ export default function VideoModal({
   onClose,
   videoTitle = "Algoritm School & Academy — Dars Jarayoni va Maktab Hayoti",
   videoUrl = "/videos/reel_sat1430.mp4",
+  poster,
   instagramUrl = "",
 }: VideoModalProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -127,6 +129,8 @@ export default function VideoModal({
           <video
             ref={videoRef}
             src={videoUrl}
+            poster={poster}
+            preload="metadata"
             playsInline
             autoPlay
             onTimeUpdate={handleTimeUpdate}

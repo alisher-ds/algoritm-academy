@@ -174,19 +174,26 @@ export default function AdminPage() {
     return matchSearch && matchStatus && matchType;
   });
 
+  // CSV katakchasi: qo'shtirnoqlarni ekranlash + formula injection (=,+,-,@) himoyasi.
+  const csvCell = (value: string | undefined) => {
+    const raw = (value ?? "").replace(/\r?\n/g, " ");
+    const safe = /^[=+\-@\t\r]/.test(raw) ? `'${raw}` : raw;
+    return `"${safe.replace(/"/g, '""')}"`;
+  };
+
   const exportCSV = () => {
     const headers = "ID,Ism,Telefon,Turi,Yo'nalish,Sana,Status,Izoh\n";
     const rows = leads
       .map((l) =>
         [
-          l.id,
-          `"${l.name}"`,
-          `"${l.phone}"`,
-          l.type,
-          `"${l.targetInterest}"`,
-          l.createdAt,
-          STATUS_LABELS[l.status] ?? l.status,
-          l.notes ? `"${l.notes}"` : "",
+          csvCell(l.id),
+          csvCell(l.name),
+          csvCell(l.phone),
+          csvCell(l.type),
+          csvCell(l.targetInterest),
+          csvCell(l.createdAt),
+          csvCell(STATUS_LABELS[l.status] ?? l.status),
+          csvCell(l.notes),
         ].join(",")
       )
       .join("\n");

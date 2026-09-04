@@ -44,19 +44,28 @@ export const STATUS_OPTIONS: { value: LeadStatus; label: string }[] = [
 
 /** Arizani backendga yuboradi. Muvaffaqiyatsiz bo'lsa mahalliy (offline) zaxira sifatida localStorage'ga saqlaydi. */
 export async function submitLead(
-  payload: LeadPayload
+  payload: LeadPayload & { website?: string }
 ): Promise<{ ok: boolean; lead?: Lead; error?: string; storedLocally?: boolean }> {
   try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 15000);
     const res = await fetch("/api/leads", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
-    });
+      signal: controller.signal,
+    }).finally(() => clearTimeout(timer));
+
     const data = await res.json().catch(() => null);
     if (res.ok && data?.success) {
       return { ok: true, lead: data.lead };
     }
+
     const error = data?.error || `Server xatoligi (${res.status})`;
+    // 4xx — foydalanuvchi xatosi (validatsiya / rate-limit): lokalga saqlash mantiqsiz.
+    if (res.status >= 400 && res.status < 500) {
+      return { ok: false, error };
+    }
     const lead = saveLeadLocally(payload);
     return { ok: false, error, lead, storedLocally: true };
   } catch {

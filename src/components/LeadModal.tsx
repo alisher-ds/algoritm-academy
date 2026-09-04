@@ -47,6 +47,7 @@ export default function LeadModal({
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [submitNote, setSubmitNote] = useState<string | null>(null);
+  const [honeypot, setHoneypot] = useState("");
 
   // Modal ochilganda formani yangi maqsad (initialCourse) bilan sinxronlash.
   // React tavsiya etgan "state-ni prop o'zgarishida sozlash" usuli:
@@ -65,6 +66,7 @@ export default function LeadModal({
     setSubmitNote(null);
     setName("");
     setPhone("+998");
+    setHoneypot("");
     onClose();
   }, [onClose]);
 
@@ -99,6 +101,7 @@ export default function LeadModal({
       type: option.type,
       targetInterest: finalTarget === OTHER_VALUE ? OTHER_VALUE : finalTarget,
       source: "Sayt — ro'yxatdan o'tish oynasi",
+      website: honeypot,
     };
 
     const res = await submitLead(payload);
@@ -164,6 +167,18 @@ export default function LeadModal({
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Honeypot — botlar uchun (odamlar ko'rmaydi) */}
+              <input
+                type="text"
+                name="website"
+                tabIndex={-1}
+                autoComplete="off"
+                aria-hidden="true"
+                value={honeypot}
+                onChange={(e) => setHoneypot(e.target.value)}
+                className="absolute left-[-9999px] w-px h-px opacity-0"
+              />
+
               <div>
                 <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider block mb-1.5">
                   Ism va Familiyangiz

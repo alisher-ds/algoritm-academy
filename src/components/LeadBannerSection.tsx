@@ -27,6 +27,7 @@ export default function LeadBannerSection() {
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [honeypot, setHoneypot] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,6 +43,7 @@ export default function LeadBannerSection() {
       type: option.type,
       targetInterest: option.value,
       source: "Sayt — pastki ariza formasi",
+      website: honeypot,
     });
 
     setLoading(false);
@@ -116,6 +118,18 @@ export default function LeadBannerSection() {
                   </div>
                 ) : (
                   <form onSubmit={handleSubmit} className="space-y-4 text-left">
+                    {/* Honeypot — botlar uchun (odamlar ko'rmaydi) */}
+                    <input
+                      type="text"
+                      name="website"
+                      tabIndex={-1}
+                      autoComplete="off"
+                      aria-hidden="true"
+                      value={honeypot}
+                      onChange={(e) => setHoneypot(e.target.value)}
+                      className="absolute left-[-9999px] w-px h-px opacity-0"
+                    />
+
                     <div>
                       <label className="block text-xs font-black text-slate-800 uppercase tracking-wider mb-1.5">
                         Ismingiz yoki Farzandingiz ismi

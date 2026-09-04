@@ -154,6 +154,7 @@ export default function GalleryGrid() {
               <img
                 src={selected.image}
                 alt={selected.title}
+                decoding="async"
                 className="max-h-[70vh] w-full object-contain"
               />
             </div>

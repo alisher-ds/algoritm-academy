@@ -43,13 +43,38 @@ Boshqa skriptlar:
 ## Ariza (lead) tizimi qanday ishlaydi
 
 1. Saytdagi har bir forma (`LeadModal`, `LeadBannerSection`) `POST /api/leads` ga yuboradi.
-2. Arizalar serverda **JSON faylda** saqlanadi: `<proyekt>/.data/leads.json` (gitignore qilingan, `LEADS_FILE` env orqali boshqa joyga ko'chirsa bo'ladi).
-3. Agar `TELEGRAM_BOT_TOKEN` va `TELEGRAM_CHAT_ID` o'rnatilgan bo'lsa — har bir ariza Telegram'ga bildirishnoma sifatida boradi.
-4. `/admin` sahifasi arizalarni API orqali ko'radi: qidiruv, status (yangi → bog'lanildi → qabul / bekor), CSV eksport.
-5. Internet uzilgan holatlarda forma arizani brauzerning `localStorage`'iga zaxiralaydi; admin birinchi kirishda ularni avtomatik serverga ko'chiradi.
+2. Arizalar ikki xil backend'da saqlanishi mumkin (avtomatik tanlanadi):
+   - **Upstash Redis (REST)** — `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` o'rnatilsa. Serverless (Vercel) uchun **majburiy**, chunki u yerda fayl tizimi vaqtinchalik.
+   - **JSON fayl** — `LEADS_FILE` yoki `<proyekt>/.data/leads.json` (lokal/VPS uchun; atomik yozish bilan).
+3. Agar `TELEGRAM_BOT_TOKEN` va `TELEGRAM_CHAT_ID` o'rnatilgan bo'lsa — har bir ariza Telegram'ga bildirishnoma sifatida boradi (yuborish xatosi arizani saqlashni buzmaydi).
+4. `/admin` sahifasi arizalarni API orqali ko'radi: qidiruv, status (yangi → bog'lanildi → qabul / bekor), CSV eksport (formula-injection'dan himoyalangan).
+5. Server ishlamay qolsa (5xx / tarmoq) forma arizani `localStorage`'ga zaxiralaydi; admin birinchi kirishda ularni avtomatik serverga ko'chiradi. Validatsiya xatolari (4xx) lokalga saqlanmaydi.
 
-> **Muhim:** `/admin` uchun parolni `.env.local` da `ADMIN_PASSWORD` bilan o'rnating.
-> Default qiymat faqat mahalliy ishlab chiqish uchun (`algoritm-admin-2026`) — production'da o'zgartirish shart.
+### Xavfsizlik
+
+| Himoya | Tafsilot |
+|---|---|
+| Sessiya | HMAC-SHA256 bilan **imzolangan** token (`exp` + `jti`), 12 soat amal qiladi. Parol hash'i cookie'da saqlanmaydi. |
+| Cookie | `HttpOnly`, `SameSite=Strict`, production'da `Secure`. |
+| Revoke | `ADMIN_SESSION_SECRET` yoki `ADMIN_PASSWORD` o'zgarsa — barcha sessiyalar bekor bo'ladi. |
+| Parol tekshiruvi | Doimiy vaqtda (timing-safe) solishtiriladi. |
+| Brute-force | `/api/leads/auth` — 15 daqiqada 8 ta urinish (IP bo'yicha). |
+| Spam | `/api/leads` — 1 daqiqada 5 ta, 1 soatda 20 ta + yashirin honeypot maydoni. |
+| CSRF | O'zgartiruvchi so'rovlarda `Origin`/`Referer` same-origin bo'lishi shart. |
+| Kirish validatsiyasi | Body hajmi ≤ 8 KB, nazorat belgilari tozalanadi, telefon/ism qat'iy tekshiriladi. |
+| Sarlavhalar | `nosniff`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, prod'da HSTS; `/admin` va `/api` — `no-store` + `noindex`. |
+
+> **Muhim:** production'da `ADMIN_PASSWORD` **majburiy**. O'rnatilmasa `/api/leads/auth` `503` qaytaradi va admin paneliga kirib bo'lmaydi (default parol faqat `NODE_ENV=development` da ishlaydi).
+
+## Testlar va CI
+
+```bash
+npm test          # vitest (30 ta test: auth, leadStore, rate-limit, API route'lar)
+npm run typecheck # tsc --noEmit
+npm run lint      # eslint
+```
+
+GitHub Actions (`.github/workflows/ci.yml`) har push/PR da lint → typecheck → test → build ni ishga tushiradi.
 
 ## Ma'lumotlar manbasi
 
@@ -59,12 +84,22 @@ Boshqa skriptlar:
 ## Muhit o'zgaruvchilari (`.env.local`)
 
 ```bash
-TELEGRAM_BOT_TOKEN=...        # @BotFather orqali olinadi
-TELEGRAM_CHAT_ID=...          # xabar boradigan chat/guruh ID si
-ADMIN_PASSWORD=...            # /admin paroli (default faqat dev uchun)
-NEXT_PUBLIC_SITE_URL=...      # https://sizning-domen.uz (SEO metadataBase uchun)
-LEADS_FILE=...                # ixtiyoriy — arizalar fayli manzili
+TELEGRAM_BOT_TOKEN=...           # @BotFather orqali olinadi
+TELEGRAM_CHAT_ID=...             # xabar boradigan chat/guruh ID si
+ADMIN_PASSWORD=...               # /admin paroli — production'da MAJBURIY
+ADMIN_SESSION_SECRET=...         # sessiya imzosi (openssl rand -hex 32) — tavsiya etiladi
+NEXT_PUBLIC_SITE_URL=...         # https://sizning-domen.uz (SEO metadataBase uchun)
+
+# Saqlash — variant A (serverless/Vercel uchun tavsiya):
+UPSTASH_REDIS_REST_URL=...
+UPSTASH_REDIS_REST_TOKEN=...
+LEADS_REDIS_KEY=algoritm:leads   # ixtiyoriy
+
+# Saqlash — variant B (lokal/VPS):
+LEADS_FILE=...                   # ixtiyoriy — arizalar fayli manzili
 ```
+
+To'liq ro'yxat va izohlar: [`.env.example`](.env.example).
 
 ## Struktura (qisqacha)
 
@@ -75,11 +110,13 @@ src/
 │   └── */layout.tsx     # har sahifa uchun SEO metadata
 ├── components/          # UI komponentlari (client)
 ├── data/ecosystemData.ts# kontent bazasi
-└── lib/                 # leads.ts (tip+klient), leadStore.ts (fayl-saqlash),
-                         # adminAuth.ts, telegram.ts, utils.ts
+├── lib/                 # leads.ts (tip+klient), leadStore.ts (redis|fayl saqlash),
+│                        # adminAuth.ts (HMAC sessiya), rateLimit.ts, telegram.ts
+tests/                   # vitest testlari
 ```
 
 ## Eslatmalar
 
 - Rasmlar `public/` da statik. `public/images/media_*.jpg` — kelajakda foydalanish uchun arxiv (saytga hozir ulanmagan).
-- Yirik videolarni (`public/videos/aziz_teacher_intro.mp4`) production'ga chiqarishda CDN/kompressiya qilish tavsiya etiladi.
+- Rasmlar `loading="lazy"` / `decoding="async"` bilan yuklanadi; hero rasmi `fetchPriority="high"`. `/images` va `/videos` uchun 1 yillik immutable kesh sarlavhalari o'rnatilgan.
+- **Yirik videolar** (`public/videos/aziz_teacher_intro.mp4` ≈ 19 MB) hozircha repo ichida. Modal'da `preload="metadata"` + poster ishlatiladi, ya'ni video faqat ochilganda yuklanadi. Media yanada o'ssa — Vercel Blob / S3 / Cloudflare Stream kabi tashqi xotiraga ko'chirish tavsiya etiladi.
