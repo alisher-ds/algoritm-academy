@@ -77,10 +77,12 @@ export default function Navbar({ onOpenLeadModal }: NavbarProps) {
   return (
     <header className="fixed inset-x-0 top-0 z-50 px-3 sm:px-6">
       <div
-        className={`mx-auto mt-3 max-w-7xl rounded-2xl border px-4 sm:px-5 transition-all duration-300 ${
-          isScrolled || mobileMenuOpen
-            ? "border-white/10 bg-night-deep/90 shadow-card backdrop-blur-2xl"
-            : "border-white/10 bg-night-deep/70 backdrop-blur-xl"
+        className={`mx-auto mt-3 max-w-7xl border px-4 sm:px-6 transition-all duration-300 ${
+          mobileMenuOpen
+            ? "rounded-2xl border-white/15 bg-night-deep/95 backdrop-blur-2xl shadow-2xl"
+            : isScrolled
+            ? "rounded-full border-white/15 bg-night-deep/90 shadow-2xl backdrop-blur-2xl"
+            : "rounded-full border-white/15 bg-black/35 backdrop-blur-xl shadow-lg"
         }`}
       >
         <div className="flex h-14 items-center justify-between gap-3">
@@ -108,8 +110,8 @@ export default function Navbar({ onOpenLeadModal }: NavbarProps) {
                   key={link.href}
                   href={link.href}
                   aria-current={isActive ? "true" : undefined}
-                  className={`relative rounded-lg px-3 py-2 text-[13px] font-medium transition-colors ${
-                    isActive ? "text-brand-400" : "text-slate-300 hover:text-white"
+                  className={`relative rounded-full px-3.5 py-1.5 text-[13px] font-medium transition-colors ${
+                    isActive ? "text-brand-400 font-semibold" : "text-slate-300 hover:text-white"
                   }`}
                 >
                   {isActive && (
@@ -125,24 +127,23 @@ export default function Navbar({ onOpenLeadModal }: NavbarProps) {
           <div className="flex items-center gap-2.5">
             <a
               href={`tel:${primaryPhone.replace(/\D/g, "")}`}
-              className="hidden items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-300 transition-colors hover:text-white xl:flex"
+              className="hidden items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold text-slate-300 transition-colors hover:text-white xl:flex"
             >
               <Phone className="h-3.5 w-3.5 text-brand-400" />
               <span className="font-mono tracking-tight">{primaryPhone}</span>
-              <span className="text-slate-500">— {phoneLabel}</span>
             </a>
 
             <button
               onClick={() => openLead("Navbar ariza")}
-              className="hidden rounded-xl bg-brand-500 px-4 py-2 text-xs font-bold uppercase tracking-wider text-white shadow-glow transition-all hover:bg-brand-400 active:scale-[0.98] sm:block"
+              className="hidden rounded-full bg-brand-500 hover:bg-brand-400 px-5 py-2 text-xs font-bold uppercase tracking-wider text-white shadow-glow transition-all active:scale-[0.98] sm:block"
             >
-              Ariza qoldirish
+              Ariza topshirish
             </button>
 
             {/* Mobile: CTA + burger */}
             <button
               onClick={() => openLead("Mobil header ariza")}
-              className="rounded-xl bg-brand-500 px-3.5 py-2 text-[11px] font-bold uppercase tracking-wider text-white transition hover:bg-brand-400 sm:hidden"
+              className="rounded-full bg-brand-500 px-4 py-1.5 text-[11px] font-bold uppercase tracking-wider text-white transition hover:bg-brand-400 sm:hidden"
             >
               Ariza
             </button>
