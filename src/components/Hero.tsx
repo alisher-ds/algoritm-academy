@@ -8,7 +8,9 @@ import {
   MapPin,
   HelpCircle,
   GraduationCap,
+  CalendarCheck,
 } from "lucide-react";
+import { ECOSYSTEM_DATA } from "@/data/ecosystemData";
 
 interface HeroProps {
   onOpenLeadModal: (target?: string) => void;
@@ -16,125 +18,130 @@ interface HeroProps {
   onOpenQuizModal: () => void;
 }
 
+const heroStats = [
+  { value: "1520", label: "Digital SAT — 2026-yilgi eng yuqori natija" },
+  { value: "27", label: "nafar o'quvchi to'liq davlat grantida" },
+  { value: "189", label: "OTM kirishda maksimal ball" },
+];
+
 export default function Hero({ onOpenLeadModal, onOpenVideoModal, onOpenQuizModal }: HeroProps) {
   return (
-    <section className="relative overflow-hidden pt-32 pb-20 sm:pt-36 sm:pb-28 bg-gradient-to-b from-emerald-50/50 via-white to-slate-50 text-slate-900 border-b border-slate-200/80">
-      
-      {/* Background Glow */}
-      <div className="absolute top-12 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-gradient-to-r from-emerald-200/30 to-lime-200/30 blur-3xl pointer-events-none rounded-full"></div>
+    <section className="relative overflow-hidden border-b border-slate-200/70 bg-gradient-to-b from-brand-50/40 via-white to-white pt-28 sm:pt-32">
+      {/* Orqa fon aksenti */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-32 left-1/2 h-96 w-[52rem] -translate-x-1/2 rounded-full bg-gradient-to-r from-brand-400/15 to-brand-200/20 blur-3xl"
+      />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
-          
-          {/* Left Column: Core Value Proposition */}
-          <div className="lg:col-span-7 space-y-7 text-left">
-            
-            {/* Top Badges */}
+      <div className="relative mx-auto max-w-7xl px-4 pb-16 pt-8 sm:px-6 sm:pb-20 lg:px-8">
+        <div className="grid items-center gap-12 lg:grid-cols-12 lg:gap-10">
+          {/* Chap ustun */}
+          <div className="lg:col-span-7">
             <div className="flex flex-wrap items-center gap-2.5">
-              <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-emerald-300 text-emerald-800 text-xs font-black uppercase tracking-wider shadow-xs">
-                <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-                1-Dars Bepul Sinov Darsi
+              <span className="inline-flex items-center gap-2 rounded-full border border-brand-200 bg-white px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-wider text-brand-700 shadow-sm">
+                <Sparkles className="h-3.5 w-3.5 text-brand-500" />
+                Birinchi dars bepul
               </span>
-              <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-xs font-bold uppercase tracking-wider">
-                <MapPin className="w-3.5 h-3.5 text-emerald-600" />
-                Qarshi sh. · Islom Karimov 291V
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3.5 py-1.5 text-[11px] font-bold text-slate-600">
+                <MapPin className="h-3.5 w-3.5 text-brand-500" />
+                Qarshi · Islom Karimov 291V
               </span>
             </div>
 
-            {/* Main Headline */}
-            <div className="space-y-2">
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight uppercase leading-[1.08] text-slate-950">
-                Kelajak Liderlari Uchun <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-600">
-                  Algoritm Academy
-                </span>
-              </h1>
-              <p className="text-base sm:text-lg text-slate-600 max-w-xl font-medium leading-relaxed pt-2">
-                Prezident maktabiga tayyorlov (PMT), Digital SAT 1500+, IELTS 7.5+ va Matematika Milliy sertifikat (A+) yo&apos;nalishlarida Qarshi shahridagi yetakchi akademik tayyorlov markazi.
-              </p>
-            </div>
+            <h1 className="mt-6 font-display text-4xl font-extrabold leading-[1.08] tracking-tight text-slate-950 sm:text-5xl lg:text-[3.4rem]">
+              Prezident maktabi va xalqaro imtihonlarga{" "}
+              <span className="text-brand-600">professional tayyorlov</span>
+            </h1>
 
-            {/* CTA Buttons */}
-            <div className="flex flex-wrap items-center gap-4 pt-2">
+            <p className="mt-5 max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg">
+              PMT, Digital SAT 1500+, IELTS 7.5+ va Matematika milliy sertifikat (A+)
+              yo&apos;nalishlarida — har bir o&apos;quvchi uchun shaxsiy o&apos;quv reja va haftalik
+              bepul mock imtihonlar.
+            </p>
+
+            <div className="mt-8 flex flex-wrap items-center gap-3.5">
               <button
-                onClick={() => onOpenLeadModal("1-Dars Bepul")}
-                className="group relative px-8 py-4 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-emerald-600/25 transition-all duration-200 flex items-center gap-2.5"
+                onClick={() => onOpenLeadModal("1-Dars bepul")}
+                className="group inline-flex items-center gap-2 rounded-xl bg-brand-500 px-7 py-4 text-sm font-bold uppercase tracking-wider text-white shadow-glow transition-all hover:bg-brand-400 active:scale-[0.98]"
               >
-                <span>1-Dars Bepul Joy Olish</span>
-                <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                Bepul sinov darsiga yozilish
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </button>
 
               <button
                 onClick={onOpenQuizModal}
-                className="px-6 py-4 rounded-full bg-white hover:bg-slate-50 text-slate-900 font-bold text-xs uppercase tracking-wider border border-slate-200 shadow-xs transition-all flex items-center gap-2"
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-6 py-4 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-brand-300 hover:text-brand-700"
               >
-                <HelpCircle className="w-4 h-4 text-emerald-600" />
-                <span>Yo'nalish Tanlash Testi</span>
+                <HelpCircle className="h-4 w-4 text-brand-500" />
+                Yo&apos;nalish tanlash testi
               </button>
             </div>
 
-            {/* Trust Metrics — rasmiy natijalar (2026 arxivi) */}
-            <div className="pt-6 border-t border-slate-200 grid grid-cols-3 gap-6 max-w-lg">
-              <div>
-                <div className="text-2xl sm:text-3xl font-black text-slate-950 tracking-tight">1520</div>
-                <div className="text-xs text-slate-500 font-bold mt-0.5 leading-snug">Digital SAT — 2026-yilgi eng yuqori natija</div>
-              </div>
-              <div className="border-x border-slate-200 px-4">
-                <div className="text-2xl sm:text-3xl font-black text-emerald-700 tracking-tight">27</div>
-                <div className="text-xs text-slate-500 font-bold mt-0.5 leading-snug">nafar o&apos;quvchi to&apos;liq davlat grantida</div>
-              </div>
-              <div>
-                <div className="text-2xl sm:text-3xl font-black text-slate-950 tracking-tight">189</div>
-                <div className="text-xs text-slate-500 font-bold mt-0.5 leading-snug">OTM kirishda maksimal ball</div>
-              </div>
+            {/* Tasdiqlangan natijalar */}
+            <div className="mt-10 grid max-w-xl grid-cols-3 gap-6 border-t border-slate-200 pt-6">
+              {heroStats.map((s, i) => (
+                <div key={s.value} className={i === 1 ? "border-x border-slate-200 px-4" : ""}>
+                  <div className="font-display text-2xl font-extrabold tracking-tight text-slate-950 sm:text-3xl">
+                    {s.value}
+                  </div>
+                  <p className="mt-1 text-xs font-medium leading-snug text-slate-500">{s.label}</p>
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* Right Column: Visual Showcase Card */}
-          <div className="lg:col-span-5 relative">
-            <div className="relative rounded-3xl overflow-hidden border border-slate-200 bg-white p-2 shadow-xl group">
-              
-              {/* Image Preview */}
-              <div className="relative h-[400px] w-full rounded-2xl overflow-hidden bg-slate-100">
+          {/* O'ng ustun: media karta */}
+          <div className="lg:col-span-5">
+            <div className="group relative overflow-hidden rounded-[1.75rem] border border-slate-200/80 bg-white p-2 shadow-card">
+              <div className="relative aspect-[4/3] w-full overflow-hidden rounded-3xl bg-slate-100">
                 <img
-                  src="/images/slides/slide_5_live_class.jpg"
-                  alt="Algoritm Academy — jonli dars jarayoni"
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  src="/images/slides/slide_2_it_ai_lab.jpg"
+                  alt="Algoritm Academy — zamonaviy o'quv xonasi"
+                  className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent"></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent" />
 
-                {/* Big Center Play Button */}
                 <button
                   onClick={onOpenVideoModal}
-                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-2xl hover:scale-110 transition-transform duration-300"
+                  className="absolute left-1/2 top-1/2 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-slate-950 shadow-lift transition-transform duration-300 hover:scale-110"
                   aria-label="Videoni ko'rish"
                 >
-                  <Play className="w-6 h-6 fill-white ml-0.5" />
+                  <Play className="ml-0.5 h-6 w-6 fill-slate-950" />
                 </button>
+
+                <span className="absolute bottom-4 left-4 rounded-full bg-black/45 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white backdrop-blur">
+                  Jonli darslar
+                </span>
               </div>
 
-              {/* Bottom Interactive Banner */}
-              <div className="p-4 flex items-center justify-between text-left">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 shrink-0">
-                    <GraduationCap className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-black text-slate-900 uppercase">Prezident Maktabi & SAT Kafolati</h4>
-                    <p className="text-[10px] text-slate-500 font-medium">Haftalik bepul mock imtihonlari</p>
+              {/* Pastki ma'lumot satri */}
+              <div className="flex items-center justify-between gap-3 p-3 sm:p-4">
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600 ring-1 ring-brand-100">
+                    <CalendarCheck className="h-5 w-5" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-bold text-slate-900">
+                      Haftalik bepul mock imtihonlar
+                    </p>
+                    <p className="text-xs text-slate-500">Real imtihon muhitida sinov</p>
                   </div>
                 </div>
                 <button
-                  onClick={() => onOpenLeadModal("PMT & SAT Darsiga Yozilish")}
-                  className="px-4 py-2 rounded-full bg-emerald-600 text-white text-xs font-black uppercase hover:bg-emerald-500 transition shrink-0 shadow-xs"
+                  onClick={() => onOpenLeadModal("PMT va SAT darsiga yozilish")}
+                  className="shrink-0 rounded-xl bg-brand-500 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white transition hover:bg-brand-400"
                 >
                   Yozilish
                 </button>
               </div>
+            </div>
 
+            {/* Kichik ma'lumot: manzil */}
+            <div className="mt-4 flex items-center gap-2.5 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-xs text-slate-500">
+              <GraduationCap className="h-4 w-4 shrink-0 text-brand-500" />
+              {ECOSYSTEM_DATA.academy.address} ({ECOSYSTEM_DATA.academy.landmark})
             </div>
           </div>
-
         </div>
       </div>
     </section>

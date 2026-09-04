@@ -48,11 +48,11 @@ export default function AloqaPage() {
               <div className="rounded-3xl border border-slate-200 bg-slate-50 p-7 sm:p-9 shadow-lg flex flex-col justify-between text-left">
                 <div>
                   <div className="flex items-center gap-3 mb-6">
-                    <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-black">
+                    <div className="w-12 h-12 rounded-2xl bg-brand-100 text-brand-800 flex items-center justify-center font-black">
                       <School className="w-6 h-6" />
                     </div>
                     <div>
-                      <span className="text-xs font-bold text-emerald-800 uppercase tracking-wider block">
+                      <span className="text-xs font-bold text-brand-800 uppercase tracking-wider block">
                         1-Bino: Xususiy Maktab
                       </span>
                       <h3 className="font-display text-2xl font-extrabold text-slate-950">
@@ -63,37 +63,37 @@ export default function AloqaPage() {
 
                   <div className="space-y-4 text-xs sm:text-sm text-slate-600 mb-8 font-medium">
                     <div className="flex items-start gap-3">
-                      <MapPin className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                      <MapPin className="w-5 h-5 text-brand-600 shrink-0 mt-0.5" />
                       <span>
                         <strong>Manzil:</strong> {ECOSYSTEM_DATA.school.address} ({ECOSYSTEM_DATA.school.landmark})
                       </span>
                     </div>
                     <div className="flex items-center gap-3">
-                      <Phone className="w-5 h-5 text-emerald-600 shrink-0" />
+                      <Phone className="w-5 h-5 text-brand-600 shrink-0" />
                       <span>
                         <strong>Telefon:</strong>{" "}
-                        <a href={`tel:${ECOSYSTEM_DATA.school.phone.replace(/\D/g, "")}`} className="text-emerald-700 font-bold hover:underline font-mono">
+                        <a href={`tel:${ECOSYSTEM_DATA.school.phone.replace(/\D/g, "")}`} className="text-brand-700 font-bold hover:underline font-mono">
                           {ECOSYSTEM_DATA.school.phone}
                         </a>
                       </span>
                     </div>
                     <div className="flex items-center gap-3">
-                      <Send className="w-5 h-5 text-emerald-600 shrink-0" />
+                      <Send className="w-5 h-5 text-brand-600 shrink-0" />
                       <span>
                         <strong>Telegram admin:</strong>{" "}
-                        <a href={ECOSYSTEM_DATA.school.telegram} target="_blank" rel="noreferrer" className="text-emerald-700 font-bold hover:underline">
+                        <a href={ECOSYSTEM_DATA.school.telegram} target="_blank" rel="noreferrer" className="text-brand-700 font-bold hover:underline">
                           @algoritm_xususiy_maktab
                         </a>
                       </span>
                     </div>
                     <div className="flex items-center gap-3">
-                      <Clock className="w-5 h-5 text-emerald-600 shrink-0" />
+                      <Clock className="w-5 h-5 text-brand-600 shrink-0" />
                       <span>
                         <strong>Ish vaqti:</strong> {ECOSYSTEM_DATA.school.workingHours} (Dush - Shanba)
                       </span>
                     </div>
                     <div className="flex items-center gap-3">
-                      <Award className="w-5 h-5 text-emerald-600 shrink-0" />
+                      <Award className="w-5 h-5 text-brand-600 shrink-0" />
                       <span>
                         <strong>Yo'nalish:</strong> 1-11 sinflar, 3 mahal ovqat, to'garaklar, yotoqxona
                       </span>
@@ -104,7 +104,7 @@ export default function AloqaPage() {
                 <div className="pt-5 border-t border-slate-200 flex flex-wrap gap-3 items-center justify-between">
                   <a
                     href={`tel:${ECOSYSTEM_DATA.school.phone.replace(/\D/g, "")}`}
-                    className="px-5 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-wider transition"
+                    className="px-5 py-3 rounded-2xl bg-brand-600 hover:bg-brand-500 text-white font-black text-xs uppercase tracking-wider transition"
                   >
                     Maktabga Qo'ng'iroq
                   </a>
@@ -136,32 +136,32 @@ export default function AloqaPage() {
 
                   <div className="space-y-4 text-xs sm:text-sm text-slate-600 mb-8 font-medium">
                     <div className="flex items-start gap-3">
-                      <MapPin className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                      <MapPin className="w-5 h-5 text-brand-600 shrink-0 mt-0.5" />
                       <span>
                         <strong>Manzil:</strong> {ECOSYSTEM_DATA.academy.address} ({ECOSYSTEM_DATA.academy.landmark})
                       </span>
                     </div>
                     <div className="flex items-center gap-3">
-                      <Phone className="w-5 h-5 text-emerald-600 shrink-0" />
+                      <Phone className="w-5 h-5 text-brand-600 shrink-0" />
                       <span>
                         <strong>Telefon:</strong>{" "}
-                        <a href={`tel:${ECOSYSTEM_DATA.academy.phone.replace(/\D/g, "")}`} className="text-emerald-700 font-bold hover:underline font-mono">
+                        <a href={`tel:${ECOSYSTEM_DATA.academy.phone.replace(/\D/g, "")}`} className="text-brand-700 font-bold hover:underline font-mono">
                           {ECOSYSTEM_DATA.academy.phone}
                         </a>
                         <span className="text-slate-400 font-medium">/</span>{" "}
-                        <a href={`tel:${(ECOSYSTEM_DATA.academy.phoneSecondary ?? "").replace(/\D/g, "")}`} className="text-emerald-700 font-bold hover:underline font-mono">
+                        <a href={`tel:${(ECOSYSTEM_DATA.academy.phoneSecondary ?? "").replace(/\D/g, "")}`} className="text-brand-700 font-bold hover:underline font-mono">
                           {ECOSYSTEM_DATA.academy.phoneSecondary}
                         </a>
                       </span>
                     </div>
                     <div className="flex items-center gap-3">
-                      <Clock className="w-5 h-5 text-emerald-600 shrink-0" />
+                      <Clock className="w-5 h-5 text-brand-600 shrink-0" />
                       <span>
                         <strong>Ish vaqti:</strong> {ECOSYSTEM_DATA.academy.workingHours} (Har kuni)
                       </span>
                     </div>
                     <div className="flex items-center gap-3">
-                      <Award className="w-5 h-5 text-emerald-600 shrink-0" />
+                      <Award className="w-5 h-5 text-brand-600 shrink-0" />
                       <span>
                         <strong>Yo'nalish:</strong> PMT, SAT 1500+, IELTS 7.5+, Milliy Sertifikat A+
                       </span>
@@ -172,7 +172,7 @@ export default function AloqaPage() {
                 <div className="pt-5 border-t border-slate-200 flex flex-wrap gap-3 items-center justify-between">
                   <a
                     href={`tel:${ECOSYSTEM_DATA.academy.phone.replace(/\D/g, "")}`}
-                    className="px-5 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-wider transition"
+                    className="px-5 py-3 rounded-2xl bg-brand-600 hover:bg-brand-500 text-white font-black text-xs uppercase tracking-wider transition"
                   >
                     Markazga Qo'ng'iroq
                   </a>
@@ -203,7 +203,7 @@ export default function AloqaPage() {
                   href={ECOSYSTEM_DATA.contact.telegram}
                   target="_blank"
                   rel="noreferrer"
-                  className="px-5 py-3 rounded-2xl bg-white/10 hover:bg-emerald-600 text-white font-bold text-xs uppercase tracking-wider transition flex items-center gap-2"
+                  className="px-5 py-3 rounded-2xl bg-white/10 hover:bg-brand-600 text-white font-bold text-xs uppercase tracking-wider transition flex items-center gap-2"
                 >
                   <Send className="w-4 h-4" /> Telegram
                 </a>
@@ -211,7 +211,7 @@ export default function AloqaPage() {
                   href={ECOSYSTEM_DATA.contact.instagram}
                   target="_blank"
                   rel="noreferrer"
-                  className="px-5 py-3 rounded-2xl bg-white/10 hover:bg-emerald-600 text-white font-bold text-xs uppercase tracking-wider transition flex items-center gap-2"
+                  className="px-5 py-3 rounded-2xl bg-white/10 hover:bg-brand-600 text-white font-bold text-xs uppercase tracking-wider transition flex items-center gap-2"
                 >
                   <Globe className="w-4 h-4" /> Instagram
                 </a>

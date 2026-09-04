@@ -71,17 +71,17 @@ export default function LeadBannerSection() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="rounded-3xl bg-slate-950 text-white p-8 sm:p-14 lg:p-16 relative overflow-hidden shadow-2xl">
           {/* Ambient Glow */}
-          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-500/15 rounded-full blur-3xl pointer-events-none"></div>
+          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-brand-500/15 rounded-full blur-3xl pointer-events-none"></div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center relative z-10">
             {/* Left Column: Heading & Value */}
             <div className="lg:col-span-6 space-y-6 text-left">
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 text-emerald-300 text-xs font-bold uppercase tracking-wider border border-white/15">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 text-brand-300 text-xs font-bold uppercase tracking-wider border border-white/15">
                 <ShieldCheck className="w-4 h-4 text-brand-400" /> Bepul Diagnostika & Suhbat
               </div>
               <h2 className="font-display text-3xl font-extrabold tracking-tight text-white sm:text-4xl lg:text-5xl">
                 Qabul 2026 Uchun <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-brand-400">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-brand-400">
                   Arizangizni Qoldiring
                 </span>
               </h2>
@@ -106,8 +106,8 @@ export default function LeadBannerSection() {
               <div className="bg-white rounded-3xl p-7 sm:p-9 text-slate-900 shadow-2xl">
                 {submitted ? (
                   <div className="py-12 text-center space-y-4 animate-in fade-in">
-                    <div className="w-16 h-16 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center mx-auto">
-                      <CheckCircle2 className="w-9 h-9 text-emerald-600" />
+                    <div className="w-16 h-16 bg-brand-100 text-brand-700 rounded-full flex items-center justify-center mx-auto">
+                      <CheckCircle2 className="w-9 h-9 text-brand-600" />
                     </div>
                     <h3 className="font-display text-2xl font-extrabold text-slate-950">Arizangiz Qabul Qilindi!</h3>
                     <p className="text-xs text-slate-600 max-w-xs mx-auto font-medium">
@@ -127,7 +127,7 @@ export default function LeadBannerSection() {
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         placeholder="Masalan: Sardorbek Alimov"
-                        className="w-full px-4 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 text-sm font-medium focus:outline-none focus:border-emerald-600 focus:bg-white transition shadow-xs"
+                        className="w-full px-4 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 text-sm font-medium focus:outline-none focus:border-brand-600 focus:bg-white transition shadow-xs"
                       />
                     </div>
 
@@ -144,7 +144,7 @@ export default function LeadBannerSection() {
                           setPhone(digits ? `+998 ${digits.replace(/^998/, "")}` : "");
                         }}
                         placeholder="+998 (90) 123-45-67"
-                        className="w-full px-4 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 text-sm font-mono focus:outline-none focus:border-emerald-600 focus:bg-white transition shadow-xs"
+                        className="w-full px-4 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 text-sm font-mono focus:outline-none focus:border-brand-600 focus:bg-white transition shadow-xs"
                       />
                     </div>
 
@@ -155,7 +155,7 @@ export default function LeadBannerSection() {
                       <select
                         value={direction}
                         onChange={(e) => setDirection(e.target.value)}
-                        className="w-full px-4 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 text-sm font-medium focus:outline-none focus:border-emerald-600 focus:bg-white transition shadow-xs"
+                        className="w-full px-4 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 text-sm font-medium focus:outline-none focus:border-brand-600 focus:bg-white transition shadow-xs"
                       >
                         {OPTIONS.map((o) => (
                           <option key={o.value} value={o.value}>
@@ -176,7 +176,7 @@ export default function LeadBannerSection() {
                     <button
                       type="submit"
                       disabled={loading}
-                      className="w-full py-4 rounded-full bg-brand-500 hover:bg-brand-400 text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 mt-2 disabled:opacity-60"
+                      className="w-full py-4 rounded-full bg-brand-500 hover:bg-brand-400 text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-brand-600/20 transition-all flex items-center justify-center gap-2 mt-2 disabled:opacity-60"
                     >
                       {loading ? (
                         <>

@@ -38,7 +38,7 @@ export default function GalleryGrid() {
               onClick={() => setActiveFilter(cat.id)}
               className={`whitespace-nowrap px-5 py-2.5 rounded-full text-xs sm:text-sm font-bold transition-all ${
                 activeFilter === cat.id
-                  ? "bg-emerald-700 text-white shadow-sm"
+                  ? "bg-brand-700 text-white shadow-sm"
                   : "bg-white text-slate-600 hover:text-slate-900 border border-slate-200"
               }`}
             >
@@ -63,7 +63,7 @@ export default function GalleryGrid() {
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
               <figcaption className="absolute bottom-0 left-0 right-0 p-5 flex items-end justify-between gap-3">
                 <div>
-                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-extrabold uppercase tracking-wider mb-2 inline-block shadow-sm">
+                  <span className="px-2.5 py-0.5 rounded-full bg-brand-600 text-white text-[10px] font-extrabold uppercase tracking-wider mb-2 inline-block shadow-sm">
                     {CATEGORY_LABELS[item.category] ?? item.category}
                   </span>
                   <h4 className="text-sm sm:text-base font-bold text-white leading-snug">

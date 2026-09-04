@@ -32,13 +32,13 @@ export default function SchoolPrograms({ onOpenLeadModal }: SchoolProgramsProps)
               key={prog.id}
               className={`rounded-3xl bg-white border p-6 sm:p-7 flex flex-col justify-between transition-all duration-300 relative group text-left ${
                 idx === 1
-                  ? "border-emerald-500 ring-2 ring-emerald-500/20 shadow-xl"
-                  : "border-slate-200 hover:border-emerald-400 hover:shadow-lg"
+                  ? "border-brand-500 ring-2 ring-brand-500/20 shadow-xl"
+                  : "border-slate-200 hover:border-brand-400 hover:shadow-lg"
               }`}
             >
               {idx === 1 && (
                 <div className="absolute -top-3 left-6">
-                  <span className="px-3 py-0.5 rounded-full bg-emerald-600 text-white text-[9px] font-black uppercase tracking-wider shadow-sm">
+                  <span className="px-3 py-0.5 rounded-full bg-brand-600 text-white text-[9px] font-black uppercase tracking-wider shadow-sm">
                     Asosiy Qabul
                   </span>
                 </div>
@@ -47,7 +47,7 @@ export default function SchoolPrograms({ onOpenLeadModal }: SchoolProgramsProps)
               <div>
                 {/* Header Row */}
                 <div className="flex items-center justify-between gap-2 mb-5">
-                  <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-[11px] font-black uppercase tracking-wider border border-emerald-200">
+                  <span className="px-3 py-1 rounded-full bg-brand-50 text-brand-800 text-[11px] font-black uppercase tracking-wider border border-brand-200">
                     {prog.gradeRange}
                   </span>
                   <span className="text-[10px] font-bold text-slate-500 uppercase">
@@ -56,7 +56,7 @@ export default function SchoolPrograms({ onOpenLeadModal }: SchoolProgramsProps)
                 </div>
 
                 {/* Title & Description */}
-                <h3 className="text-xl font-black text-slate-950 mb-2.5 group-hover:text-emerald-700 transition-colors leading-snug">
+                <h3 className="text-xl font-black text-slate-950 mb-2.5 group-hover:text-brand-700 transition-colors leading-snug">
                   {prog.title}
                 </h3>
                 <p className="text-xs text-slate-600 leading-relaxed mb-5">
@@ -66,11 +66,11 @@ export default function SchoolPrograms({ onOpenLeadModal }: SchoolProgramsProps)
                 {/* Reassurance Timing & Food */}
                 <div className="space-y-2 py-3 border-y border-slate-100 mb-5 text-[11px] text-slate-600 font-medium">
                   <div className="flex items-center gap-2">
-                    <Clock className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <Clock className="w-3.5 h-3.5 text-brand-600 shrink-0" />
                     <span>Vaqt: <strong className="text-slate-900">{prog.schedule}</strong></span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Utensils className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <Utensils className="w-3.5 h-3.5 text-brand-600 shrink-0" />
                     <span>Taom: <strong className="text-slate-900">{prog.meals}</strong></span>
                   </div>
                 </div>
@@ -79,7 +79,7 @@ export default function SchoolPrograms({ onOpenLeadModal }: SchoolProgramsProps)
                 <div className="space-y-2.5 mb-6">
                   {prog.focus.map((item, fIdx) => (
                     <div key={fIdx} className="flex items-start gap-2 text-[11.5px] font-semibold text-slate-700">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-3.5 h-3.5 text-brand-600 shrink-0 mt-0.5" />
                       <span>{item}</span>
                     </div>
                   ))}
@@ -92,8 +92,8 @@ export default function SchoolPrograms({ onOpenLeadModal }: SchoolProgramsProps)
                   onClick={() => onOpenLeadModal(prog.title)}
                   className={`w-full py-3 rounded-full font-black text-xs uppercase tracking-wider transition-all duration-200 flex items-center justify-center gap-2 ${
                     idx === 1
-                      ? "bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/20"
-                      : "bg-slate-950 hover:bg-emerald-600 text-white"
+                      ? "bg-brand-600 hover:bg-brand-500 text-white shadow-md shadow-brand-600/20"
+                      : "bg-slate-950 hover:bg-brand-600 text-white"
                   }`}
                 >
                   <span>Qabulga Yozilish</span>

@@ -270,7 +270,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
               key={member.id}
               onClick={() => handleOpenModal(member)}
               className={`group relative rounded-2xl sm:rounded-[24px] overflow-hidden bg-white border cursor-pointer shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between ${
-                member.isRealVideo ? "border-emerald-500 ring-2 ring-emerald-400/30" : "border-slate-200/90 hover:border-emerald-500"
+                member.isRealVideo ? "border-brand-500 ring-2 ring-brand-400/30" : "border-slate-200/90 hover:border-brand-500"
               }`}
             >
               {/* Photo Frame with Glowing Aura & Real Photo Cover */}
@@ -294,7 +294,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
                 {/* Real Video Badge */}
                 {member.isRealVideo && (
                   <div className="absolute top-3 left-3">
-                    <span className="px-2 py-0.5 rounded-full bg-emerald-500 text-slate-950 text-[9px] font-black uppercase tracking-wider flex items-center gap-1 shadow-md">
+                    <span className="px-2 py-0.5 rounded-full bg-brand-500 text-slate-950 text-[9px] font-black uppercase tracking-wider flex items-center gap-1 shadow-md">
                       <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span>
                       Video Dars
                     </span>
@@ -347,7 +347,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
                       <span className="block text-[7.5px] uppercase tracking-wider text-slate-400 font-bold leading-none">
                         O'QUVCHILAR
                       </span>
-                      <span className="block text-[9.5px] sm:text-[10.5px] font-bold text-emerald-400 leading-tight mt-0.5">
+                      <span className="block text-[9.5px] sm:text-[10.5px] font-bold text-brand-400 leading-tight mt-0.5">
                         {member.students}
                       </span>
                     </div>
@@ -408,7 +408,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
             {/* Modal Header */}
             <div className="p-5 sm:p-6 bg-slate-950/80 backdrop-blur-md flex items-center justify-between border-b border-white/10 shrink-0">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full overflow-hidden border border-emerald-500/40 shrink-0">
+                <div className="w-10 h-10 rounded-full overflow-hidden border border-brand-500/40 shrink-0">
                   <img
                     src={selectedMember.image}
                     alt={selectedMember.name}
@@ -416,7 +416,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
                   />
                 </div>
                 <div>
-                  <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider block">
+                  <span className="text-[11px] font-bold text-brand-400 uppercase tracking-wider block">
                     {selectedMember.role}
                   </span>
                   <h3 className="font-display text-lg font-extrabold text-white leading-tight sm:text-xl mt-0.5">
@@ -476,7 +476,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
                     {selectedMember.highlights.map((h, i) => (
                       <div key={i} className="flex items-center gap-2 text-xs text-slate-300">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                        <CheckCircle2 className="w-4 h-4 text-brand-400 shrink-0" />
                         <span>{h}</span>
                       </div>
                     ))}
@@ -511,7 +511,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
                     handleCloseModal();
                     if (onSelectTeacherForConsultation) onSelectTeacherForConsultation(selectedMember.name);
                   }}
-                  className="w-full py-3.5 rounded-full bg-brand-500 hover:bg-brand-400 text-white font-bold text-xs uppercase tracking-wider shadow-lg shadow-emerald-600/30 transition flex items-center justify-center gap-2"
+                  className="w-full py-3.5 rounded-full bg-brand-500 hover:bg-brand-400 text-white font-bold text-xs uppercase tracking-wider shadow-lg shadow-brand-600/30 transition flex items-center justify-center gap-2"
                 >
                   <span>{selectedMember.name} Darsiga Yozilish</span>
                   <ArrowRight className="w-4 h-4" />
