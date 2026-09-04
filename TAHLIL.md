@@ -85,3 +85,26 @@ Qarshi shahridagi **Algoritm ta'lim ekotizimi** marketing-sayti: 1-qanot — **A
 | Komponentlar | 28 | 23 |
 | FAQ savollari | 4 (bosh sahifada 0) | 12 (hammasi ko'rinadi) |
 | API | 3 method, in-memory, frontend ulanmagan | CRUD + auth + logout, fayl-saqlash, frontend ulangan |
+
+---
+
+## 5. Frontend professionalizatsiyasi (2026-09-04, ikkinchi bosqich)
+
+Maqsad: funksional kod tuzatilgach, frontendni zamonaviy ta'lim saytlari darajasiga ko'tarish.
+
+| № | O'zgarish | Natija |
+|---|---|---|
+| 3.1 | **Shrift tizimi** — Inter (body) + Manrope (sarlavhalar) variable shriftlar `@fontsource` orqali self-host | Google Fonts ga bog'liqlik yo'q (sandboxda fonts.googleapis.com bloklangan edi); barcha sarlavhalar yagona display shriftida |
+| 3.2 | **Dizayn tokenlari** — `tailwind.config` da to'liq `brand` (50–950) va `navy/night` palitrasi, shadow'lar, animatsiyalar | 20 faylda 30+ tarqoq hex (`#00C853`, `#00E676`, `#0b1329`, `#080e1e`…) bitta token tizimiga birlashtirildi — sayt bo'ylab rang uyg'unligi |
+| 3.3 | **Navbar** — rounded-2xl glass panel, scroll holati, bo'lim kesishganda faol havola (IntersectionObserver), sahifaga qarab telefon (bosh — maktab qabuli, markaz — o'quv markazi), aksessuar mobil menyu | Barcha sahifalarda yagona, professional navigatsiya |
+| 3.4 | **Footer** — gradient aksent, glow, 3 telefon qatori (maktab + markaz 2 raqam), litsenziya, tartibli havolalar | |
+| 3.5 | **Video vitrina (honest)** — 6 ta "reel" (soxta 24.5K–52.1K ko'rishlar soni va turli mazmun da'volari, lekin barchasi bitta videoni ochardi) o'chirildi | Endi faqat 2 ta real video: `reel_sat1430.mp4` va `aziz_teacher_intro.mp4`, real posterlar bilan; qolgani uchun Telegram kanalga yo'naltirish |
+| 3.6 | **Markaz hero** — demo-SVG `hero_cover.svg` o'rniga real dars fotosi; soxta statistika (250+, "Top 1", 98.5%) o'rniga 2026 arxividan tasdiqlangan natijalar (1520 ball, 27 grant, 189 ball); "SAT 1400+/IELTS 8.0" da'volari aniqlandi | Har bir raqam endi `achievements` dagi haqiqiy yozuvga tayanadi |
+| 3.7 | **SEO** — JSON-LD (EducationalOrganization), to'liq OG/Twitter metadata + `og-cover.jpg` (1200×630), `sitemap.xml`, `robots.txt`, canonical | |
+| 3.8 | **UX detallari** — focus-visible ring, `prefers-reduced-motion`, `video` modalda soxta "HD 1080p · Algoritm Media" yorlig'i olib tashlandi | Klaviatura va maxsus ehtiyojli foydalanuvchilar uchun qulaylik |
+
+Tekshiruv: `npm run lint` 0/0 · `tsc` toza · `npm run build` ✅ (13 route + robots + sitemap).
+Commit: `a9ad79a`
+
+---
+
