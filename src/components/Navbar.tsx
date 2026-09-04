@@ -8,9 +8,7 @@ import {
   X, 
   GraduationCap, 
   School, 
-  Sparkles,
-  ArrowRight
-} from "lucide-react";
+  } from "lucide-react";
 import { ECOSYSTEM_DATA } from "@/data/ecosystemData";
 
 interface NavbarProps {
@@ -93,7 +91,7 @@ export default function Navbar({ onOpenLeadModal }: NavbarProps) {
 
           {/* Consultation / Application Button */}
           <button
-            onClick={() => onOpenLeadModal && onOpenLeadModal("Header ariza")}
+            onClick={() => { if (onOpenLeadModal) onOpenLeadModal("Header ariza"); }}
             className="px-4 py-2 rounded-full bg-[#00C853] hover:bg-[#00E676] text-white font-bold text-xs uppercase tracking-wider transition-all shadow-md shadow-emerald-500/20"
           >
             Ariza qoldirish
@@ -103,7 +101,7 @@ export default function Navbar({ onOpenLeadModal }: NavbarProps) {
         {/* Mobile Hamburger Toggle */}
         <div className="flex sm:hidden items-center gap-2">
           <button
-            onClick={() => onOpenLeadModal && onOpenLeadModal("Mobil header ariza")}
+            onClick={() => { if (onOpenLeadModal) onOpenLeadModal("Mobil header ariza"); }}
             className="px-3 py-1.5 rounded-full bg-[#00C853] text-white text-[11px] font-bold uppercase"
           >
             Ariza
@@ -180,7 +178,7 @@ export default function Navbar({ onOpenLeadModal }: NavbarProps) {
             <button
               onClick={() => {
                 setMobileMenuOpen(false);
-                onOpenLeadModal && onOpenLeadModal("Mobil qabul arizasi");
+                if (onOpenLeadModal) onOpenLeadModal("Mobil qabul arizasi");
               }}
               className="w-full py-3 rounded-full bg-[#00C853] text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg"
             >

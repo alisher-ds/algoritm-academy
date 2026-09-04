@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { ArrowRight, UserPlus, Sparkles, CheckCircle2 } from "lucide-react";
+import { ArrowRight, UserPlus, } from "lucide-react";
 import { ECOSYSTEM_DATA } from "@/data/ecosystemData";
 
 interface AdmissionRoadmapProps {

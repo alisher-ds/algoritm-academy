@@ -5,7 +5,6 @@ import {
   ArrowRight,
   School,
   GraduationCap,
-  Sparkles,
   ChevronLeft,
   ChevronRight
 } from "lucide-react";

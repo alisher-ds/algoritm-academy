@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Play, Eye, Heart, Video, Sparkles } from "lucide-react";
+import { Play, Eye, Heart, Video, } from "lucide-react";
 import VideoModal from "@/components/VideoModal";
 
 interface ReelItem {
@@ -30,7 +30,7 @@ export default function ReelsShowcase() {
       likes: "2.1K",
       duration: "01:15",
       thumbnail: "/images/demo/reel_1.svg",
-      videoUrl: "/videos/reel_olympiad.mp4",
+      videoUrl: "/videos/reel_sat1430.mp4",
       description: "Prezident maktabi imtihonlariga tayyorgarlik bo'yicha mantiqiy masalalar yechish namunasi.",
       instagramUrl: "https://www.instagram.com/algoritm.academy",
     },
@@ -54,7 +54,7 @@ export default function ReelsShowcase() {
       likes: "1.7K",
       duration: "00:58",
       thumbnail: "/images/demo/reel_3.svg",
-      videoUrl: "/videos/reel_math4d.mp4",
+      videoUrl: "/videos/reel_sat1430.mp4",
       description: "Murakkab matematik masalalarni tezkor usulda yechish mahorati darsi.",
       instagramUrl: "https://www.instagram.com/algoritm.academy",
     },
@@ -66,7 +66,7 @@ export default function ReelsShowcase() {
       likes: "2.9K",
       duration: "02:10",
       thumbnail: "/images/demo/reel_4.svg",
-      videoUrl: "/videos/reel_open_doors.mp4",
+      videoUrl: "/videos/reel_sat1430.mp4",
       description: "Ingliz tilida erkin so'zlashuv va jonli Speaking klubi mashg'ulotlari.",
       instagramUrl: "https://www.instagram.com/algoritm.academy",
     },
@@ -78,7 +78,7 @@ export default function ReelsShowcase() {
       likes: "2.6K",
       duration: "01:30",
       thumbnail: "/images/demo/reel_5.svg",
-      videoUrl: "/videos/reel_pmt_test.mp4",
+      videoUrl: "/videos/reel_sat1430.mp4",
       description: "O'quvchilarning bilim darajasini real imtihon muhitida sinash jarayoni.",
       instagramUrl: "https://www.instagram.com/algoritm.academy",
     },
@@ -90,7 +90,7 @@ export default function ReelsShowcase() {
       likes: "4.8K",
       duration: "02:30",
       thumbnail: "/images/demo/reel_6.svg",
-      videoUrl: "/videos/reel_graduation.mp4",
+      videoUrl: "/videos/reel_sat1430.mp4",
       description: "Yil yakunida yuqori natijalar qayd etgan o'quvchilarni taqdirlash tantanasi.",
       instagramUrl: "https://www.instagram.com/algoritm.academy",
     },

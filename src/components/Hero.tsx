@@ -1,19 +1,14 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
-import { 
-  ArrowRight, 
-  Play, 
-  Sparkles, 
-  MapPin, 
+import {
+  ArrowRight,
+  Play,
+  Sparkles,
+  MapPin,
   HelpCircle,
   GraduationCap,
-  ShieldCheck,
-  CheckCircle2,
-  Award
 } from "lucide-react";
-import { ECOSYSTEM_DATA } from "@/data/ecosystemData";
 
 interface HeroProps {
   onOpenLeadModal: (target?: string) => void;
