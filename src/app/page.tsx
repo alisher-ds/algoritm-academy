@@ -16,12 +16,10 @@ import AdmissionRoadmap from "@/components/AdmissionRoadmap";
 import FAQAccordion from "@/components/FAQAccordion";
 import LeadBannerSection from "@/components/LeadBannerSection";
 import LeadModal from "@/components/LeadModal";
-import VideoModal from "@/components/VideoModal";
 
 export default function HomePage() {
   const [leadModalOpen, setLeadModalOpen] = useState(false);
   const [leadTarget, setLeadTarget] = useState("Algoritm Academy Qabul 2026");
-  const [videoModalOpen, setVideoModalOpen] = useState(false);
 
   const handleOpenLeadModal = (targetName: string = "Algoritm Academy Qabul 2026") => {
     setLeadTarget(targetName);
@@ -35,10 +33,7 @@ export default function HomePage() {
 
       <main className="flex-1">
         {/* 2. Flagship Academy Hero (School + Courses Dual Tracks) */}
-        <SchoolHero
-          onOpenLeadModal={handleOpenLeadModal}
-          onOpenVideoModal={() => setVideoModalOpen(true)}
-        />
+        <SchoolHero onOpenLeadModal={handleOpenLeadModal} />
 
         {/* 3. Ekotizimning 6 Ta Tasdiqlangan Natijasi (School + Academy 80%) */}
         <SchoolResults />
@@ -86,11 +81,6 @@ export default function HomePage() {
         isOpen={leadModalOpen}
         onClose={() => setLeadModalOpen(false)}
         initialCourse={leadTarget}
-      />
-
-      <VideoModal
-        isOpen={videoModalOpen}
-        onClose={() => setVideoModalOpen(false)}
       />
     </div>
   );
