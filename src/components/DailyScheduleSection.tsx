@@ -24,12 +24,12 @@ export default function DailyScheduleSection() {
           {ECOSYSTEM_DATA.school.dailySchedule.map((item, idx) => (
             <div
               key={idx}
-              className="p-7 rounded-3xl bg-white border border-slate-200 shadow-xs hover:border-emerald-400 hover:shadow-md transition-all duration-200 text-left flex flex-col justify-between"
+              className="p-7 rounded-3xl bg-white border border-slate-200 shadow-xs hover:border-brand-400 hover:shadow-md transition-all duration-200 text-left flex flex-col justify-between"
             >
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <span className="text-3xl">{item.icon}</span>
-                  <span className="px-3.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200/70 text-xs font-black font-mono">
+                  <span className="px-3.5 py-1 rounded-full bg-brand-50 text-brand-800 border border-brand-200/70 text-xs font-black font-mono">
                     {item.time}
                   </span>
                 </div>

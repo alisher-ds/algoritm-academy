@@ -35,10 +35,10 @@ export default function SchoolResults() {
             </div>
             <div>
               <div className="flex items-center justify-between">
-                <span className="px-2.5 py-1 rounded-md bg-emerald-500/20 text-emerald-400 text-[10px] font-black uppercase tracking-wider border border-emerald-500/30">
+                <span className="px-2.5 py-1 rounded-md bg-brand-500/20 text-brand-400 text-[10px] font-black uppercase tracking-wider border border-brand-500/30">
                   Oliy Ta'lim
                 </span>
-                <span className="text-[11px] font-bold text-emerald-400">100% Byudjet</span>
+                <span className="text-[11px] font-bold text-brand-400">100% Byudjet</span>
               </div>
               <div className="mt-5 text-4xl sm:text-5xl font-black tracking-tight text-white">
                 600+
@@ -49,12 +49,12 @@ export default function SchoolResults() {
             </div>
             <div className="mt-6 text-xs text-slate-300 border-t border-white/10 pt-3.5 flex items-center justify-between">
               <span className="font-semibold">Davlat Grantlari Sohiblari:</span>
-              <span className="text-emerald-400 font-black text-sm">150+ Grant</span>
+              <span className="text-brand-400 font-black text-sm">150+ Grant</span>
             </div>
           </div>
 
           {/* 2. SAT 1200+ va 1500+ */}
-          <div className="p-7 rounded-3xl bg-emerald-800 text-white flex flex-col justify-between shadow-lg relative overflow-hidden">
+          <div className="p-7 rounded-3xl bg-brand-800 text-white flex flex-col justify-between shadow-lg relative overflow-hidden">
             <div className="absolute right-0 top-0 translate-x-3 -translate-y-3 opacity-10">
               <Globe2 className="w-32 h-32 text-white" />
             </div>
@@ -63,7 +63,7 @@ export default function SchoolResults() {
                 <span className="px-2.5 py-1 rounded-md bg-white/20 text-white text-[10px] font-black uppercase tracking-wider">
                   Digital SAT
                 </span>
-                <span className="text-[11px] font-bold text-emerald-200">Top 1% Global</span>
+                <span className="text-[11px] font-bold text-brand-200">Top 1% Global</span>
               </div>
               <div className="mt-5 text-4xl sm:text-5xl font-black tracking-tight text-white">
                 100+ Ta
@@ -72,20 +72,20 @@ export default function SchoolResults() {
                 SAT 1200+ Natija
               </div>
             </div>
-            <div className="mt-6 text-xs text-emerald-100 border-t border-white/15 pt-3.5 flex items-center justify-between">
+            <div className="mt-6 text-xs text-brand-100 border-t border-white/15 pt-3.5 flex items-center justify-between">
               <span className="font-semibold">SAT 1500+ Global Elita:</span>
               <span className="font-black text-white text-sm">5 Nafar (1520 Eng Yuqori)</span>
             </div>
           </div>
 
           {/* 3. Prezident va Ixtisoslashtirilgan Maktablar */}
-          <div className="p-7 rounded-3xl bg-slate-50 border border-slate-200 flex flex-col justify-between hover:border-emerald-500 hover:shadow-md transition duration-200">
+          <div className="p-7 rounded-3xl bg-slate-50 border border-slate-200 flex flex-col justify-between hover:border-brand-500 hover:shadow-md transition duration-200">
             <div>
               <div className="flex items-center justify-between">
-                <span className="px-2.5 py-1 rounded-md bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase tracking-wider">
+                <span className="px-2.5 py-1 rounded-md bg-brand-100 text-brand-800 text-[10px] font-black uppercase tracking-wider">
                   Ixtisoslashgan Ta'lim
                 </span>
-                <span className="text-[11px] font-bold text-emerald-700">PMT & Al-Xorazmiy</span>
+                <span className="text-[11px] font-bold text-brand-700">PMT & Al-Xorazmiy</span>
               </div>
               <div className="mt-5 text-4xl sm:text-5xl font-black tracking-tight text-slate-950">
                 300+
@@ -101,7 +101,7 @@ export default function SchoolResults() {
           </div>
 
           {/* 4. Jami Fan Sertifikatlari */}
-          <div className="p-7 rounded-3xl bg-slate-50 border border-slate-200 flex flex-col justify-between hover:border-emerald-500 hover:shadow-md transition duration-200">
+          <div className="p-7 rounded-3xl bg-slate-50 border border-slate-200 flex flex-col justify-between hover:border-brand-500 hover:shadow-md transition duration-200">
             <div>
               <div className="flex items-center justify-between">
                 <span className="px-2.5 py-1 rounded-md bg-blue-100 text-blue-900 text-[10px] font-black uppercase tracking-wider">
@@ -123,7 +123,7 @@ export default function SchoolResults() {
           </div>
 
           {/* 5. Chet Tili Sertifikatlari (B2 va Undan Yuqori) */}
-          <div className="p-7 rounded-3xl bg-slate-50 border border-slate-200 flex flex-col justify-between hover:border-emerald-500 hover:shadow-md transition duration-200">
+          <div className="p-7 rounded-3xl bg-slate-50 border border-slate-200 flex flex-col justify-between hover:border-brand-500 hover:shadow-md transition duration-200">
             <div>
               <div className="flex items-center justify-between">
                 <span className="px-2.5 py-1 rounded-md bg-purple-100 text-purple-900 text-[10px] font-black uppercase tracking-wider">
@@ -145,7 +145,7 @@ export default function SchoolResults() {
           </div>
 
           {/* 6. Respublika Fan Olimpiadasi Bosh Mukofoti */}
-          <div className="p-7 rounded-3xl bg-slate-50 border border-slate-200 flex flex-col justify-between hover:border-emerald-500 hover:shadow-md transition duration-200">
+          <div className="p-7 rounded-3xl bg-slate-50 border border-slate-200 flex flex-col justify-between hover:border-brand-500 hover:shadow-md transition duration-200">
             <div>
               <div className="flex items-center justify-between">
                 <span className="px-2.5 py-1 rounded-md bg-amber-100 text-amber-900 text-[10px] font-black uppercase tracking-wider">
@@ -171,11 +171,11 @@ export default function SchoolResults() {
         {/* 3. Rasmiy Tasdiqlanganlik va Shaffoflik Eslatmasi */}
         <div className="p-5 sm:p-6 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-600">
           <div className="flex items-center gap-2.5 font-medium">
-            <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0" />
+            <ShieldCheck className="w-5 h-5 text-brand-600 shrink-0" />
             <span>Ko'rsatkichlar Algoritm Academy xususiy maktabi va o'quv markazi bitiruvchilarining rasmiy buyruqlari, davlat grantlari va xalqaro sertifikatlari asosida shakllantirilgan.</span>
           </div>
-          <div className="flex items-center gap-1.5 text-emerald-800 font-bold shrink-0 bg-emerald-100/70 px-3 py-1.5 rounded-xl border border-emerald-200">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+          <div className="flex items-center gap-1.5 text-brand-800 font-bold shrink-0 bg-brand-100/70 px-3 py-1.5 rounded-xl border border-brand-200">
+            <CheckCircle2 className="w-4 h-4 text-brand-600" />
             <span>100% Tasdiqlangan Natijadorlik</span>
           </div>
         </div>

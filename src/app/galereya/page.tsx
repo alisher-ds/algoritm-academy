@@ -18,7 +18,7 @@ export default function GalereyaPage() {
         {/* Header */}
         <section className="relative pt-12 pb-16 bg-slate-950 text-white border-b border-white/10 text-center">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-bold uppercase tracking-wider mb-6 border border-emerald-500/20">
+            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-500/10 text-brand-400 text-xs font-bold uppercase tracking-wider mb-6 border border-brand-500/20">
               <Camera className="w-3.5 h-3.5" /> Algoritm Media Arxiv
             </span>
 

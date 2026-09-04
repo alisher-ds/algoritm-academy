@@ -46,7 +46,7 @@ export default function SectionHeader({
           className={`mb-4 inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-wider ${
             dark
               ? "border border-brand-400/30 bg-brand-400/10 text-brand-400"
-              : "border border-emerald-200/80 bg-emerald-50 text-emerald-700"
+              : "border border-brand-200/80 bg-brand-50 text-brand-700"
           }`}
         >
           {Icon && <Icon className="h-3.5 w-3.5" />}

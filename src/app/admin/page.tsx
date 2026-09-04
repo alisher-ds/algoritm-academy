@@ -300,10 +300,10 @@ export default function AdminPage() {
         </div>
 
         {notice && (
-          <div className="mb-6 flex items-start gap-2 text-xs text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl px-4 py-3">
+          <div className="mb-6 flex items-start gap-2 text-xs text-brand-300 bg-brand-500/10 border border-brand-500/20 rounded-2xl px-4 py-3">
             <Info className="w-4 h-4 shrink-0 mt-0.5" />
             <span>{notice}</span>
-            <button onClick={() => setNotice(null)} className="ml-auto text-emerald-300 hover:text-white font-bold">
+            <button onClick={() => setNotice(null)} className="ml-auto text-brand-300 hover:text-white font-bold">
               ✕
             </button>
           </div>

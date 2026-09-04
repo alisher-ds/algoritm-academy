@@ -32,14 +32,14 @@ export default function DtmGrantBanner() {
   return (
     <section className="bg-night-deep py-16 text-white border-b border-white/5">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="rounded-3xl bg-gradient-to-br from-night via-night-deep to-night-deep p-8 sm:p-12 text-white border border-emerald-500/20 shadow-2xl relative overflow-hidden">
+        <div className="rounded-3xl bg-gradient-to-br from-night via-night-deep to-night-deep p-8 sm:p-12 text-white border border-brand-500/20 shadow-2xl relative overflow-hidden">
           
           {/* Subtle Glow */}
-          <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+          <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 bg-brand-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 mb-10 pb-8 border-b border-white/10 relative z-10">
             <div>
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold uppercase tracking-wider mb-3">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-brand-500/10 border border-brand-500/30 text-brand-400 text-xs font-bold uppercase tracking-wider mb-3">
                 <TrendingUp className="w-3.5 h-3.5 text-brand-500" /> Rasmiy Imtihon Natijalari
               </div>
               <h3 className="font-display text-2xl font-extrabold tracking-tight text-white sm:text-3xl lg:text-4xl">
@@ -68,9 +68,9 @@ export default function DtmGrantBanner() {
             {highlights.map((item, idx) => (
               <div
                 key={idx}
-                className="p-6 rounded-2xl bg-white/[0.03] border border-white/10 hover:border-emerald-500/40 hover:bg-white/[0.05] transition-all duration-300 group"
+                className="p-6 rounded-2xl bg-white/[0.03] border border-white/10 hover:border-brand-500/40 hover:bg-white/[0.05] transition-all duration-300 group"
               >
-                <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider block mb-1">
+                <span className="text-[10px] font-bold text-brand-400 uppercase tracking-wider block mb-1">
                   {item.category}
                 </span>
                 <div className="text-3xl font-black text-white tracking-tight mb-1 group-hover:text-brand-500 transition-colors">

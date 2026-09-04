@@ -39,7 +39,7 @@ export default function CourseCatalog({ onOpenLeadModal }: CourseCatalogProps) {
   });
 
   return (
-    <section className="bg-night-deep py-20 sm:py-28 text-white border-b border-emerald-500/10" id="kurslar">
+    <section className="bg-night-deep py-20 sm:py-28 text-white border-b border-brand-500/10" id="kurslar">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}
@@ -81,12 +81,12 @@ export default function CourseCatalog({ onOpenLeadModal }: CourseCatalogProps) {
           {filteredCourses.map((course) => (
             <div
               key={course.id}
-              className="group rounded-3xl bg-white/[0.02] border border-white/10 p-6 sm:p-8 flex flex-col justify-between hover:border-emerald-500/40 hover:bg-white/[0.04] hover:shadow-[0_10px_35px_rgba(0,200,83,0.15)] transition-all duration-300 relative overflow-hidden text-left"
+              className="group rounded-3xl bg-white/[0.02] border border-white/10 p-6 sm:p-8 flex flex-col justify-between hover:border-brand-500/40 hover:bg-white/[0.04] hover:shadow-[0_10px_35px_rgba(0,200,83,0.15)] transition-all duration-300 relative overflow-hidden text-left"
             >
               <div>
                 {/* Top badges */}
                 <div className="flex items-center justify-between gap-3 mb-4">
-                  <span className="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold uppercase tracking-wider">
+                  <span className="px-3 py-1 rounded-full bg-brand-500/10 border border-brand-500/30 text-brand-400 text-xs font-bold uppercase tracking-wider">
                     {course.categoryLabel}
                   </span>
                   {course.badge && (
@@ -134,7 +134,7 @@ export default function CourseCatalog({ onOpenLeadModal }: CourseCatalogProps) {
                     <span className="text-[10px] text-slate-500 font-semibold uppercase block">Kafedra Mudiri / Murabbiy</span>
                     <h4 className="text-xs font-bold text-white">{course.mentor.name}</h4>
                   </div>
-                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-400 border border-brand-500/20">
                     ★ {course.mentor.rating}
                   </span>
                 </div>

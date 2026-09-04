@@ -48,7 +48,7 @@ export default function FAQAccordion({ categoryFilter = "hammasi" }: FAQAccordio
                 key={idx}
                 className={`rounded-3xl border transition-all duration-200 overflow-hidden ${
                   isOpen
-                    ? "border-emerald-500 bg-white shadow-md shadow-emerald-500/5"
+                    ? "border-brand-500 bg-white shadow-md shadow-brand-500/5"
                     : "border-slate-200 bg-slate-50 hover:bg-white"
                 }`}
               >
@@ -62,7 +62,7 @@ export default function FAQAccordion({ categoryFilter = "hammasi" }: FAQAccordio
                   </span>
                   <div
                     className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-transform duration-200 ${
-                      isOpen ? "rotate-180 bg-emerald-100 text-emerald-700" : "bg-white text-slate-400 border border-slate-200"
+                      isOpen ? "rotate-180 bg-brand-100 text-brand-700" : "bg-white text-slate-400 border border-slate-200"
                     }`}
                   >
                     <ChevronDown className="w-4 h-4" />

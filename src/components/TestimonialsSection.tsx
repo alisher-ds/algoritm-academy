@@ -51,7 +51,7 @@ export default function TestimonialsSection() {
           {testimonials.map((item, idx) => (
             <div
               key={idx}
-              className="p-7 sm:p-8 rounded-3xl bg-slate-50 border border-slate-200/90 hover:border-emerald-400 hover:bg-white hover:shadow-xl transition-all duration-300 flex flex-col justify-between text-left relative group"
+              className="p-7 sm:p-8 rounded-3xl bg-slate-50 border border-slate-200/90 hover:border-brand-400 hover:bg-white hover:shadow-xl transition-all duration-300 flex flex-col justify-between text-left relative group"
             >
               <div>
                 {/* Header row: stars & badge */}
@@ -61,8 +61,8 @@ export default function TestimonialsSection() {
                       <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
                     ))}
                   </div>
-                  <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase text-emerald-800 bg-emerald-100/80 px-2.5 py-0.5 rounded-full">
-                    <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                  <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase text-brand-800 bg-brand-100/80 px-2.5 py-0.5 rounded-full">
+                    <CheckCircle2 className="w-3 h-3 text-brand-600" />
                     {item.badge}
                   </span>
                 </div>
@@ -88,7 +88,7 @@ export default function TestimonialsSection() {
                     {item.role}
                   </p>
                 </div>
-                <Quote className="w-6 h-6 text-emerald-200 group-hover:text-emerald-400 transition-colors" />
+                <Quote className="w-6 h-6 text-brand-200 group-hover:text-brand-400 transition-colors" />
               </div>
             </div>
           ))}
@@ -97,10 +97,10 @@ export default function TestimonialsSection() {
         {/* Reassurance Banner */}
         <div className="mt-10 p-5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-600">
           <div className="flex items-center gap-2 font-medium text-left">
-            <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+            <ShieldCheck className="w-4 h-4 text-brand-600 shrink-0" />
             <span>Har bir ota-ona istalgan vaqtda maktabga kelib ta'lim muhiti va dars jarayoni bilan shaxsan tanishishi mumkin.</span>
           </div>
-          <span className="text-emerald-800 font-bold shrink-0">
+          <span className="text-brand-800 font-bold shrink-0">
             100% Ochiq va Shaffof Ta'lim
           </span>
         </div>
