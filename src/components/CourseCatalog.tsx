@@ -11,6 +11,7 @@ import {
   GraduationCap
 } from "lucide-react";
 import { ECOSYSTEM_DATA } from "@/data/ecosystemData";
+import SectionHeader from "@/components/SectionHeader";
 
 interface CourseCatalogProps {
   onOpenLeadModal: (courseTitle: string) => void;
@@ -43,17 +44,7 @@ export default function CourseCatalog({ onOpenLeadModal }: CourseCatalogProps) {
         
         {/* Section Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 text-left">
-          <div className="max-w-2xl">
-            <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold uppercase tracking-wider mb-3">
-              <GraduationCap className="w-3.5 h-3.5 text-brand-400" /> Algoritm Repetitorlik & O'quv Markazi
-            </span>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight uppercase text-white">
-              Akademik Tayyorlov va Grant Kurslari
-            </h2>
-            <p className="mt-3 text-slate-400 text-sm sm:text-base leading-relaxed">
-              Prezident maktabiga tayyorlov (PMT), Digital SAT 1500+, IELTS 7.5+, Matematika Milliy Sertifikat (A+) va DTM grant repetitorlik dasturlari. Har bir kurs uchun 1-dars mutlaqo bepul.
-            </p>
-          </div>
+          <SectionHeader dark eyebrow="O'quv markazi kurslari" eyebrowIcon={GraduationCap} title="Akademik tayyorlov va grant kurslari" description="Prezident maktabiga tayyorlov (PMT), Digital SAT 1500+, IELTS 7.5+, Matematika milliy sertifikat (A+) va DTM grant repetitorlik dasturlari. Har bir kurs uchun 1-dars mutlaqo bepul." />
 
           {/* Search bar */}
           <div className="relative w-full md:w-80">

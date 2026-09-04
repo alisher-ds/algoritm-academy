@@ -2,6 +2,7 @@
 
 import React from "react";
 import { MessageSquare, Star, Quote, CheckCircle2, ShieldCheck } from "lucide-react";
+import SectionHeader from "@/components/SectionHeader";
 
 export default function TestimonialsSection() {
   const testimonials = [
@@ -37,17 +38,13 @@ export default function TestimonialsSection() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}
-        <div className="max-w-2xl mb-12 text-left">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold uppercase tracking-wider mb-3">
-            <MessageSquare className="w-3.5 h-3.5 text-emerald-600" /> Ishonch & Fikrlar
-          </div>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-slate-950 uppercase leading-tight">
-            Ota-onalar Nima Deydi?
-          </h2>
-          <p className="mt-3 text-slate-600 text-base">
-            Farzandini bizga ishongan ota-onalarning samimiy tavsiyalari va baholari.
-          </p>
-        </div>
+        <SectionHeader
+ eyebrow="Ishonch va fikrlar"
+ eyebrowIcon={MessageSquare}
+ title="Ota-onalar nima deydi?"
+ description="Farzandini bizga ishongan ota-onalarning samimiy tavsiyalari va baholari."
+ className="mb-12"
+ />
 
         {/* Testimonial Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

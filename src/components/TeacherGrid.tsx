@@ -11,6 +11,7 @@ import {
   CheckCircle2
 } from "lucide-react";
 import { ECOSYSTEM_DATA } from "@/data/ecosystemData";
+import SectionHeader from "@/components/SectionHeader";
 
 interface TeacherGridProps {
   onSelectTeacherForConsultation?: (teacherName: string) => void;
@@ -21,7 +22,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
   const teamMembers = [
     {
       id: "tm-aziz",
-      name: "AZIZ XOLMURODOV",
+      name: "Aziz Xolmurodov",
       role: "Maktab Matematika Ustozi",
       subject: "Matematika & Milliy Sertifikat",
       scoreBadge: "A+",
@@ -44,7 +45,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
     },
     {
       id: "tm1",
-      name: "SHOHRUH JALOLOV",
+      name: "Shohruh Jalolov",
       role: "Matematika & Olimpiada Mudiri",
       subject: "Fundamental Matematika",
       scoreBadge: "MILLIY A+",
@@ -66,7 +67,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
     },
     {
       id: "tm2",
-      name: "DILRABO AXMEDOVA",
+      name: "Dilrabo Axmedova",
       role: "Boshlang'ich Ta'lim Metodisti",
       subject: "1-4 Sinf Metodikasi",
       scoreBadge: "CAMBRIDGE",
@@ -88,7 +89,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
     },
     {
       id: "tm4",
-      name: "FARRUX ALIYEV",
+      name: "Farrux Aliyev",
       role: "SAT & Digital Math Eksperti",
       subject: "SAT Digital & AQSH Grantlari",
       scoreBadge: "SAT 1480+",
@@ -110,7 +111,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
     },
     {
       id: "tm5",
-      name: "JASUR RAHIMJONOV",
+      name: "Jasur Rahimjonov",
       role: "PMT Mantiq Kafedrasi Mudiri",
       subject: "Prezident Maktabi Tayyorlov",
       scoreBadge: "TOP 1",
@@ -132,7 +133,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
     },
     {
       id: "tm6",
-      name: "AZIZA NURMATOVA",
+      name: "Aziza Nurmatova",
       role: "Ingliz Tili & Speaking Murabbiyi",
       subject: "Cambridge Speaking & CEFR",
       scoreBadge: "IELTS 8.5",
@@ -153,7 +154,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
     },
     {
       id: "tm7",
-      name: "BEHZOD QOSIMOV",
+      name: "Behzod Qosimov",
       role: "IT & Sun'iy Intellekt Kafedrasi",
       subject: "Python, C++ & Robototexnika",
       scoreBadge: "SENIOR DEV",
@@ -174,7 +175,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
     },
     {
       id: "tm8",
-      name: "NILUFAR YUSUPOVA",
+      name: "Nilufar Yusupova",
       role: "Mental Arifmetika Mutaxassisi",
       subject: "Tezkor Hisob & Shaxmat",
       scoreBadge: "XALQARO",
@@ -195,7 +196,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
     },
     {
       id: "tm9",
-      name: "ODILBEK SHAVKIYEV",
+      name: "Odilbek Shavkiyev",
       role: "Fizika & STEM Fanlari Ustozi",
       subject: "Fundamental Fizika & STEM",
       scoreBadge: "MILLIY A+",
@@ -216,7 +217,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
     },
     {
       id: "tm10",
-      name: "SARVAR ERGASHEV",
+      name: "Sarvar Ergashev",
       role: "Robototexnika & Muhandislik",
       subject: "Lego Mindstorms & Arduino",
       scoreBadge: "WRO WINNER",
@@ -253,17 +254,14 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}
-        <div className="max-w-3xl mb-14 text-left">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-brand-500 text-xs font-bold uppercase tracking-wider mb-3">
-            <GraduationCap className="w-4 h-4" /> Professional Pedagogik Jamoa
-          </div>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-slate-950 uppercase leading-tight">
-            Kuchli Natijador <span className="text-brand-500">Ustozlar Jamoasi</span>
-          </h2>
-          <p className="mt-2 text-slate-600 text-sm sm:text-base font-normal">
-            Har bir ustozning rasmiy sertifikatlari, yutuqlari va tajribasi bilan tanishing.
-          </p>
-        </div>
+        <SectionHeader
+ eyebrow="Professional pedagogik jamoa"
+ eyebrowIcon={GraduationCap}
+ title={<>Kuchli natijador <span className="text-brand-600">ustozlar jamoasi</span></>}
+ description="Har bir ustozning rasmiy sertifikatlari, yutuqlari va tajribasi bilan tanishing."
+ wide
+ className="mb-14"
+ />
 
         {/* 10-Portrait Team Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 sm:gap-5">
@@ -307,7 +305,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
                 <div className="absolute bottom-3 left-3 right-3 text-left space-y-1.5">
                   
                   {/* Bold Uppercase Name */}
-                  <h3 className="text-xs sm:text-[13px] font-black uppercase text-white leading-tight tracking-tight drop-shadow-sm">
+                  <h3 className="font-display text-[13px] font-bold text-white leading-tight drop-shadow-sm">
                     {member.name}
                   </h3>
 
@@ -421,7 +419,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
                   <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider block">
                     {selectedMember.role}
                   </span>
-                  <h3 className="text-lg sm:text-xl font-black uppercase text-white leading-none mt-0.5">
+                  <h3 className="font-display text-lg font-extrabold text-white leading-tight sm:text-xl mt-0.5">
                     {selectedMember.name}
                   </h3>
                 </div>

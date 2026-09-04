@@ -115,7 +115,7 @@ export default function LeadModal({
             <div className="w-16 h-16 rounded-full bg-brand-500/20 border border-brand-500/40 flex items-center justify-center mx-auto text-brand-500 animate-in zoom-in-95 duration-200">
               <CheckCircle2 className="w-8 h-8 text-brand-500" />
             </div>
-            <h3 className="text-2xl font-black uppercase text-white">
+            <h3 className="font-display text-2xl font-extrabold text-white">
               Arizangiz Qabul Qilindi!
             </h3>
             <p className="text-sm text-slate-300 max-w-sm mx-auto">
@@ -129,7 +129,7 @@ export default function LeadModal({
             )}
             <button
               onClick={handleClose}
-              className="mt-4 px-8 py-3 rounded-full bg-brand-500 text-slate-950 font-bold text-xs hover:bg-brand-500-400 transition"
+              className="mt-4 px-8 py-3 rounded-full bg-brand-500 text-slate-950 font-bold text-xs hover:bg-brand-400 transition"
             >
               Tushunarli
             </button>
@@ -140,7 +140,7 @@ export default function LeadModal({
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-500/15 text-brand-500 text-xs font-bold uppercase tracking-wider mb-2 border border-brand-500/30">
                 <Sparkles className="w-3.5 h-3.5" /> 1-Dars Bepul Sinov Darsi
               </span>
-              <h3 className="text-2xl font-black uppercase text-white">
+              <h3 className="font-display text-2xl font-extrabold text-white">
                 Kursga Ro'yxatdan O'tish
               </h3>
               <p className="text-xs text-slate-400 mt-1">
@@ -209,7 +209,7 @@ export default function LeadModal({
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-4 rounded-full bg-brand-500 hover:bg-brand-500-400 text-slate-950 font-bold text-xs shadow-md transition flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="w-full py-4 rounded-full bg-brand-500 hover:bg-brand-400 text-slate-950 font-bold text-xs shadow-md transition flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {loading ? (
                     <>

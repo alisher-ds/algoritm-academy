@@ -216,7 +216,7 @@ export default function AdminPage() {
               <Lock className="w-6 h-6 text-brand-500" />
             </div>
             <div>
-              <h1 className="text-2xl font-black uppercase text-white">CRM Kirish</h1>
+              <h1 className="font-display text-2xl font-extrabold text-white">CRM Kirish</h1>
               <p className="text-xs text-slate-400 mt-1">
                 Arizalar boshqaruviga kirish uchun parolni kiriting.
               </p>
@@ -237,7 +237,7 @@ export default function AdminPage() {
             <button
               type="submit"
               disabled={busy || !password}
-              className="w-full py-3.5 rounded-full bg-brand-500 hover:bg-brand-500-400 text-slate-950 font-black text-xs uppercase tracking-wider transition disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full py-3.5 rounded-full bg-brand-500 hover:bg-brand-400 text-slate-950 font-black text-xs uppercase tracking-wider transition disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
               Kirish
@@ -278,7 +278,7 @@ export default function AdminPage() {
               </span>
               <span className="text-xs text-slate-400 font-mono">{leads.length} ta jami ariza</span>
             </div>
-            <h1 className="text-3xl font-black uppercase text-white mt-2">
+            <h1 className="font-display text-3xl font-extrabold text-white mt-2">
               Arizalar va Qabul Boshqaruvi
             </h1>
           </div>

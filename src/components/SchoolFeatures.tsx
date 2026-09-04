@@ -3,6 +3,7 @@
 import React from "react";
 import { Utensils, Bus, BookOpen, Activity, ShieldCheck, Sparkles, } from "lucide-react";
 import { ECOSYSTEM_DATA } from "@/data/ecosystemData";
+import SectionHeader from "@/components/SectionHeader";
 
 const iconMap: Record<string, React.ReactNode> = {
   Utensils: <Utensils className="w-6 h-6 text-emerald-600" />,
@@ -18,17 +19,13 @@ export default function SchoolFeatures() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}
-        <div className="max-w-2xl mb-16 text-left">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold uppercase tracking-wider mb-3">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> Barcha Qulayliklar
-          </div>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-slate-950 uppercase leading-tight">
-            Maktab Imkoniyatlari & Sharoitlar
-          </h2>
-          <p className="mt-3 text-slate-600 text-base">
-            O'quvchining jismoniy, ruhiy va aqliy salomatligi uchun to'liq yaratilgan zamonaviy infratuzilma.
-          </p>
-        </div>
+        <SectionHeader
+ eyebrow="Barcha qulayliklar"
+ eyebrowIcon={ShieldCheck}
+ title="Maktab imkoniyatlari va sharoitlar"
+ description="O'quvchining jismoniy, ruhiy va aqliy salomatligi uchun to'liq yaratilgan zamonaviy infratuzilma."
+ className="mb-16"
+ />
 
         {/* 4 Core Features */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">

@@ -30,8 +30,8 @@ export default function AloqaPage() {
             <span className="text-xs font-bold uppercase tracking-wider text-brand-400 block mb-2">
               Markazimiz & Aloqa
             </span>
-            <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight uppercase mb-4">
-              Biz Bilan Bog'laning
+            <h1 className="font-display text-3xl font-extrabold tracking-tight text-white sm:text-5xl">
+              Biz bilan bog'laning
             </h1>
             <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
               Algoritm Academy maktabi yoki o'quv markazimizga tashrif buyuring yoki to'g'ridan-to'g'ri qo'ng'iroq qiling.
@@ -55,7 +55,7 @@ export default function AloqaPage() {
                       <span className="text-xs font-bold text-emerald-800 uppercase tracking-wider block">
                         1-Bino: Xususiy Maktab
                       </span>
-                      <h3 className="text-2xl font-black text-slate-950 uppercase">
+                      <h3 className="font-display text-2xl font-extrabold text-slate-950">
                         Algoritm School
                       </h3>
                     </div>
@@ -128,7 +128,7 @@ export default function AloqaPage() {
                       <span className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
                         2-Bino: O'quv Markazi
                       </span>
-                      <h3 className="text-2xl font-black text-slate-950 uppercase">
+                      <h3 className="font-display text-2xl font-extrabold text-slate-950">
                         Algoritm Academy
                       </h3>
                     </div>
@@ -190,8 +190,8 @@ export default function AloqaPage() {
             {/* Social & Contact Bar */}
             <div className="p-7 sm:p-8 rounded-3xl bg-slate-900 text-white flex flex-col sm:flex-row items-center justify-between gap-6 text-left">
               <div>
-                <h4 className="text-lg font-black uppercase text-white">
-                  Ijtimoiy Tarmoqlarda Kuzatib Boring
+                <h4 className="font-display text-lg font-extrabold text-white">
+                  Ijtimoiy tarmoqlarda kuzatib boring
                 </h4>
                 <p className="text-xs text-slate-400 mt-1">
                   Telegram va Instagram sahifalarimizda har kuni yangi natijalar va muhim e'lonlar chiqib boradi.

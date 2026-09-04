@@ -3,6 +3,7 @@
 import React from "react";
 import { CheckCircle2, Clock, Utensils, ArrowRight, School } from "lucide-react";
 import { ECOSYSTEM_DATA } from "@/data/ecosystemData";
+import SectionHeader from "@/components/SectionHeader";
 
 interface SchoolProgramsProps {
   onOpenLeadModal: (programTitle: string) => void;
@@ -15,17 +16,14 @@ export default function SchoolPrograms({ onOpenLeadModal }: SchoolProgramsProps)
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}
-        <div className="max-w-3xl mb-16 text-left">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold uppercase tracking-wider mb-3">
-            <School className="w-3.5 h-3.5 text-emerald-700" /> 1-Qanot: Algoritm School
-          </div>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-slate-950 uppercase leading-tight">
-            0 – 11 Sinf Xususiy Maktab Dasturlari
-          </h2>
-          <p className="mt-3 text-slate-600 text-base leading-relaxed">
-            0-sinfdan boshlab OTM grantlarigacha bo'lgan uzluksiz, o'zbek va rus tillaridagi chuqurlashtirilgan to'liq kunlik ta'lim bosqichlari.
-          </p>
-        </div>
+        <SectionHeader
+ eyebrow="1-qanot: Algoritm School"
+ eyebrowIcon={School}
+ title="0–11 sinf xususiy maktab dasturlari"
+ description="0-sinfdan boshlab OTM grantlarigacha bo'lgan uzluksiz, o'zbek va rus tillaridagi chuqurlashtirilgan to'liq kunlik ta'lim bosqichlari."
+ wide
+ className="mb-16"
+ />
 
         {/* 4 Grade Cards (0-Sinf, 1-4 Sinf, 5-8 Sinf, 9-11 Sinf) */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

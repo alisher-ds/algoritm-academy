@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Camera } from "lucide-react";
 import { ECOSYSTEM_DATA } from "@/data/ecosystemData";
+import SectionHeader from "@/components/SectionHeader";
 
 const CATEGORY_LABELS: Record<string, string> = {
   darslar: "Dars Jarayoni",
@@ -27,17 +28,7 @@ export default function GalleryGrid() {
   return (
     <section className="bg-slate-50 py-20 sm:py-28 text-slate-900" id="galereya">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="max-w-2xl mb-12 text-left">
-          <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 flex items-center gap-1.5">
-            <Camera className="w-3.5 h-3.5" /> Haqiqiy Foto Lavhalar
-          </span>
-          <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-950 uppercase mt-2">
-            Algoritm hayotidan lavhalar
-          </h2>
-          <p className="mt-3 text-base text-slate-600">
-            Xususiy maktab va akademiyamizning dars jarayonlari, zamonaviy xonalari va tadbir lavhalari.
-          </p>
-        </div>
+        <SectionHeader eyebrow="Haqiqiy foto lavhalar" eyebrowIcon={Camera} title="Algoritm hayotidan lavhalar" description="Xususiy maktab va akademiyamizning dars jarayonlari, zamonaviy xonalari va tadbir lavhalari." className="mb-12" />
 
         {/* Categories */}
         <div className="flex items-center gap-2 overflow-x-auto pb-4 mb-10 scrollbar-none">

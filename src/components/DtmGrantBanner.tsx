@@ -42,7 +42,7 @@ export default function DtmGrantBanner() {
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold uppercase tracking-wider mb-3">
                 <TrendingUp className="w-3.5 h-3.5 text-brand-500" /> Rasmiy Imtihon Natijalari
               </div>
-              <h3 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white uppercase tracking-tight">
+              <h3 className="font-display text-2xl font-extrabold tracking-tight text-white sm:text-3xl lg:text-4xl">
                 Muvaffaqiyatli Ta'lim Natijalari
               </h3>
               <p className="text-slate-300 text-xs sm:text-sm mt-2 max-w-xl leading-relaxed">

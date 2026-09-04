@@ -22,8 +22,8 @@ export default function GalereyaPage() {
               <Camera className="w-3.5 h-3.5" /> Algoritm Media Arxiv
             </span>
 
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight uppercase leading-tight mb-4">
-              Algoritm Hayotidan Foto Lavhalar
+            <h1 className="font-display text-4xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-6xl">
+              Algoritm hayotidan foto lavhalar
             </h1>
 
             <p className="text-slate-300 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto">

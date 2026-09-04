@@ -127,7 +127,7 @@ export default function DiagnosticQuizModal({
                   onClose();
                   onSelectCourse(result.title);
                 }}
-                className="flex-1 py-3.5 rounded-full bg-brand-500 text-slate-950 font-bold text-xs hover:bg-brand-500-400 transition flex items-center justify-center gap-2"
+                className="flex-1 py-3.5 rounded-full bg-brand-500 text-slate-950 font-bold text-xs hover:bg-brand-400 transition flex items-center justify-center gap-2"
               >
                 1-Dars Bepul Joy Olish <ArrowRight className="w-4 h-4" />
               </button>
