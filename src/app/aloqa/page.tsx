@@ -30,8 +30,8 @@ export default function AloqaPage() {
             <span className="text-xs font-bold uppercase tracking-wider text-brand-400 block mb-2">
               Markazimiz & Aloqa
             </span>
-            <h1 className="font-display text-3xl font-extrabold tracking-tight text-white sm:text-5xl">
-              Biz bilan bog'laning
+            <h1 className="font-display text-3xl font-extrabold uppercase tracking-tight text-white sm:text-5xl">
+              Biz bilan bog&apos;laning
             </h1>
             <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
               Algoritm Academy maktabi yoki o'quv markazimizga tashrif buyuring yoki to'g'ridan-to'g'ri qo'ng'iroq qiling.

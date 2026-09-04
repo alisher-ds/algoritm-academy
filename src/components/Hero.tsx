@@ -48,8 +48,8 @@ export default function Hero({ onOpenLeadModal, onOpenVideoModal, onOpenQuizModa
               </span>
             </div>
 
-            <h1 className="mt-6 font-display text-4xl font-extrabold leading-[1.08] tracking-tight text-slate-950 sm:text-5xl lg:text-[3.4rem]">
-              Prezident maktabi va xalqaro imtihonlarga{" "}
+            <h1 className="mt-6 font-display text-3xl font-extrabold uppercase leading-[1.12] tracking-tight text-slate-950 sm:text-4xl lg:text-5xl xl:text-[3.2rem]">
+              Prezident maktabi, SAT va IELTS —{" "}
               <span className="text-brand-600">professional tayyorlov</span>
             </h1>
 
