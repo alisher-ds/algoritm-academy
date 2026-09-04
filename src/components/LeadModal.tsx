@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { X, CheckCircle2, Phone, User, Send, Sparkles, Loader2, Info } from "lucide-react";
 import { ECOSYSTEM_DATA } from "@/data/ecosystemData";
 import { submitLead, type LeadType } from "@/lib/leads";
@@ -60,6 +60,29 @@ export default function LeadModal({
     }
   }
 
+  const handleClose = useCallback(() => {
+    setSubmitted(false);
+    setSubmitNote(null);
+    setName("");
+    setPhone("+998");
+    onClose();
+  }, [onClose]);
+
+  // Escape bilan yopish + orqa fonda scroll bloklash
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") handleClose();
+    };
+    window.addEventListener("keydown", onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [isOpen, handleClose]);
+
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -90,16 +113,8 @@ export default function LeadModal({
     );
   };
 
-  const handleClose = () => {
-    setSubmitted(false);
-    setSubmitNote(null);
-    setName("");
-    setPhone("+998");
-    onClose();
-  };
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
       <div className="relative w-full max-w-lg rounded-3xl bg-night border border-white/20 p-6 sm:p-8 shadow-2xl text-white max-h-[92vh] overflow-y-auto">
         {/* Close Button */}
         <button
@@ -112,7 +127,7 @@ export default function LeadModal({
 
         {submitted ? (
           <div className="text-center py-8 space-y-4">
-            <div className="w-16 h-16 rounded-full bg-brand-500/20 border border-brand-500/40 flex items-center justify-center mx-auto text-brand-500 animate-in zoom-in-95 duration-200">
+            <div className="w-16 h-16 rounded-full bg-brand-500/20 border border-brand-500/40 flex items-center justify-center mx-auto text-brand-500 animate-fade-in">
               <CheckCircle2 className="w-8 h-8 text-brand-500" />
             </div>
             <h3 className="font-display text-2xl font-extrabold text-white">

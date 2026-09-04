@@ -52,7 +52,7 @@ export default function MarkazPage() {
         {/* 6. Live Reels & Direct Video Showcase */}
         <ReelsShowcase />
 
-        {/* 7. Academy Mentors (IELTS ZONE style modal) */}
+        {/* 7. Mentorlar jamoasi */}
         <TeacherGrid
           onSelectTeacherForConsultation={(teacher) =>
             handleOpenLeadModal(`${teacher} bilan konsultatsiya`)

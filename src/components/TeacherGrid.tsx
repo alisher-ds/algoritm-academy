@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useCallback, useEffect, useState, useRef } from "react";
 import {
   X,
   Play,
@@ -261,9 +261,24 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
     setSelectedMember(member);
   };
 
-  const handleCloseModal = () => {
+  const handleCloseModal = useCallback(() => {
     setSelectedMember(null);
-  };
+  }, []);
+
+  // Escape bilan yopish + orqa fonda scroll bloklash
+  useEffect(() => {
+    if (!selectedMember) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") handleCloseModal();
+    };
+    window.addEventListener("keydown", onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [selectedMember, handleCloseModal]);
 
   return (
     <section className="bg-white py-24 sm:py-32 text-slate-900 border-b border-slate-200/80" id="ustozlar">
@@ -418,7 +433,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
 
       {/* DETAILED USER-FRIENDLY VIDEO & PROFILE MODAL */}
       {selectedMember && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-xl animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-xl animate-fade-in">
           <div className="relative w-full max-w-3xl bg-night rounded-3xl overflow-hidden shadow-2xl border border-white/20 text-white text-left max-h-[92vh] flex flex-col">
             
             {/* Modal Header */}

@@ -105,7 +105,7 @@ export default function LeadBannerSection() {
             <div className="lg:col-span-6">
               <div className="bg-white rounded-3xl p-7 sm:p-9 text-slate-900 shadow-2xl">
                 {submitted ? (
-                  <div className="py-12 text-center space-y-4 animate-in fade-in">
+                  <div className="py-12 text-center space-y-4 animate-fade-in">
                     <div className="w-16 h-16 bg-brand-100 text-brand-700 rounded-full flex items-center justify-center mx-auto">
                       <CheckCircle2 className="w-9 h-9 text-brand-600" />
                     </div>

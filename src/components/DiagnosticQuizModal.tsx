@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { X, ArrowRight, Sparkles, Loader2 } from "lucide-react";
 import confetti from "canvas-confetti";
 
@@ -24,6 +24,21 @@ export default function DiagnosticQuizModal({
     track: string;
     branch: string;
   } | null>(null);
+
+  // Escape bilan yopish + orqa fonda scroll bloklash
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -76,7 +91,7 @@ export default function DiagnosticQuizModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in">
       <div className="relative w-full max-w-lg bg-night border border-white/15 rounded-3xl p-6 sm:p-8 text-white shadow-2xl overflow-hidden">
         {/* Close Button */}
         <button
