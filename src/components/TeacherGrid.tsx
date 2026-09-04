@@ -656,14 +656,8 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
             <ChevronRight className="w-5 h-5" />
           </button>
 
-          {/* Zamonaviy shaffof chekka (CSS Mask) — oqargan tuman yo'q, chekkalar tabiiy shaffoflashadi */}
-          <div
-            className="relative w-full overflow-hidden py-3 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8"
-            style={{
-              maskImage: "linear-gradient(to right, transparent 0%, black 48px, black calc(100% - 48px), transparent 100%)",
-              WebkitMaskImage: "linear-gradient(to right, transparent 0%, black 48px, black calc(100% - 48px), transparent 100%)",
-            }}
-          >
+          {/* Toza ochiq chekka — hech qanday oq tuman yoki niqoblarsiz */}
+          <div className="relative w-full overflow-hidden py-3 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
             {/* Real interaktiv suriluvchi lenta (Touch swipe + Mouse drag + Wheel + RAF Auto-scroll) */}
             <div
               ref={scrollRef}
