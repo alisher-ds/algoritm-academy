@@ -78,7 +78,7 @@ export default function HomePage() {
         />
 
         {/* 13. Universal Ariza Topshirish Bloki */}
-        <LeadBannerSection onOpenLeadModal={handleOpenLeadModal} />
+        <LeadBannerSection />
       </main>
 
       {/* Footer */}

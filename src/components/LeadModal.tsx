@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { X, CheckCircle2, Phone, User, BookOpen, Send, Sparkles, Loader2 } from "lucide-react";
+import React, { useState } from "react";
+import { X, CheckCircle2, Phone, User, Send, Sparkles, Loader2, Info } from "lucide-react";
 import { ECOSYSTEM_DATA } from "@/data/ecosystemData";
+import { submitLead, type LeadType } from "@/lib/leads";
 
 interface LeadModalProps {
   isOpen: boolean;
@@ -10,55 +11,88 @@ interface LeadModalProps {
   initialCourse?: string;
 }
 
+const OTHER_VALUE = "Boshqa yo'nalish / Maslahat";
+
+// Kurslar ro'yxati + maktab varianti
+const SCHOOL_OPTION = "1-11 Sinf Xususiy Maktabi (To'liq kun)";
+
+function buildOptions(): { value: string; type: LeadType }[] {
+  return [
+    { value: SCHOOL_OPTION, type: "maktab" as LeadType },
+    ...ECOSYSTEM_DATA.courses.map((c) => ({ value: c.title, type: "kurs" as LeadType })),
+    { value: OTHER_VALUE, type: "umumiy" as LeadType },
+  ];
+}
+
+const NAV_TRIGGERS = /ariza|suhbat|konsultatsiya|savol|qabul 2026|header|mobil/i;
+
+/** Yuboriladigan qiziqish qiymatini aniqlaydi (junk-triggerlardan tozalaydi). */
+function resolveTarget(initialCourse: string): string {
+  const t = (initialCourse || "").trim();
+  if (!t) return ECOSYSTEM_DATA.courses[0]?.title || OTHER_VALUE;
+  if (buildOptions().some((o) => o.value === t)) return t;
+  if (NAV_TRIGGERS.test(t)) return OTHER_VALUE;
+  return t; // mazmunli erkin qiymat (masalan: "5-sinf", "Ustoz bilan suhbat")
+}
+
 export default function LeadModal({
   isOpen,
   onClose,
   initialCourse = "Prezident Maktabiga Tayyorlov (PMT)",
 }: LeadModalProps) {
+  const options = buildOptions();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("+998");
-  const [selectedCourse, setSelectedCourse] = useState(initialCourse);
+  const [courseValue, setCourseValue] = useState(initialCourse);
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [submitNote, setSubmitNote] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (initialCourse) setSelectedCourse(initialCourse);
-  }, [initialCourse]);
+  // Modal ochilganda formani yangi maqsad (initialCourse) bilan sinxronlash.
+  // React tavsiya etgan "state-ni prop o'zgarishida sozlash" usuli:
+  const [lastOpen, setLastOpen] = useState(isOpen);
+  if (lastOpen !== isOpen) {
+    setLastOpen(isOpen);
+    if (isOpen) {
+      const resolved = resolveTarget(initialCourse);
+      setCourseValue(options.some((o) => o.value === resolved) ? resolved : OTHER_VALUE);
+      setSubmitNote(null);
+    }
+  }
 
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || phone.length < 9) return;
+    const digits = phone.replace(/\D/g, "");
+    if (!name.trim() || digits.length < 9) return;
 
     setLoading(true);
-
-    const newLead = {
-      id: "lead_" + Date.now(),
+    const finalTarget = resolveTarget(initialCourse);
+    const option = options.find((o) => o.value === courseValue) ?? options[0];
+    const payload = {
       name: name.trim(),
       phone: phone.trim(),
-      interest: selectedCourse,
-      date: new Date().toISOString(),
-      status: "yangi",
+      type: option.type,
+      targetInterest: finalTarget === OTHER_VALUE ? OTHER_VALUE : finalTarget,
+      source: "Sayt — ro'yxatdan o'tish oynasi",
     };
 
-    try {
-      const stored = localStorage.getItem("algoritm_crm_leads");
-      const list = stored ? JSON.parse(stored) : [];
-      list.unshift(newLead);
-      localStorage.setItem("algoritm_crm_leads", JSON.stringify(list));
-    } catch (err) {
-      console.error(err);
-    }
-
-    setTimeout(() => {
-      setLoading(false);
-      setSubmitted(true);
-    }, 600);
+    const res = await submitLead(payload);
+    setLoading(false);
+    setSubmitted(true);
+    setSubmitNote(
+      res.ok
+        ? null
+        : res.storedLocally
+          ? "Serverga ulanish imkoni bo'lmadi — arizangiz shu qurilmada saqlandi. Qo'ng'iroq qilib tasdiqlashingiz mumkin."
+          : res.error || "Xatolik yuz berdi"
+    );
   };
 
   const handleClose = () => {
     setSubmitted(false);
+    setSubmitNote(null);
     setName("");
     setPhone("+998");
     onClose();
@@ -66,8 +100,7 @@ export default function LeadModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-lg rounded-3xl bg-[#0b1329] border border-white/20 p-6 sm:p-8 shadow-2xl text-white">
-        
+      <div className="relative w-full max-w-lg rounded-3xl bg-[#0b1329] border border-white/20 p-6 sm:p-8 shadow-2xl text-white max-h-[92vh] overflow-y-auto">
         {/* Close Button */}
         <button
           onClick={handleClose}
@@ -88,6 +121,12 @@ export default function LeadModal({
             <p className="text-sm text-slate-300 max-w-sm mx-auto">
               Mutaxassislarimiz 15 daqiqa ichida siz bilan bog'lanib, bepul sinov darsiga taklif qilishadi.
             </p>
+            {submitNote && (
+              <p className="flex items-start justify-center gap-2 text-xs text-amber-300 bg-amber-400/10 border border-amber-400/20 rounded-xl px-4 py-3 max-w-sm mx-auto text-left">
+                <Info className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>{submitNote}</span>
+              </p>
+            )}
             <button
               onClick={handleClose}
               className="mt-4 px-8 py-3 rounded-full bg-brand text-slate-950 font-bold text-xs hover:bg-brand-light transition"
@@ -119,6 +158,7 @@ export default function LeadModal({
                   <input
                     type="text"
                     required
+                    minLength={2}
                     placeholder="Masalan: Jasur Rahimov"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
@@ -138,7 +178,10 @@ export default function LeadModal({
                     required
                     placeholder="+998 90 123 45 67"
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
+                    onChange={(e) => {
+                      const digits = e.target.value.replace(/\D/g, "");
+                      setPhone(digits ? `+998 ${digits.replace(/^998/, "")}` : "+998");
+                    }}
                     className="w-full pl-11 pr-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-brand"
                   />
                 </div>
@@ -146,19 +189,19 @@ export default function LeadModal({
 
               <div>
                 <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider block mb-1.5">
-                  Qiziqtirayotgan Kurs
+                  Qaysi yo'nalishga yozilmoqchisiz?
                 </label>
                 <select
-                  value={selectedCourse}
-                  onChange={(e) => setSelectedCourse(e.target.value)}
+                  value={courseValue}
+                  onChange={(e) => setCourseValue(e.target.value)}
                   className="w-full px-4 py-3 rounded-2xl bg-slate-900 border border-white/15 text-white text-xs focus:outline-none focus:border-brand"
                 >
-                  {ECOSYSTEM_DATA.courses.map((c) => (
-                    <option key={c.id} value={c.title}>
-                      {c.title}
+                  {options.map((o) => (
+                    <option key={o.value} value={o.value} className="bg-slate-900">
+                      {o.type === "maktab" ? "🏫 " : o.type === "kurs" ? "🎓 " : "📋 "}
+                      {o.value}
                     </option>
                   ))}
-                  <option value="Boshqa yo'nalish">Boshqa yo'nalish / Maslahat</option>
                 </select>
               </div>
 
@@ -169,13 +212,18 @@ export default function LeadModal({
                   className="w-full py-4 rounded-full bg-brand hover:bg-brand-light text-slate-950 font-bold text-xs shadow-md transition flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {loading ? (
-                    <Loader2 className="w-4 h-4 animate-spin text-slate-950" />
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-slate-950" /> Yuborilmoqda...
+                    </>
                   ) : (
                     <>
                       1-Dars Bepul Joyni Band Qilish <Send className="w-3.5 h-3.5" />
                     </>
                   )}
                 </button>
+                <p className="text-[10px] text-slate-500 text-center mt-3">
+                  Arizangiz bevosita Algoritm Academy qabul bo'limiga yuboriladi.
+                </p>
               </div>
             </form>
           </div>

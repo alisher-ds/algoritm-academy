@@ -1,38 +1,38 @@
-export interface LeadPayload {
-  name: string;
-  phone: string;
-  type: "maktab" | "kurs" | "umumiy";
-  targetInterest: string; // e.g. "5-sinf", "IELTS Intensive", "Matematika"
-  preferredTime?: string;
-  notes?: string;
-  source?: string;
+import type { LeadPayload } from "./leads";
+
+const TYPE_LABELS: Record<LeadPayload["type"], string> = {
+  maktab: "🏫 Xususiy Maktabga Qabul",
+  kurs: "🎓 O'quv Markazi Kursi",
+  umumiy: "📋 Umumiy Konsultatsiya",
+};
+
+/** Telegram Markdown uchun xavfsiz matn (_, *, `, [ belgilaridan tozalaydi). */
+function md(value: string): string {
+  return value.replace(/[_*`[\]()~>#+\-=|{}.!]/g, "\\$&");
 }
 
-export async function sendLeadNotification(payload: LeadPayload): Promise<{ success: boolean; error?: string }> {
+export async function sendLeadNotification(
+  payload: LeadPayload
+): Promise<{ success: boolean; error?: string }> {
   const botToken = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;
 
-  const typeLabels = {
-    maktab: "🏫 Xususiy Maktabga Qabul",
-    kurs: "🎓 O'quv Markazi Kursi",
-    umumiy: "📋 Umumiy Konsultatsiya",
-  };
+  const message = [
+    "🔔 *YANGI ARIZA | ALGORITM EKOSISTEMASI*",
+    "━━━━━━━━━━━━━━━━━━━━",
+    `👤 *F.I.Sh:* ${md(payload.name)}`,
+    `📞 *Telefon:* ${md(payload.phone)}`,
+    `🎯 *Yo'nalish:* ${TYPE_LABELS[payload.type] || md(payload.type)}`,
+    `📚 *Qiziqish / Sinf / Fan:* ${md(payload.targetInterest || "Ko'rsatilmagan")}`,
+    `⏰ *Qulay vaqt:* ${md(payload.preferredTime || "Ixtiyoriy")}`,
+    `💬 *Izoh:* ${md(payload.notes || "Yo'q")}`,
+    `📱 *Manba:* ${md(payload.source || "Sayt")}`,
+    `📅 *Sana:* ${new Date().toLocaleString("uz-UZ", { timeZone: "Asia/Tashkent" })}`,
+    "━━━━━━━━━━━━━━━━━━━━",
+    "ℹ️ _Sayt orqali yuborildi_",
+  ].join("\n");
 
-  const message = `
-🔔 *YANGI ARIZA | ALGORITM EKOSISTEMASI*
-━━━━━━━━━━━━━━━━━━━━
-👤 *F.I.Sh:* ${payload.name}
-📞 *Telefon:* ${payload.phone}
-🎯 *Yo'nalish:* ${typeLabels[payload.type] || payload.type}
-📚 *Qiziqish / Sinf / Fan:* ${payload.targetInterest || "Ko'rsatilmagan"}
-⏰ *Qulay vaqt:* ${payload.preferredTime || "Ixtiyoriy"}
-💬 *Qo'shimcha izoh:* ${payload.notes || "Yo'q"}
-📅 *Sana:* ${new Date().toLocaleString("uz-UZ", { timeZone: "Asia/Tashkent" })}
-━━━━━━━━━━━━━━━━━━━━
-ℹ️ _Sayt orqali yuborildi_
-`;
-
-  // If Telegram env variables are set, send to Telegram directly
+  // Telegram env o'rnatilgan bo'lsa — to'g'ridan-to'g'ri yuboramiz
   if (botToken && chatId) {
     try {
       const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
@@ -57,7 +57,11 @@ export async function sendLeadNotification(payload: LeadPayload): Promise<{ succ
     }
   }
 
-  // If not configured, mock success for local demo
-  console.log("Mock Lead Received (Configure TELEGRAM_BOT_TOKEN & TELEGRAM_CHAT_ID for live alerts):\n", message);
-  return { success: true };
+  // Env o'rnatilmagan bo'lsa — ma'lumot .data/leads.json da saqlanadi (mock log)
+  console.log(
+    "[Telegram] Bildirishnoma yuborilmadi — TELEGRAM_BOT_TOKEN va TELEGRAM_CHAT_ID o'rnating.\nAriza serverda saqlandi:",
+    payload.name,
+    payload.phone
+  );
+  return { success: false, error: "Telegram env o'rnatilmagan" };
 }
