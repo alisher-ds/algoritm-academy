@@ -17,6 +17,31 @@ interface TeacherGridProps {
   onSelectTeacherForConsultation?: (teacherName: string) => void;
 }
 
+const initials = (name: string) =>
+  name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase();
+
+function TeacherAvatar({ name, image, className }: { name: string; image?: string; className?: string }) {
+  if (image) {
+    return <img src={image} alt={name} className={className} />;
+  }
+  return (
+    <div
+      aria-hidden
+      className={`${className} flex items-center justify-center bg-gradient-to-br from-night via-night-card to-night-deep`}
+    >
+      <span className="font-display text-4xl font-extrabold tracking-tight text-brand-300/90 sm:text-5xl">
+        {initials(name)}
+      </span>
+    </div>
+  );
+}
+
 export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherGridProps) {
   // 10 Team members with Aziz Xolmurodov featured with his real photo and video
   const teamMembers = [
@@ -32,7 +57,6 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
       experience: "10 yil",
       students: "3 500+",
       image: "/images/aziz_xolmurodov.png",
-      certImage: "/images/demo/cert_math.svg",
       videoUrl: "/videos/aziz_teacher_intro.mp4",
       bio: "Algoritm maktabining matematika ustozi — Milliy sertifikatning eng yuqori A+ darajasi sohibi. O'quvchilarni milliy sertifikat, DTM va xalqaro olimpiada imtihonlariga yuqori natija bilan tayyorlaydi.",
       highlights: [
@@ -54,8 +78,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
       qualLabel: "MALAKA",
       experience: "10 yil",
       students: "3 500+",
-      image: "/images/demo/mentor_1.svg",
-      certImage: "/images/demo/cert_math.svg",
+      image: "",
       videoUrl: "",
       bio: "Matematika fanidan Milliy sertifikat (A+) va xalqaro olimpiadalarga tayyorlovchi yetakchi pedagog.",
       highlights: [
@@ -76,8 +99,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
       qualLabel: "MALAKA",
       experience: "12 yil",
       students: "4 200+",
-      image: "/images/demo/mentor_2.svg",
-      certImage: "/images/demo/cert_ielts.svg",
+      image: "",
       videoUrl: "",
       bio: "Boshlang'ich sinf o'quvchilarida husnixat, tezkor hisoblash va mantiqiy tafakkurni shakllantirish bo'yicha mutaxassis.",
       highlights: [
@@ -98,8 +120,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
       qualLabel: "QUALIFICATION",
       experience: "6 yil",
       students: "1 500+",
-      image: "/images/demo/mentor_4.svg",
-      certImage: "/images/demo/cert_sat.svg",
+      image: "",
       videoUrl: "",
       bio: "AQSH va Yevropaning nufuzli oliygohlariga 100% to'liq grant yutish bo'yicha mutaxassis.",
       highlights: [
@@ -120,8 +141,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
       qualLabel: "MALAKA",
       experience: "8 yil",
       students: "2 900+",
-      image: "/images/demo/mentor_1.svg",
-      certImage: "/images/demo/cert_pmt.svg",
+      image: "",
       videoUrl: "",
       bio: "Mantiqiy va tanqidiy fikrlash bo'yicha Prezident va Al-Xorazmiy maktablariga tayyorlovchi yetakchi ekspert.",
       highlights: [
@@ -142,8 +162,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
       qualLabel: "QUALIFICATION",
       experience: "5 yil",
       students: "1 800+",
-      image: "/images/demo/mentor_2.svg",
-      certImage: "/images/demo/cert_ielts.svg",
+      image: "",
       videoUrl: "",
       bio: "Erta yoshdan ingliz tilida ravon gapirish va xalqaro muloqot ko'nikmalarini rivojlantiruvchi ustoz.",
       highlights: [
@@ -163,8 +182,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
       qualLabel: "YO'NALISH",
       experience: "6 yil",
       students: "2 100+",
-      image: "/images/demo/mentor_3.svg",
-      certImage: "/images/demo/cert_sat.svg",
+      image: "",
       videoUrl: "",
       bio: "Maktab o'quvchilariga zamonaviy dasturlash, sun'iy intellekt va amaliy texnologiyalarni o'rgatuvchi muhandis.",
       highlights: [
@@ -184,8 +202,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
       qualLabel: "MALAKA",
       experience: "9 yil",
       students: "3 200+",
-      image: "/images/demo/mentor_2.svg",
-      certImage: "/images/demo/cert_math.svg",
+      image: "",
       videoUrl: "",
       bio: "Mental arifmetika bo'yicha xalqaro olimpiadalar g'oliblarini tayyorlagan oliy toifali mutaxassis.",
       highlights: [
@@ -205,8 +222,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
       qualLabel: "MALAKA",
       experience: "14 yil",
       students: "5 000+",
-      image: "/images/demo/mentor_4.svg",
-      certImage: "/images/demo/cert_sat.svg",
+      image: "",
       videoUrl: "",
       bio: "Laboratoriya tajribalari va fizika fanini amaliyot bilan bog'lab o'rgatuvchi tajribali pedagog.",
       highlights: [
@@ -226,8 +242,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
       qualLabel: "MALAKA",
       experience: "5 yil",
       students: "1 400+",
-      image: "/images/demo/mentor_1.svg",
-      certImage: "/images/demo/cert_pmt.svg",
+      image: "",
       videoUrl: "",
       bio: "Xalqaro robototexnika musobaqalari chempioni, bolalarda konstruktorlik tafakkurini rivojlantiruvchi ustoz.",
       highlights: [
@@ -237,6 +252,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
       isRealVideo: false
     },
   ];
+
 
   const [selectedMember, setSelectedMember] = useState<typeof teamMembers[0] | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -275,9 +291,9 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
             >
               {/* Photo Frame with Glowing Aura & Real Photo Cover */}
               <div className="relative aspect-[3/4.2] w-full overflow-hidden bg-gradient-to-b from-amber-100/50 via-slate-800/40 to-slate-950">
-                <img
-                  src={member.image}
-                  alt={member.name}
+                <TeacherAvatar
+                  name={member.name}
+                  image={member.image}
                   className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
                 />
 
@@ -408,11 +424,11 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
             {/* Modal Header */}
             <div className="p-5 sm:p-6 bg-slate-950/80 backdrop-blur-md flex items-center justify-between border-b border-white/10 shrink-0">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full overflow-hidden border border-brand-500/40 shrink-0">
-                  <img
-                    src={selectedMember.image}
-                    alt={selectedMember.name}
-                    className="w-full h-full object-cover object-top"
+                <div className="w-10 h-10 overflow-hidden rounded-full border border-brand-500/40 shrink-0">
+                  <TeacherAvatar
+                    name={selectedMember.name}
+                    image={selectedMember.image}
+                    className="h-full w-full object-cover object-top"
                   />
                 </div>
                 <div>
@@ -452,11 +468,11 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
                   />
                 </div>
               ) : (
-                <div className="relative w-full rounded-2xl overflow-hidden bg-slate-900 border border-white/15 shadow-2xl">
-                  <img
-                    src={selectedMember.image}
-                    alt={selectedMember.name}
-                    className="w-full h-56 sm:h-72 object-cover object-top"
+                <div className="relative w-full overflow-hidden rounded-2xl border border-white/15 bg-slate-900 shadow-2xl">
+                  <TeacherAvatar
+                    name={selectedMember.name}
+                    image={selectedMember.image}
+                    className="h-56 w-full object-cover object-top sm:h-72"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
                 </div>
