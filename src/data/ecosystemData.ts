@@ -1,0 +1,826 @@
+export interface SchoolProgram {
+  id: string;
+  gradeRange: string;
+  title: string;
+  description: string;
+  focus: string[];
+  schedule: string;
+  meals: string;
+  badge: string;
+}
+
+export interface SchoolFeature {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  badge?: string;
+}
+
+export interface Course {
+  id: string;
+  title: string;
+  category: "prezident-maktabi" | "aniq-fanlar" | "tillar" | "dasturlash" | "boshlangich";
+  categoryLabel: string;
+  description: string;
+  duration: string;
+  weeklyHours: string;
+  level: string;
+  targetAudience: string;
+  features: string[];
+  mentor: {
+    name: string;
+    role: string;
+    experience: string;
+    rating: number;
+  };
+  badge?: string;
+  isPopular?: boolean;
+}
+
+export interface Teacher {
+  id: string;
+  name: string;
+  role: string;
+  subject: string;
+  type: "maktab" | "markaz" | "hammasi";
+  score: string;
+  scoreLabel: string;
+  certType: string;
+  experience: string;
+  studentsCount: string;
+  education: string;
+  image: string;
+  classThumbnail: string;
+  classBadge: string;
+  certificateImage: string;
+  videoUrl: string;
+  bio: string;
+  achievements: string[];
+}
+
+export interface Achievement {
+  id: string;
+  studentName: string;
+  category: "SAT" | "Prezident Maktabi" | "OTM Granti" | "189 Ball" | "Olimpiada" | "Sertifikat" | "Maktab" | string;
+  score: string;
+  detail: string;
+  year: string;
+  yearGroup?: "2026" | "2025";
+  universityOrCert?: string;
+  image?: string;
+}
+
+export const COMPARISON_STATS_2025_2026 = [
+  { metric: "SAT 1200+ Natijalari", y2025: "32 Nafar", y2026: "57 Nafar", change: "+78% O'sish", isPositive: true },
+  { metric: "Eng Yuqori SAT Bali", y2025: "1510 Ball", y2026: "1520 Ball (Top 1% Global)", change: "+10 Ball (Top 1%)", isPositive: true },
+  { metric: "SAT orqali 4 Yillik Davlat Granti", y2025: "— (Yangi)", y2026: "27 Nafar (Iqtisodiyot, Milliy OTM, IT)", change: "27 Nafar Byudjet", isPositive: true },
+  { metric: "Tarix Milliy Sertifikatlari", y2025: "93 Ta", y2026: "400+ Ta", change: "4x Barobardan Ko'p", isPositive: true },
+  { metric: "Ona Tili Milliy Sertifikatlari", y2025: "40+ Ta", y2026: "80+ Ta", change: "2x Barobar", isPositive: true },
+  { metric: "IELTS Eng Yuqori Natija", y2025: "IELTS 6.5", y2026: "IELTS 8.0 (Global Top)", change: "+1.5 Ball", isPositive: true },
+  { metric: "OTM Qabullari (Nomma-nom)", y2025: "25 Nafar (7 Grant)", y2026: "85+ Nafar (46+ Grant)", change: "Grantlar 6.5x", isPositive: true },
+  { metric: "189.0 Maksimal Ball (Muddatidan oldin)", y2025: "1 Nafar", y2026: "12 Nafar (Muddatidan oldin)", change: "12x O'sish", isPositive: true },
+  { metric: "PMT 2-Bosqichga O'tganlar", y2025: "39+ Nafar (4 tasi 100%)", y2026: "80+ Nafar (135 dan 82 / 61%)", change: "2x Barobar", isPositive: true },
+  { metric: "Al-Xorazmiy Maktablariga Qabul", y2025: "3 Nafar", y2026: "44 Nafar (22 ta 4-sinf, 22 ta 5-9)", change: "14x Portlash!", isPositive: true },
+  { metric: "Muhandislik Maktabiga Qabul", y2025: "—", y2026: "25 Nafar", change: "Yangi Yo'nalish", isPositive: true },
+  { metric: "Shahar Ixtisoslashtirilgan Maktab", y2025: "10–11 Nafar", y2026: "28–33 Nafar", change: "3x Barobar", isPositive: true },
+  { metric: "Prezident Maktabi Yakuniy Qabul", y2025: "6 Nafar (4, 10, 13, 17...)", y2026: "5 Nafar (4, 12, 14, 15, 21)", change: "Stabil Yuqori", isPositive: true },
+  { metric: "Respublika Olimpiada Bosh Mukofoti", y2025: "KHISO 1-o'rin", y2026: "60 000 000 UZS (94 Ball)", change: "Respublika Chempioni", isPositive: true },
+];
+
+export interface FAQ {
+  question: string;
+  answer: string;
+  category: "maktab" | "markaz" | "umumiy";
+}
+
+export const ECOSYSTEM_DATA = {
+  name: "Algoritm Academy",
+  licenseNumber: "№ 1483319",
+  stats: [
+    { label: "OTM Talabalari", value: "600+ (150+ Grant)", icon: "GraduationCap" },
+    { label: "SAT 1200+ Natijadorlik", value: "100+ (5x 1500+)", icon: "Award" },
+    { label: "Prezident & Ixtisos Maktab", value: "300+", icon: "ShieldCheck" },
+    { label: "Jami Fan Sertifikatlari", value: "700+", icon: "Sparkles" },
+    { label: "Chet Tili Sertifikati (B2+)", value: "50+", icon: "Globe" },
+    { label: "Respublika Bosh Mukofoti", value: "60 Mln UZS", icon: "Trophy" },
+  ],
+  contact: {
+    phoneMain: "+998 (90) 895-05-05",
+    phoneSecondary: "+998 (94) 895-05-05",
+    telegram: "https://t.me/Algoritm_Academy",
+    instagram: "https://instagram.com/algoritm.academy",
+    address: "Qarshi shahri, Mustaqillik shoh ko'chasi (Geolog MFY)",
+    landmark: "Mo'ljal: Yangi Shifoxona qarshisida",
+    email: "info@algoritm.uz",
+    workingHours: "08:00 - 18:00",
+  },
+  school: {
+    name: "Algoritm School",
+    tagline: "1-11 Sinf Chuqurlashtirilgan Xususiy Maktabi",
+    description: "Qarshi shahridagi matematika, ingliz tili va IT chuqurlashtirilgan, 3 mahal parhezli issiq ovqat, to'garaklar va to'liq kunlik ta'lim dasturiga ega zamonaviy xususiy maktab.",
+    address: "Qarshi shahri, Mustaqillik shoh ko'chasi (Geolog MFY)",
+    landmark: "Mo'ljal: Yangi Shifoxona qarshisida",
+    phone: "+998 (90) 895-05-05",
+    workingHours: "08:00 - 18:00",
+    stats: [
+      { label: "Sinf kvotasi", value: "Qat'iy 15 nafar", icon: "Sparkles" },
+      { label: "0-Sinf kvotasi", value: "Atigi 18 o'rin", icon: "Users" },
+      { label: "Ta'lim tili", value: "O'zbek & Rus", icon: "Globe" },
+      { label: "Xalqaro Olimpiadalar", value: "KHISO, IMEC, JSEO", icon: "Award" },
+      { label: "Qabul", value: "0 – 11 sinflar", icon: "GraduationCap" },
+      { label: "Sinov darsi", value: "1 kunlik 100% Bepul", icon: "ShieldCheck" },
+    ],
+    programs: [
+      {
+        id: "preschool",
+        gradeRange: "0-sinf / 4 – 7 yosh",
+        title: "0-Sinf & Maktabgacha Tayyorlov",
+        description: "0-sinfdanoq robototexnika darslari, o'zbek va rus tayyorlov guruhlari (Nelya Mamadaliyeva, Irina Artikova), har tomonlama aqliy va psixologik tayyorlov (kvota: atigi 18 ta joy).",
+        focus: [
+          "0-sinfdanoq amaliy Robototexnika mashg'ulotlari",
+          "Rus va o'zbek tayyorlov guruhlari (malakali mutaxassislar)",
+          "Hisoblash, mantiq va 1-sinfga qulay moslashuv",
+          "Shaxmat, karate, mental arifmetika va raqs to'garaklari",
+        ],
+        schedule: "08:00 - 17:00 (To'liq kun)",
+        meals: "3 mahal issiq ovqat",
+        badge: "0-Sinf & Tayyorlov",
+      },
+      {
+        id: "primary",
+        gradeRange: "1 - 4 sinflar",
+        title: "1–4 Sinf: Boshlang'ich & Prezident Maktabi (PMT)",
+        description: "Alohida O'zbek va to'liq Rus sinflari. Asosiy maqsad — 4-sinf yakunidagi Prezident maktabi (PMT) imtihonlariga mustahkam poydevor yaratish, chuqurlashtirilgan matematika va ingliz tili.",
+        focus: [
+          "4-sinf yakunidagi Prezident Maktabi (PMT) imtihoniga to'liq tayyorgarlik",
+          "Tanqidiy fikrlash (Critical Thinking), muammoli masalalar va IQ mantiq",
+          "Chuqurlashtirilgan matematika va ingliz tili so'zlashuvi",
+          "Xalqaro olimpiadalar (KHISO, Kenguru, SEAMO) va Robototexnika",
+        ],
+        schedule: "08:30 - 17:00 (To'liq kun)",
+        meals: "3 mahal issiq ovqat",
+        badge: "PMT Poydevori",
+      },
+      {
+        id: "middle",
+        gradeRange: "5 - 8 sinflar",
+        title: "5–8 Sinf: O'rta Ta'lim & Xalqaro Olimpiadalar",
+        description: "Al-Xorazmiy va ixtisoslashtirilgan maktablar dasturi. 5-6 sinflardanoq CEFR va IELTS xalqaro sertifikatlariga tayyorgarlik, xalqaro olimpiadalar markazi va chuqur aniq fanlar.",
+        focus: [
+          "5-6 sinflardanoq CEFR B1/B2 va IELTS xalqaro sertifikatlari",
+          "Xalqaro olimpiadalar markazi (KHISO, IMEC, JSEO, TasIMO)",
+          "Al-Xorazmiy va ixtisoslashtirilgan maktablar intensiv tayyorlovi",
+          "Chuqur matematika, fizika laboratoriyalari va IT loyihalari",
+        ],
+        schedule: "08:30 - 17:00 (To'liq kun)",
+        meals: "3 mahal issiq ovqat",
+        badge: "O'rta Maktab",
+      },
+      {
+        id: "high",
+        gradeRange: "9 - 11 sinflar",
+        title: "9–11 Sinf: Yuqori Sinf & Xalqaro Grantlar",
+        description: "Dunyoning top universitetlariga SAT 1500+ natijalari, 10-sinfdayoq OTMga 189 maksimal ball va Matematika Milliy A+ sertifikatiga repetitorsiz 100% tayyorgarlik.",
+        focus: [
+          "SAT 1500+ natijasi bilan dunyo oliygohlariga 100% grantlar",
+          "O'zbekiston OTMlariga 10-sinfdayoq 189 ball maksimal tayyorlov",
+          "Matematika Milliy sertifikat (A+) oliy toifali ustozlar nazoratida",
+          "7–10 sinflar uchun 1 yillik bepul o'qish imkonini beruvchi GRAND imtihoni",
+        ],
+        schedule: "08:30 - 17:30 (Intensiv rejim)",
+        meals: "3 mahal to'yimli issiq ovqat",
+        badge: "SAT & OTM Granti",
+      },
+    ],
+    features: [
+      {
+        id: "f1",
+        title: "Halol Oshxona & 3 Mahal Issiq Ovqat",
+        description: "Taomlarning 100% halolligi va sifatiga qat'iy e'tibor beriladi. Kun davomida 3 mahal issiq ovqat o'qish to'lovi ichida bepul taqdim etiladi.",
+        icon: "Utensils",
+        badge: "Halol & Sifatli",
+      },
+      {
+        id: "f2",
+        title: "15 dan Ortiq Bepul To'garaklar",
+        description: "Robototexnika, shaxmat, karate, mental arifmetika, ingliz tili va raqs mashg'ulotlari darsdan so'ng maktab hududida bepul o'tiladi.",
+        icon: "Activity",
+        badge: "15+ To'garak",
+      },
+      {
+        id: "f3",
+        title: "Oylik Stipendiya & GRAND Dasturi",
+        description: "Har oy yakunidagi nazorat testida har bir sinfda 1-o'rinni olgan o'quvchilarga maxsus naqd stipendiya hamda yuqori sinflar uchun yillik bepul GRAND granti beriladi.",
+        icon: "Sparkles",
+        badge: "Rag'bat Tizimi",
+      },
+      {
+        id: "f4",
+        title: "Doimiy Shifokor, Yotoqxona & Transport",
+        description: "Kunlik tibbiy nazorat, Qarshi shahri bo'ylab xavfsiz transport hamda uzoqdan kelgan o'quvchilar uchun qulay yotoqxona (pansionat) mavjud.",
+        icon: "ShieldCheck",
+        badge: "Xavfsizlik & Qulaylik",
+      },
+    ],
+    dailySchedule: [
+      { time: "08:00 - 08:30", title: "O'quvchilarni kutib olish va ertalabki nonushta", icon: "☕" },
+      { time: "08:30 - 13:00", title: "Asosiy akademik darslar (Matematika & Tillar)", icon: "📚" },
+      { time: "13:00 - 14:00", title: "3 mahal halol issiq tushlik va toza havoda hordiq", icon: "🍲" },
+      { time: "14:00 - 15:30", title: "15+ Bepul to'garaklar (Robototexnika, Shaxmat, Karate, Raqs)", icon: "🤖" },
+      { time: "15:30 - 16:30", title: "O'qituvchi nazoratida uyga vazifalarni to'liq bajarish", icon: "✍️" },
+      { time: "16:30 - 17:00", title: "Ikkinchi tushlik (poldnik) va xavfsiz transportda kuzatish", icon: "🚌" },
+    ],
+    admissionSteps: [
+      { step: "01", title: "1 Kunlik BEPUL Sinov Darsi", description: "Farzandingiz bilan kelib darslar, muhit va 3 mahal ovqatlanish jarayoni bilan bepul tanishasiz." },
+      { step: "02", title: "Ochiq Eshiklar Kuni", description: "Maktab asoschisi Bobur Xaydarov bilan shaxsan uchrashuv va yillik maxsus chegirmalar taqdimoti." },
+      { step: "03", title: "Bilim Darajasi / GRAND Imtihoni", description: "Matematika va ingliz tili monitoringi yoki 7–10 sinflar uchun 1 yillik bepul o'qish granti sinovi." },
+      { step: "04", title: "Maktab Safiga Qabul", description: "Qat'iy 15 talik sinf kvotasiga muvofiq o'quvchi rasman Algoritm School oilasiga qabul qilinadi." },
+    ],
+  },
+  academy: {
+    name: "Algoritm Academy",
+    tagline: "Repetitorlik & O'quv Markazi",
+    description: "Prezident maktabiga tayyorlov (PMT), SAT 1400+, IELTS 8.0, Matematika Milliy Sertifikat va DTM grant repetitorlik kurslari.",
+    address: "Qarshi shahri, Islom Karimov ko'chasi 291V-uy",
+    landmark: "Mo'ljal: Zulfina Med klinikasi yonida",
+    phone: "+998 (90) 895-05-05",
+    workingHours: "08:00 - 20:00",
+  },
+  courses: [
+    {
+      id: "pmt-prep",
+      title: "Prezident Maktabiga Tayyorlov (PMT)",
+      category: "prezident-maktabi" as const,
+      categoryLabel: "Prezident Maktabi",
+      description: "3-4 sinf o'quvchilari uchun Mantiqiy fikrlash, Tanqidiy tahlil va Cambridge ingliz tili bo'yicha maxsus 150 daqiqalik sinov tizimi.",
+      duration: "9 oy",
+      weeklyHours: "Haftada 3 kun · 2.5 soat",
+      level: "3-4 Sinflar",
+      targetAudience: "3-4 sinf iqtidorli o'quvchilari",
+      features: [
+        "Mantiqiy va tanqidiy fikrlash darslari",
+        "Cambridge Primary & A2 Key ingliz tili",
+        "Haftalik 150 daqiqalik repetitsion testlar",
+        "Psixologik tayyorgarlik va vaqt boshqaruvi",
+      ],
+      mentor: {
+        name: "Jasur Rahimjonov",
+        role: "PMT Kafedrasi Mudiri",
+        experience: "5+ yil tajriba",
+        rating: 5.0,
+      },
+      badge: "Top Kurs",
+      isPopular: true,
+    },
+    {
+      id: "sat-digital",
+      title: "SAT Digital & 100% Xalqaro Grant",
+      category: "tillar" as const,
+      categoryLabel: "Xalqaro Grant",
+      description: "AQSH va xorijiy nufuzli universitetlarga 100% grant yutish uchun SAT Math va Reading & Writing intensiv kursi.",
+      duration: "5 oy",
+      weeklyHours: "Haftada 3 kun · 2.5 soat",
+      level: "Intermediate - Advanced",
+      targetAudience: "8-11 sinf o'quvchilari va talabalar",
+      features: [
+        "SAT 1400+ ball kafolatlangan o'quv rejasi",
+        "Digital SAT rasmiy platforma simulyatsiyasi",
+        "Xalqaro universitetlarga grant hujjatlarini topshirish",
+      ],
+      mentor: {
+        name: "Farrux Aliyev",
+        role: "SAT Mentori",
+        experience: "6+ yil tajriba",
+        rating: 5.0,
+      },
+      badge: "SAT 1400+",
+      isPopular: true,
+    },
+    {
+      id: "math-dtm",
+      title: "Matematika (Milliy Sertifikat A+ & DTM)",
+      category: "aniq-fanlar" as const,
+      categoryLabel: "Aniq Fanlar",
+      description: "5-11 sinflar va abituriyentlar uchun mualliflik metodikasi. Milliy sertifikat (A+) va DTM imtihonlariga kafolatlangan tayyorgarlik.",
+      duration: "9 oy",
+      weeklyHours: "Haftada 3 kun · 2 soat",
+      level: "5-11 Sinflar & Abituriyentlar",
+      targetAudience: "Maktab o'quvchilari va abituriyentlar",
+      features: [
+        "Milliy sertifikat (A+) natijalari kafolati",
+        "DTM 30/30 maksimal natija uslubiyoti",
+        "Mavzulashtirilgan testlar va doimiy monitoring",
+      ],
+      mentor: {
+        name: "Abdurashid Karimov",
+        role: "Bosh Matematika Murabbiyi",
+        experience: "5+ yil tajriba",
+        rating: 5.0,
+      },
+      badge: "Mashhur",
+      isPopular: true,
+    },
+    {
+      id: "ielts-pro",
+      title: "IELTS 7.5+ & CEFR Intensive",
+      category: "tillar" as const,
+      categoryLabel: "Chet Tillari",
+      description: "Speaking, Writing, Reading va Listening ko'nikmalarini jadal rivojlantirish va xalqaro sertifikat olish kursi.",
+      duration: "4-6 oy",
+      weeklyHours: "Haftada 3 kun · 2 soat",
+      level: "Pre-Intermediate va yuqori",
+      targetAudience: "O'quvchilar va yoshlar",
+      features: [
+        "Shaxsiy IELTS 8.5 sertifikatli ustoz darslari",
+        "Haftalik bepul Mock imtihonlari",
+        "Erkin muloqot va Speaking klublari",
+      ],
+      mentor: {
+        name: "Zilola Usmonova",
+        role: "IELTS & CEFR Instructor",
+        experience: "5+ yil tajriba",
+        rating: 5.0,
+      },
+      badge: "IELTS 8.5",
+      isPopular: true,
+    },
+  ],
+  teachers: [
+    {
+      id: "t1",
+      name: "Abdurashid Karimov",
+      role: "Bosh Matematika Mentori",
+      subject: "Matematika & DTM",
+      type: "hammasi" as const,
+      score: "A+",
+      scoreLabel: "Milliy Sertifikat",
+      certType: "Davlat A+ Sertifikati",
+      experience: "5 yil",
+      studentsCount: "650+",
+      education: "Oliy toifali matematika pedagogi",
+      image: "/images/demo/mentor_1.svg",
+      classThumbnail: "/images/demo/reel_3.svg",
+      classBadge: "450+ O'quvchilar",
+      certificateImage: "/images/demo/cert_math.svg",
+      videoUrl: "/videos/reel_math4d.mp4",
+      bio: "Matematika fanidan o'quvchilarni milliy sertifikat va OTM grantlariga tayyorlovchi yetakchi murabbiy.",
+      achievements: [
+        "Matematika milliy sertifikatiga tayyorlov yetakchisi",
+        "OTM grantlariga yuzlab o'quvchilarni kiritgan",
+        "Algoritm ta'lim tizimi bosh murabbiyi",
+      ],
+    },
+  ],
+  achievements: [
+    // ==========================================
+    // 2026-YIL MA'LUMOTLARI (JORIY MAVSUM)
+    // ==========================================
+    {
+      id: "a-axmatov-26",
+      studentName: "Respublika Fan Olimpiadasi Chempioni",
+      category: "Olimpiada",
+      score: "Respublika 1-O'rin (94 Ball)",
+      detail: "Katta Yutuqli Olimpiada (KYO, Toshkent) saralangan 150 nafar eng kuchli iqtidor orasida mutlaq 1-o'rinni egallab, 60 000 000 so'mlik bosh pul mukofotini qo'lga kiritdi.",
+      year: "2026",
+      yearGroup: "2026",
+      universityOrCert: "60 000 000 so'm Bosh Mukofot",
+    },
+    {
+      id: "a-fayzullayeva-26",
+      studentName: "Digital SAT 1520 Sohibi",
+      category: "SAT",
+      score: "SAT 1520 Ball",
+      detail: "CollegeBoard Digital SAT xalqaro imtihonida dunyo bo'yicha eng yuqori 1 foizlik natija (Math 790, EBRW 730) qayd etib, guruhda 1-o'rinni egalladi.",
+      year: "2026",
+      yearGroup: "2026",
+      universityOrCert: "Top 1% Global",
+    },
+    {
+      id: "a-mamanazarov-26",
+      studentName: "Digital SAT 1500 Natijasi",
+      category: "SAT",
+      score: "SAT 1500 Ball",
+      detail: "Digital SAT xalqaro imtihonida 1500 ballik nufuzli natijani qayd etib, SAT 1500+ elita klubi a'zosi bo'ldi.",
+      year: "2026",
+      yearGroup: "2026",
+      universityOrCert: "SAT 1500+ Klubi",
+    },
+    {
+      id: "a-sat-1480-trio",
+      studentName: "Digital SAT 1480 Natijalari (3 Nafar)",
+      category: "SAT",
+      score: "SAT 1480 Ball (3 Nafar)",
+      detail: "Ixtisoslashtirilgan guruhning 3 nafar o'quvchisi bir vaqtning o'zida 1480 ballik yuqori natijaga erishdi.",
+      year: "2026",
+      yearGroup: "2026",
+      universityOrCert: "SAT 1480 Natija",
+    },
+    {
+      id: "a-sohibov-26",
+      studentName: "Digital SAT 1430 & IELTS 6.5",
+      category: "SAT",
+      score: "SAT 1430 · IELTS 6.5",
+      detail: "Maktab o'quvchisi: darslar davomida 5 oylik tayyorgarlik natijasida SAT 1430 va IELTS 6.5 ball to'plab, to'liq davlat grantini kafolatladi.",
+      year: "2026",
+      yearGroup: "2026",
+      universityOrCert: "Maktab O'quvchisi",
+    },
+    {
+      id: "a-sherbek-26",
+      studentName: "Digital SAT Math 790 (9-Sinf)",
+      category: "SAT",
+      score: "SAT 1270 (Math 790)",
+      detail: "Atigi 9-sinf o'quvchisi bo'lishiga qaramay SAT Math qismidan 790 ball olib, muddatidan oldin davlat grantini naqd qildi.",
+      year: "2026",
+      yearGroup: "2026",
+      universityOrCert: "9-Sinfda SAT Granti",
+    },
+    {
+      id: "a-27grants-26",
+      studentName: "27 Nafar SAT Davlat Granti",
+      category: "OTM Granti",
+      score: "4 Yillik 100% Davlat Granti",
+      detail: "Faqat SAT imtiyozi orqali 27 nafar o'quvchi Iqtisodiyot, Milliy universitet, IT va Diplomatiya yo'nalishlariga 4 yillik to'liq byudjet grantiga qabul qilindi.",
+      year: "2026",
+      yearGroup: "2026",
+      universityOrCert: "27 Nafar To'liq Grant",
+    },
+    {
+      id: "a-mirfayz-26",
+      studentName: "189.0 Ball (4x Davlat Granti)",
+      category: "189 Ball",
+      score: "189.0 Ball (4x Byudjet)",
+      detail: "Muddatidan oldin birdaniga 4 ta ta'lim yo'nalishi bo'yicha maksimal 189.0 ball to'plab, to'liq byudjet grantiga kirdi.",
+      year: "2026",
+      yearGroup: "2026",
+      universityOrCert: "4 Yo'nalishda 189.0 Byudjet",
+    },
+    {
+      id: "a-tojiyev-26",
+      studentName: "189.0 Ball (2x Davlat Granti)",
+      category: "189 Ball",
+      score: "189.0 Ball (2x Byudjet)",
+      detail: "Muddatidan oldin maksimal 189 ball to'plab, birdaniga ikki yetakchi oliygoh davlat grantiga qabul qilindi.",
+      year: "2026",
+      yearGroup: "2026",
+      universityOrCert: "Ikki Oliygoh Byudjet",
+    },
+    {
+      id: "a-aliqulova-26",
+      studentName: "189.0 Ball (Diplomatiya Sohasi)",
+      category: "189 Ball",
+      score: "189.0 Ball · Davlat Granti",
+      detail: "Muddatidan oldin 189 ball to'plab, xalqaro munosabatlar va diplomatiya sohasidagi oliygohga to'liq davlat granti asosida kirdi.",
+      year: "2026",
+      yearGroup: "2026",
+      universityOrCert: "Diplomatiya Davlat Granti",
+    },
+    {
+      id: "a-samadov-26",
+      studentName: "189.0 Ball (Yuridik Sohasi)",
+      category: "189 Ball",
+      score: "189.0 Ball · Davlat Granti",
+      detail: "Poytaxt yuridik oliygohiga 189.0 maksimal ball bilan 100% davlat granti asosida qabul qilindi.",
+      year: "2026",
+      yearGroup: "2026",
+      universityOrCert: "Yuridik Davlat Granti",
+    },
+    {
+      id: "a-ovlayev-26",
+      studentName: "189.0 Ball (Xalqaro Munosabatlar)",
+      category: "189 Ball",
+      score: "189.0 Ball · Davlat Granti",
+      detail: "Xalqaro munosabatlar oliygohiga 189.0 maksimal ball bilan to'liq davlat granti asosida talabalikka qabul qilindi.",
+      year: "2026",
+      yearGroup: "2026",
+      universityOrCert: "Xalqaro Soha Granti",
+    },
+    {
+      id: "a-berdinazarov-26",
+      studentName: "Iqtisodiyot Sohasi Davlat Granti",
+      category: "OTM Granti",
+      score: "100% Davlat Granti",
+      detail: "178 ball va Matematika A+ milliy sertifikati orqali yetakchi iqtisodiyot OTMiga davlat granti asosida qabul qilindi.",
+      year: "2026",
+      yearGroup: "2026",
+      universityOrCert: "Iqtisodiyot Davlat Granti",
+    },
+    {
+      id: "a-asila-ielts8",
+      studentName: "IELTS 8.0 Xalqaro Sertifikati",
+      category: "Sertifikat",
+      score: "IELTS 8.0 Ball",
+      detail: "Xalqaro IELTS imtihonida 8.0 ballik yuqori natijani qayd etib, OTMlarga to'liq imtiyozni qo'lga kiritdi.",
+      year: "2026",
+      yearGroup: "2026",
+      universityOrCert: "IELTS 8.0 Xalqaro",
+    },
+    {
+      id: "a-pm-2026",
+      studentName: "Prezident Maktablari 5 Nafar Qabul",
+      category: "Prezident Maktabi",
+      score: "5 Nafar 100% Davlat Granti",
+      detail: "Yakuniy bosqichda viloyat bo'yicha eng yuqori o'rinlarni zabt etishdi: 4-o'rin (83.5 ball), 12-o'rin (81.0), 14-o'rin (80.5), 15-o'rin (80.5), 21-o'rin (78.5).",
+      year: "2026",
+      yearGroup: "2026",
+      universityOrCert: "Prezident Maktabi Qabullari",
+    },
+    {
+      id: "a-alxorazmiy-26",
+      studentName: "Al-Xorazmiy Maktablari Qabuli",
+      category: "Prezident Maktabi",
+      score: "44 Nafar Qabul (14x O'sish)",
+      detail: "4-sinflar kesimida 22 nafar, 5–9-sinflar kesimida 22 nafar o'quvchi Al-Xorazmiy ixtisoslashgan maktablariga qabul qilindi.",
+      year: "2026",
+      yearGroup: "2026",
+      universityOrCert: "Al-Xorazmiy 44 Nafar",
+    },
+    {
+      id: "a-muhandislik-26",
+      studentName: "Muhandislik Maktabi Qabuli",
+      category: "Prezident Maktabi",
+      score: "25 Nafar Qabul",
+      detail: "2026-yilda yangi ochilgan ixtisoslashtirilgan muhandislik maktabiga birdaniga 25 nafar o'quvchimiz qabul qilindi.",
+      year: "2026",
+      yearGroup: "2026",
+      universityOrCert: "Muhandislik Maktabi",
+    },
+    {
+      id: "a-pmt-saralash-26",
+      studentName: "PMT 1-Bosqich Saralashi",
+      category: "Prezident Maktabi",
+      score: "82 Nafar (135 dan 82 / 61%)",
+      detail: "Prezident maktabi 1-bosqichida 135 nafar o'quvchidan 82 nafari saralashdan muvaffaqiyatli o'tib, 2-bosqichga yo'llanma oldi.",
+      year: "2026",
+      yearGroup: "2026",
+      universityOrCert: "61% Saralash Konversiyasi",
+    },
+    {
+      id: "a-samir-26",
+      studentName: "10-Sinf Multi-Sertifikat Sohibi",
+      category: "Sertifikat",
+      score: "4 Ta Fan Sertifikati",
+      detail: "10-sinfdayoq tarix, ona tili, matematika va ingliz tili fanlaridan milliy sertifikatlarni olib, muddatidan oldin talabalikni naqd qildi.",
+      year: "2026",
+      yearGroup: "2026",
+      universityOrCert: "10-Sinf Multi-Sertifikat",
+    },
+    {
+      id: "a-toychiyev-26",
+      studentName: "10-Sinf Multi-Sertifikat Sohibi",
+      category: "Sertifikat",
+      score: "4 Ta Fan Sertifikati",
+      detail: "10-sinf o'quvchisi 4 ta fandan sertifikat olib, muddatidan oldin barcha imtiyozlarni qo'lga kiritdi.",
+      year: "2026",
+      yearGroup: "2026",
+      universityOrCert: "10-Sinf Multi-Sertifikat",
+    },
+    {
+      id: "a-abduhamidov-26",
+      studentName: "Boshlang'ich Sinf Xalqaro Medallari",
+      category: "Maktab",
+      score: "3x Xalqaro Medal · 8x Stipendiya",
+      detail: "Maktab 3-«A» sinf o'quvchisi: matematika xalqaro olimpiadalarida 3 ta sovrin va har oylik testlarda 8 marotaba maktab stipendiyasi sohibi.",
+      year: "2026",
+      yearGroup: "2026",
+      universityOrCert: "Maktab Faxri · 3-Sinf",
+    },
+    {
+      id: "a-tasimo-26",
+      studentName: "Viloyat Fan Olimpiadasi 1-O'rin",
+      category: "Olimpiada",
+      score: "TasIMO Viloyat 1-O'rin (88%)",
+      detail: "TasIMO olimpiadasining viloyat bosqichida 88% ko'rsatkich bilan 1-o'rinni egallab, respublika finaliga yo'llanma oldi.",
+      year: "2026",
+      yearGroup: "2026",
+      universityOrCert: "Respublika Yo'llanmasi",
+    },
+
+    // ==========================================
+    // 2025-YIL MA'LUMOTLARI (TO'LIQ YIL)
+    // ==========================================
+    {
+      id: "a-firdavs-25",
+      studentName: "Digital SAT 1510 Natijasi",
+      category: "SAT",
+      score: "SAT 1510 Ball",
+      detail: "2025-yil Digital SAT imtihonida 1510 ballik yuqori natijaga erishib, O'zbekiston va xalqaro universitetlar grantiga ega bo'ldi.",
+      year: "2025",
+      yearGroup: "2025",
+      universityOrCert: "SAT 1500+ Klubi",
+    },
+    {
+      id: "a-xasanova-25",
+      studentName: "Digital SAT 1500 Natijasi",
+      category: "SAT",
+      score: "SAT 1500 Ball",
+      detail: "Digital SAT imtihonida ketma-ket 1480 va 1500 ball to'plab, 1500+ klubi yetakchilaridan biriga aylandi.",
+      year: "2025",
+      yearGroup: "2025",
+      universityOrCert: "SAT 1500+ Klubi",
+    },
+    {
+      id: "a-munisa-25",
+      studentName: "Digital SAT 1470 Natijasi",
+      category: "SAT",
+      score: "SAT 1470 Ball",
+      detail: "2025-yilgi SAT imtihonida 1470 ball to'plab, nufuzli grantlar guruhidan joy oldi.",
+      year: "2025",
+      yearGroup: "2025",
+      universityOrCert: "SAT 1450+ Natija",
+    },
+    {
+      id: "a-qudratov-25",
+      studentName: "Digital SAT 1470 Natijasi",
+      category: "SAT",
+      score: "SAT 1470 Ball",
+      detail: "Digital SAT sinovida 1470 ball natija qayd etib, nufuzli ta'lim imtiyozini qo'lga kiritdi.",
+      year: "2025",
+      yearGroup: "2025",
+      universityOrCert: "SAT 1450+ Natija",
+    },
+    {
+      id: "a-ismoyilov-25",
+      studentName: "Digital SAT Math 800/800 Maksimal",
+      category: "SAT",
+      score: "SAT 1460 (Math 800)",
+      detail: "SAT imtihonida matematika qismidan 800/800 maksimal ball to'plab, umumiy 1460 ball natijani ko'rsatdi.",
+      year: "2025",
+      yearGroup: "2025",
+      universityOrCert: "SAT Math 800/800",
+    },
+    {
+      id: "a-shohjahon-25",
+      studentName: "Digital SAT 1430 (8-Sinf / 14 Yosh)",
+      category: "SAT",
+      score: "SAT 1430 Ball",
+      detail: "Atigi 8-sinfda, 14 yoshida bor-yo'g'i 6 oylik tayyorgarlik bilan SAT 1430 ball to'pladi.",
+      year: "2025",
+      yearGroup: "2025",
+      universityOrCert: "8-Sinfda SAT 1430",
+    },
+    {
+      id: "a-berdiyorova-25",
+      studentName: "189.0 Maksimal Ball (Muddatidan Avval)",
+      category: "189 Ball",
+      score: "189.0 Maksimal Ball",
+      detail: "Matematika A+ (100%), Ingliz tili B2 (100%), Ona tili B (88%), Tarix C+ (83%) sertifikatlari orqali 189.0 ball to'plab, muddatidan avval talaba bo'ldi.",
+      year: "2025",
+      yearGroup: "2025",
+      universityOrCert: "Muddatidan Avval 189.0",
+    },
+    {
+      id: "a-urinov-2025-jamlanma",
+      studentName: "Gumanitar va Huquq Yo'nalishi",
+      category: "OTM Granti",
+      score: "~250 Nafar Talaba (2025)",
+      detail: "2025-yil yakuni bo'yicha: harbiy akademiya, xavfsizlik akademiyasi, ichki ishlar akademiyasi, 40 dan ortiq yuridik yo'nalishlari va 200 ga yaqin boshqa yo'nalishlar talabalari.",
+      year: "2025",
+      yearGroup: "2025",
+      universityOrCert: "250+ Talaba (2025)",
+    },
+    {
+      id: "a-sanjar-vohidov",
+      studentName: "Huquq-tartibot Akademiyasi (Davlat Granti)",
+      category: "OTM Granti",
+      score: "326.6 Ball Davlat Granti",
+      detail: "Huquqni muhofaza qilish akademiyasining maxsus yo'nalishiga 326.6 ball bilan davlat granti asosida qabul qilindi.",
+      year: "2025",
+      yearGroup: "2025",
+      universityOrCert: "Maxsus Akademiya Granti",
+    },
+    {
+      id: "a-rayhonov-inha",
+      studentName: "Xalqaro Texnologiya OTMi Talabasi",
+      category: "OTM Granti",
+      score: "Xalqaro OTM Qabuli",
+      detail: "Atigi 3 oy matematika o'qib, nufuzli xalqaro texnologiya universiteti (Toshkent) talabasi bo'ldi.",
+      year: "2025",
+      yearGroup: "2025",
+      universityOrCert: "Xalqaro OTM Talabasi",
+    },
+    {
+      id: "a-qurbonov-westminster",
+      studentName: "Xalqaro Nufuzli OTM Talabasi",
+      category: "OTM Granti",
+      score: "Xalqaro Universitet",
+      detail: "Toshkentdagi xalqaro nufuzli universitet talabaligiga tavsiya etildi.",
+      year: "2025",
+      yearGroup: "2025",
+      universityOrCert: "Xalqaro OTM Talabasi",
+    },
+    {
+      id: "a-pm-2025",
+      studentName: "Prezident Maktabi 2025 Qabullari",
+      category: "Prezident Maktabi",
+      score: "6 Nafar Qabul (4, 10, 13, 17, 19...)",
+      detail: "Prezident maktabiga viloyat bo'yicha 4-o'rin (82.5 ball), 10-o'rin (78.0), 13-o'rin (77.0), 17-o'rin (75.5), 19-o'rin (75.5), 24-o'rin (73.0) bilan qabul qilindi.",
+      year: "2025",
+      yearGroup: "2025",
+      universityOrCert: "6 Nafar PM Qabul",
+    },
+    {
+      id: "a-pm-saralash-2025",
+      studentName: "PMT 2025 Saralash Bosqichi",
+      category: "Prezident Maktabi",
+      score: "38 Nafar (4 tasi 100%)",
+      detail: "Viloyat bo'yicha eng kuchli 480 talikka 38 nafar o'quvchimiz kirdi, viloyatdagi 11 nafar 100% olganning 4 nafari o'quvchimiz bo'ldi.",
+      year: "2025",
+      yearGroup: "2025",
+      universityOrCert: "Saralashda 4 Ta 100%",
+    },
+    {
+      id: "a-khiso-2025",
+      studentName: "KHISO 2025 Sovrindorlari",
+      category: "Olimpiada",
+      score: "1-O'rin, 3-O'rin, 4-O'rin",
+      detail: "Xalqaro KHISO olimpiadasida 5-sinflar kesimida 1-o'rin, 4-sinflar kesimida 3-o'rin va 4-o'rin qo'lga kiritildi.",
+      year: "2025",
+      yearGroup: "2025",
+      universityOrCert: "KHISO Sovrindorlari",
+    },
+    {
+      id: "a-copernicus-2025",
+      studentName: "COPERNICUS Xalqaro Bronza Medali",
+      category: "Olimpiada",
+      score: "COPERNICUS Bronza Medali",
+      detail: "3-sinf o'quvchisi xalqaro COPERNICUS olimpiadasida bronza medalini olib, AQSHdagi 2-bosqichga yo'llanma yutdi.",
+      year: "2025",
+      yearGroup: "2025",
+      universityOrCert: "AQSHga Yo'llanma",
+    },
+    {
+      id: "a-boboqulov-stem",
+      studentName: "STEM Xalqaro Oltin Medali",
+      category: "Olimpiada",
+      score: "STEM Xalqaro Oltin Medali",
+      detail: "Sobiq o'quvchimiz xalqaro STEM fan olimpiadasida oltin medalni qo'lga kiritdi.",
+      year: "2025",
+      yearGroup: "2025",
+      universityOrCert: "Xalqaro Oltin Medal",
+    },
+    {
+      id: "a-sohibov-ielts-25",
+      studentName: "IELTS 6.5 Xalqaro Sertifikati",
+      category: "Sertifikat",
+      score: "IELTS 6.5 Ball",
+      detail: "Maktab o'quvchisi 2025-yil kuzida xalqaro IELTS 6.5 sertifikatini qo'lga kiritdi.",
+      year: "2025",
+      yearGroup: "2025",
+      universityOrCert: "IELTS 6.5",
+    },
+    {
+      id: "a-cefr-11-2025",
+      studentName: "11 Nafar CEFR B2 Egalari",
+      category: "Sertifikat",
+      score: "11 Nafar CEFR B2 Sertifikati",
+      detail: "2025-yilda 11 nafar o'quvchimiz davlat multilevel imtihonida B2 sertifikatini qo'lga kiritdi.",
+      year: "2025",
+      yearGroup: "2025",
+      universityOrCert: "11 Nafar B2 Sertifikat",
+    },
+  ],
+  faqs: [
+    {
+      category: "maktab" as const,
+      question: "Algoritm School xususiy maktabiga qabul qanday bo'ladi?",
+      answer: "Qabul 1-11 sinf o'quvchilari uchun matematika va mantiqiy fikrlash bo'yicha bepul diagnostik sinov testi hamda psixolog suhbati asosida amalga oshiriladi.",
+    },
+    {
+      category: "maktab" as const,
+      question: "Maktabda dars vaqti va ovqatlanish qanday tashkil etilgan?",
+      answer: "Darslar soat 08:30 dan 17:00 gacha to'liq kunlik rejimda bo'lib, o'quvchilarga kuniga 3 mahal parhezli issiq taom, darsdan so'ng to'garaklar va uy vazifalarini bajarish xizmati taqdim etiladi.",
+    },
+    {
+      category: "maktab" as const,
+      question: "Maktab avtobusi (transport) xizmati bormi?",
+      answer: "Ha, Qarshi shahrining barcha yo'nalishlari bo'yicha o'quvchilarni xavfsiz olib kelish va uyga kuzatish uchun maxsus transport xizmati yo'lga qo'yilgan.",
+    },
+    {
+      category: "markaz" as const,
+      question: "Algoritm Academy o'quv markazida qanday repetitorlik kurslari bor?",
+      answer: "O'quv markazimizda Prezident maktabiga tayyorlov (PMT), SAT 1400+, IELTS 7.5+, Matematika Milliy Sertifikat (A+) va DTM grant kurslari faoliyat yuritadi.",
+    },
+  ],
+  gallery: [
+    {
+      id: "g1",
+      title: "Zamonaviy dars xonalari",
+      category: "darslar",
+      image: "/images/demo/hero_cover.svg",
+    },
+    {
+      id: "g2",
+      title: "PMT sinov imtihoni jarayoni",
+      category: "mashgulotlar",
+      image: "/images/demo/reel_1.svg",
+    },
+    {
+      id: "g3",
+      title: "SAT va Xalqaro Grantlar darsi",
+      category: "darslar",
+      image: "/images/demo/reel_2.svg",
+    },
+  ],
+};
