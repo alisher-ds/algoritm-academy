@@ -40,7 +40,7 @@ export default function Footer() {
           <div className="space-y-5 lg:col-span-4">
             <Link href="/" className="group flex items-center gap-3">
               <span className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl bg-white/10 ring-1 ring-white/15 transition-transform group-hover:scale-105">
-                <img src="/logo.png" alt="" className="h-full w-full object-contain" />
+                <img src="/logo.png" alt="" loading="lazy" decoding="async" className="h-full w-full object-contain" />
               </span>
               <span className="flex flex-col leading-none">
                 <span className="font-display text-lg font-extrabold tracking-tight text-white">

@@ -1,83 +1,120 @@
 import { NextResponse } from "next/server";
 import { sendLeadNotification } from "@/lib/telegram";
 import { addLead, deleteLead, listLeads, updateLead } from "@/lib/leadStore";
-import { isAuthed } from "@/lib/adminAuth";
+import { isAuthed, isSameOrigin } from "@/lib/adminAuth";
+import { clientIp, rateLimit } from "@/lib/rateLimit";
 import type { LeadType, LeadStatus } from "@/lib/leads";
 
 export const dynamic = "force-dynamic";
 
-function json(data: unknown, status = 200) {
-  return NextResponse.json(data, { status });
+function json(data: unknown, status = 200, headers?: Record<string, string>) {
+  return NextResponse.json(data, { status, headers });
+}
+
+function forbidden() {
+  return json({ success: false, error: "So'rov rad etildi" }, 403);
+}
+
+function unauthorized() {
+  return json({ success: false, error: "Ruxsat yo'q" }, 401);
 }
 
 const VALID_TYPES: LeadType[] = ["maktab", "kurs", "umumiy"];
 const VALID_STATUSES: LeadStatus[] = ["yangi", "boglangan", "qabul_qilindi", "bekor_qilindi"];
 const PHONE_RE = /^\+?[0-9 ()-]{7,20}$/;
+const MAX_BODY_BYTES = 8 * 1024;
+
+/** Nazorat belgilarini olib tashlash (log/CSV injection va chalkash kiritishlarga qarshi). */
+function clean(value: string, max: number): string {
+  return value
+    .replace(/[\u0000-\u001f\u007f]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, max);
+}
 
 function normalizeLeadBody(body: Record<string, unknown>) {
-  const name = typeof body.name === "string" ? body.name.trim().slice(0, 120) : "";
-  const phone = typeof body.phone === "string" ? body.phone.trim().slice(0, 30) : "";
+  const str = (v: unknown, max: number) => (typeof v === "string" ? clean(v, max) : "");
+
+  const name = str(body.name, 120);
+  const phone = str(body.phone, 30);
   const rawType = typeof body.type === "string" ? body.type : "umumiy";
   const type: LeadType = VALID_TYPES.includes(rawType as LeadType)
     ? (rawType as LeadType)
     : "umumiy";
-  const targetInterest =
-    typeof body.targetInterest === "string" && body.targetInterest.trim()
-      ? body.targetInterest.trim().slice(0, 160)
-      : "Umumiy ma'lumot";
-  const preferredTime =
-    typeof body.preferredTime === "string" && body.preferredTime.trim()
-      ? body.preferredTime.trim().slice(0, 80)
-      : undefined;
-  const notes =
-    typeof body.notes === "string" && body.notes.trim()
-      ? body.notes.trim().slice(0, 400)
-      : undefined;
-  const source =
-    typeof body.source === "string" && body.source.trim()
-      ? body.source.trim().slice(0, 60)
-      : "sayt";
+  const targetInterest = str(body.targetInterest, 160) || "Umumiy ma'lumot";
+  const preferredTime = str(body.preferredTime, 80) || undefined;
+  const notes = str(body.notes, 400) || undefined;
+  const source = str(body.source, 60) || "sayt";
 
   const errors: string[] = [];
   if (name.length < 2) errors.push("Ism kamida 2 ta belgidan iborat bo'lishi kerak");
   if (!PHONE_RE.test(phone)) errors.push("Telefon raqam noto'g'ri formatda");
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length < 7) errors.push("Telefon raqamda kamida 7 ta raqam bo'lishi kerak");
+
   return { payload: { name, phone, type, targetInterest, preferredTime, notes, source }, errors };
 }
 
-/** GET — faqat admin (cookie). Barcha arizalar ro'yxati. */
+/** So'rov tanasini hajm cheklovi bilan o'qish. */
+async function readJsonBody(req: Request): Promise<Record<string, unknown> | null> {
+  const len = Number(req.headers.get("content-length") || 0);
+  if (len > MAX_BODY_BYTES) return null;
+  const text = await req.text().catch(() => "");
+  if (!text || text.length > MAX_BODY_BYTES) return null;
+  try {
+    const parsed = JSON.parse(text);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+/** GET — faqat admin (imzolangan cookie). Barcha arizalar ro'yxati. */
 export async function GET(req: Request) {
-  if (!isAuthed(req)) return json({ success: false, error: "Ruxsat yo'q" }, 401);
+  if (!isAuthed(req)) return unauthorized();
   const leads = await listLeads();
-  return json({ success: true, leads });
+  return json({ success: true, leads }, 200, { "Cache-Control": "no-store" });
 }
 
 /** POST — ochiq (sayt formalari). Yangi ariza + Telegram bildirishnoma. */
 export async function POST(req: Request) {
   try {
-    // Juda oddiy rate-limit: IP + 1 daqiqa ichida 10 tadan ko'p bo'lmasin (in-memory).
-    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
-    const now = Date.now();
-    const hits = rateMap.get(ip) ?? [];
-    const recent = hits.filter((t) => now - t < 60_000);
-    if (recent.length >= 10) {
-      return json({ success: false, error: "Juda ko'p so'rov yuborildi, birozdan so'ng urinib ko'ring" }, 429);
-    }
-    rateMap.set(ip, [...recent, now]);
+    if (!isSameOrigin(req)) return forbidden();
 
-    const body = await req.json().catch(() => null);
-    if (!body || typeof body !== "object") {
-      return json({ success: false, error: "Noto'g'ri so'rov formati" }, 400);
+    // Rate-limit: IP bo'yicha 1 daqiqada 5 ta, 1 soatda 20 ta.
+    const ip = clientIp(req);
+    const perMinute = await rateLimit(`lead:m:${ip}`, 5, 60);
+    const perHour = await rateLimit(`lead:h:${ip}`, 20, 3600);
+    const blocked = !perMinute.allowed ? perMinute : !perHour.allowed ? perHour : null;
+    if (blocked) {
+      return json(
+        { success: false, error: "Juda ko'p so'rov yuborildi, birozdan so'ng urinib ko'ring" },
+        429,
+        { "Retry-After": String(blocked.retryAfter || 60) }
+      );
     }
 
-    const { payload, errors } = normalizeLeadBody(body as Record<string, unknown>);
-    if (errors.length) {
-      return json({ success: false, error: errors.join("; ") }, 400);
+    const body = await readJsonBody(req);
+    if (!body) return json({ success: false, error: "Noto'g'ri so'rov formati" }, 400);
+
+    // Honeypot maydoni (botlar to'ldiradi) — jimgina muvaffaqiyat qaytaramiz.
+    if (typeof body.website === "string" && body.website.trim()) {
+      return json({ success: true, message: "Arizangiz qabul qilindi!" }, 201);
     }
+
+    const { payload, errors } = normalizeLeadBody(body);
+    if (errors.length) return json({ success: false, error: errors.join("; ") }, 400);
 
     const lead = await addLead(payload);
 
-    // Telegram bildirishnoma (env o'rnatilmagan bo'lsa mock rejimda log qiladi)
-    const tg = await sendLeadNotification(lead);
+    // Telegram bildirishnoma arizani saqlashni bloklamasligi kerak.
+    const tg = await sendLeadNotification(lead).catch((err) => {
+      console.error("Telegram notification failed:", err);
+      return { success: false as const };
+    });
 
     return json(
       {
@@ -96,18 +133,18 @@ export async function POST(req: Request) {
 
 /** PATCH — faqat admin. Status / izoh yangilash. */
 export async function PATCH(req: Request) {
-  if (!isAuthed(req)) return json({ success: false, error: "Ruxsat yo'q" }, 401);
+  if (!isAuthed(req)) return unauthorized();
+  if (!isSameOrigin(req)) return forbidden();
   try {
-    const body = await req.json().catch(() => null);
-    if (!body || typeof body !== "object") {
-      return json({ success: false, error: "Noto'g'ri so'rov formati" }, 400);
-    }
+    const body = await readJsonBody(req);
+    if (!body) return json({ success: false, error: "Noto'g'ri so'rov formati" }, 400);
+
     const { id, status, adminNotes } = body as {
       id?: string;
       status?: LeadStatus;
       adminNotes?: string;
     };
-    if (!id) return json({ success: false, error: "Ariza ID si kerak" }, 400);
+    if (!id || typeof id !== "string") return json({ success: false, error: "Ariza ID si kerak" }, 400);
 
     const patch: { status?: LeadStatus; adminNotes?: string } = {};
     if (status !== undefined) {
@@ -117,7 +154,10 @@ export async function PATCH(req: Request) {
       patch.status = status;
     }
     if (adminNotes !== undefined) {
-      patch.adminNotes = String(adminNotes).slice(0, 600);
+      patch.adminNotes = clean(String(adminNotes), 600);
+    }
+    if (patch.status === undefined && patch.adminNotes === undefined) {
+      return json({ success: false, error: "Yangilash uchun maydon berilmadi" }, 400);
     }
 
     const updated = await updateLead(id, patch);
@@ -131,7 +171,8 @@ export async function PATCH(req: Request) {
 
 /** DELETE — faqat admin. Ariza o'chirish. */
 export async function DELETE(req: Request) {
-  if (!isAuthed(req)) return json({ success: false, error: "Ruxsat yo'q" }, 401);
+  if (!isAuthed(req)) return unauthorized();
+  if (!isSameOrigin(req)) return forbidden();
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
@@ -144,6 +185,3 @@ export async function DELETE(req: Request) {
     return json({ success: false, error: "Xatolik yuz berdi" }, 500);
   }
 }
-
-// IP-based sodda rate-limit xotirasi
-const rateMap = new Map<string, number[]>();

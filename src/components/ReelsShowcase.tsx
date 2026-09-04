@@ -126,6 +126,7 @@ export default function ReelsShowcase() {
           onClose={() => setSelectedVideo(null)}
           videoTitle={selectedVideo.title}
           videoUrl={selectedVideo.videoUrl}
+          poster={selectedVideo.poster}
         />
       )}
     </section>
