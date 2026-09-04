@@ -349,7 +349,7 @@ export const ECOSYSTEM_DATA = {
       universityOrCert: "SAT 1480 Natija",
     },
     {
-      id: "a-sohibov-26",
+      id: "a-sat-1430-26",
       studentName: "Digital SAT 1430 & IELTS 6.5",
       category: "SAT",
       score: "SAT 1430 · IELTS 6.5",
@@ -693,7 +693,7 @@ export const ECOSYSTEM_DATA = {
       universityOrCert: "Xalqaro Oltin Medal",
     },
     {
-      id: "a-sohibov-ielts-25",
+      id: "a-ielts-6-5-25",
       studentName: "IELTS 6.5 Xalqaro Sertifikati",
       category: "Sertifikat",
       score: "IELTS 6.5 Ball",
@@ -772,7 +772,7 @@ export const ECOSYSTEM_DATA = {
     {
       category: "umumiy" as const,
       question: "Qanday natijalarga erishgan o'quvchilar bor?",
-      answer: "Haqiqiy natijalar bazasidan namunalar: SAT 1430 + IELTS 6.5 (Sohibov Asilbek), SAT 1260 + IELTS 7.0 (Imomyorova Mohinur), 2026-yil yakunida 189.0 maksimal ball sohiblari, Al-Xorazmiy maktablariga 44 nafar qabul va respublika olimpiadasida 60 000 000 so'm bosh mukofot.",
+      answer: "Haqiqiy natijalar bazasidan namunalar: SAT 1430 + IELTS 6.5, SAT 1260 + IELTS 7.0, 2026-yil yakunida 189.0 maksimal ball sohiblari, Al-Xorazmiy maktablariga 44 nafar qabul va respublika olimpiadasida 60 000 000 so'm bosh mukofot.",
     },
   ],
   gallery: [

@@ -1,11 +1,10 @@
-import type { ReactNode } from "react";
-import type { LucideIcon } from "lucide-react";
+import type { ComponentType, ReactNode } from "react";
 
 interface SectionHeaderProps {
   /** Kichik kapsula yorliq (eyebrow), masalan: "Shaffof qabul 2026" */
   eyebrow?: string;
   /** Eyebrow oldidagi ikonka */
-  eyebrowIcon?: LucideIcon;
+  eyebrowIcon?: ComponentType<{ className?: string }>;
   /** Asosiy sarlavha — Title Case uslubida yoziladi */
   title: ReactNode;
   /** Sarlavha ostidagi tavsif */
