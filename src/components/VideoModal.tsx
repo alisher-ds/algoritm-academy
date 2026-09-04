@@ -79,15 +79,15 @@ export default function VideoModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-3xl bg-[#0b1329] border border-white/20 rounded-3xl overflow-hidden shadow-2xl flex flex-col">
+      <div className="relative w-full max-w-3xl bg-night border border-white/20 rounded-3xl overflow-hidden shadow-2xl flex flex-col">
         {/* Header Bar */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-slate-950/90 z-20">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-brand flex items-center justify-center text-slate-950">
+            <div className="w-8 h-8 rounded-full bg-brand-500 flex items-center justify-center text-slate-950">
               <Play className="w-4 h-4 fill-slate-950 ml-0.5" />
             </div>
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-brand block">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-brand-500 block">
                 Algoritm Video Vitrinasi
               </span>
               <h3 className="text-sm sm:text-base font-bold text-white truncate max-w-sm sm:max-w-md">
@@ -127,7 +127,7 @@ export default function VideoModal({
               className="absolute inset-0 flex items-center justify-center bg-black/40 transition"
               aria-label="Play"
             >
-              <div className="w-16 h-16 rounded-full bg-brand text-slate-950 flex items-center justify-center shadow-2xl animate-in zoom-in-90 duration-150">
+              <div className="w-16 h-16 rounded-full bg-brand-500 text-slate-950 flex items-center justify-center shadow-2xl animate-in zoom-in-90 duration-150">
                 <Play className="w-7 h-7 fill-slate-950 ml-1" />
               </div>
             </button>
@@ -141,7 +141,7 @@ export default function VideoModal({
               className="w-full h-1.5 bg-white/20 rounded-full cursor-pointer overflow-hidden relative hover:h-2.5 transition-all"
             >
               <div
-                className="h-full bg-brand rounded-full transition-all"
+                className="h-full bg-brand-500 rounded-full transition-all"
                 style={{ width: `${progress}%` }}
               ></div>
             </div>
@@ -160,9 +160,7 @@ export default function VideoModal({
                 >
                   {isMuted ? <VolumeX className="w-4 h-4 text-rose-400" /> : <Volume2 className="w-4 h-4" />}
                 </button>
-                <span className="text-[11px] text-slate-300 font-mono">
-                  HD 1080p · Algoritm Media
-                </span>
+                <span className="text-[11px] text-slate-400">Rasmiy video</span>
               </div>
 
               <div className="flex items-center gap-2">
@@ -171,7 +169,7 @@ export default function VideoModal({
                     href={instagramUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-brand hover:text-slate-950 transition text-[11px] font-bold"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-brand-500 hover:text-slate-950 transition text-[11px] font-bold"
                     title="Instagram'da ochish"
                   >
                     <ExternalLink className="w-3.5 h-3.5" />

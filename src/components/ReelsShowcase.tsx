@@ -1,183 +1,131 @@
 "use client";
 
 import React, { useState } from "react";
-import { Play, Eye, Heart, Video, } from "lucide-react";
+import { Play, Video, Send, ArrowUpRight } from "lucide-react";
 import VideoModal from "@/components/VideoModal";
+import { ECOSYSTEM_DATA } from "@/data/ecosystemData";
 
-interface ReelItem {
+interface VideoItem {
   id: string;
   title: string;
   category: string;
-  views: string;
-  likes: string;
-  duration: string;
-  thumbnail: string;
   description: string;
+  poster: string;
   videoUrl: string;
-  instagramUrl: string;
 }
 
+const videos: VideoItem[] = [
+  {
+    id: "v1",
+    title: "Algoritm Academy — dars va natijalar lavhasi",
+    category: "Video lavha",
+    description:
+      "Dars jarayonlari, imtihon sinovlari va o'quvchilar natijalaridan haqiqiy lavhalar.",
+    poster: "/images/slides/slide_5_live_class.jpg",
+    videoUrl: "/videos/reel_sat1430.mp4",
+  },
+  {
+    id: "v2",
+    title: "Aziz Xolmurodov — matematika (Milliy A+)",
+    category: "Ustoz bilan tanishuv",
+    description:
+      "Maktab matematika ustozi Aziz Xolmurodov bilan qisqacha tanishuv.",
+    poster: "/images/aziz_xolmurodov.jpg",
+    videoUrl: "/videos/aziz_teacher_intro.mp4",
+  },
+];
+
 export default function ReelsShowcase() {
-  const [selectedVideo, setSelectedVideo] = useState<ReelItem | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
-  const reels: ReelItem[] = [
-    {
-      id: "r1",
-      title: "Mantiqiy Fikrlash & PMT Masalalari Tahlili",
-      category: "PMT Darsi",
-      views: "24.5K",
-      likes: "2.1K",
-      duration: "01:15",
-      thumbnail: "/images/demo/reel_1.svg",
-      videoUrl: "/videos/reel_sat1430.mp4",
-      description: "Prezident maktabi imtihonlariga tayyorgarlik bo'yicha mantiqiy masalalar yechish namunasi.",
-      instagramUrl: "https://www.instagram.com/algoritm.academy",
-    },
-    {
-      id: "r2",
-      title: "SAT 1450+ Ball & Xalqaro Grant Natijasi",
-      category: "SAT Digital",
-      views: "42.3K",
-      likes: "3.5K",
-      duration: "01:45",
-      thumbnail: "/images/demo/reel_2.svg",
-      videoUrl: "/videos/reel_sat1430.mp4",
-      description: "O'quvchimizning Digital SAT imtihoni va to'liq grant yutish strategiyasi haqidagi tajribasi.",
-      instagramUrl: "https://www.instagram.com/algoritm.academy",
-    },
-    {
-      id: "r3",
-      title: "Matematika DTM & Olimpiada Masalalari",
-      category: "Matematika",
-      views: "19.8K",
-      likes: "1.7K",
-      duration: "00:58",
-      thumbnail: "/images/demo/reel_3.svg",
-      videoUrl: "/videos/reel_sat1430.mp4",
-      description: "Murakkab matematik masalalarni tezkor usulda yechish mahorati darsi.",
-      instagramUrl: "https://www.instagram.com/algoritm.academy",
-    },
-    {
-      id: "r4",
-      title: "Speaking & IELTS 8.0 Erkin Muloqot Klublari",
-      category: "IELTS 8.0",
-      views: "36.2K",
-      likes: "2.9K",
-      duration: "02:10",
-      thumbnail: "/images/demo/reel_4.svg",
-      videoUrl: "/videos/reel_sat1430.mp4",
-      description: "Ingliz tilida erkin so'zlashuv va jonli Speaking klubi mashg'ulotlari.",
-      instagramUrl: "https://www.instagram.com/algoritm.academy",
-    },
-    {
-      id: "r5",
-      title: "Haftalik Mock Test & Sinov Imtihoni Jarayoni",
-      category: "Mock Test",
-      views: "31.4K",
-      likes: "2.6K",
-      duration: "01:30",
-      thumbnail: "/images/demo/reel_5.svg",
-      videoUrl: "/videos/reel_sat1430.mp4",
-      description: "O'quvchilarning bilim darajasini real imtihon muhitida sinash jarayoni.",
-      instagramUrl: "https://www.instagram.com/algoritm.academy",
-    },
-    {
-      id: "r6",
-      title: "G'oliblarni Taqdirlash & Bitiruv Tantanasi",
-      category: "Tadbir",
-      views: "52.1K",
-      likes: "4.8K",
-      duration: "02:30",
-      thumbnail: "/images/demo/reel_6.svg",
-      videoUrl: "/videos/reel_sat1430.mp4",
-      description: "Yil yakunida yuqori natijalar qayd etgan o'quvchilarni taqdirlash tantanasi.",
-      instagramUrl: "https://www.instagram.com/algoritm.academy",
-    },
-  ];
-
-  const handleOpenVideo = (reel: ReelItem) => {
-    setSelectedVideo(reel);
-    setIsModalOpen(true);
-  };
+  const [selectedVideo, setSelectedVideo] = useState<VideoItem | null>(null);
 
   return (
-    <section className="bg-[#080e1e] py-20 sm:py-28 text-white border-b border-emerald-500/10" id="reels">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+    <section className="relative overflow-hidden bg-night-deep py-20 text-white sm:py-24" id="reels">
+      {/* Orqa fon aksenti */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -right-40 top-0 h-96 w-96 rounded-full bg-brand-500/10 blur-3xl"
+      />
+
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mb-10 flex flex-col justify-between gap-6 md:flex-row md:items-end">
           <div className="max-w-2xl">
-            <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold uppercase tracking-wider mb-3">
-              <Video className="w-3.5 h-3.5 text-brand" /> Video Lavhalar
+            <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-brand-400/30 bg-brand-400/10 px-3.5 py-1.5 text-xs font-bold uppercase tracking-wider text-brand-400">
+              <Video className="h-3.5 w-3.5" />
+              Video lavhalar
             </span>
-            <h2 className="text-3xl sm:text-4xl font-black tracking-tight uppercase text-white">
-              Jonli Jarayon & Reels Videolar
+            <h2 className="font-display text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+              Maktab hayoti va natijalar videoda
             </h2>
-            <p className="mt-3 text-slate-400 text-sm sm:text-base">
-              Dars jarayonlari, imtihon sinovlari va o'quvchilarimizning natijalari videolavhalari.
+            <p className="mt-3 max-w-xl text-sm leading-relaxed text-slate-400 sm:text-base">
+              O&apos;quv jarayoni va natijalardan lavhalar. To&apos;liq arxiv Telegram
+              kanalimizda muntazam yangilanadi.
             </p>
           </div>
-
-          <button
-            onClick={() => handleOpenVideo(reels[0])}
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white/[0.04] hover:bg-white/[0.08] text-white text-xs font-bold border border-white/10 transition self-start md:self-auto shrink-0"
-          >
-            <Play className="w-4 h-4 text-brand fill-brand" />
-            Barcha Videolarni Ko'rish
-          </button>
         </div>
 
-        {/* Reels Grid (9:16 vertical card aspect) */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-6">
-          {reels.map((reel) => (
-            <div
-              key={reel.id}
-              onClick={() => handleOpenVideo(reel)}
-              className="group relative rounded-3xl overflow-hidden aspect-[9/16] bg-slate-900 border border-white/10 shadow-lg cursor-pointer hover:border-emerald-500/50 hover:shadow-[0_10px_30px_rgba(0,200,83,0.25)] transition-all duration-300 hover:-translate-y-1.5"
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          {videos.map((video, i) => (
+            <article
+              key={video.id}
+              className={`group relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03] shadow-card transition-all duration-300 hover:-translate-y-1 hover:border-brand-400/40 ${
+                i === 0 ? "md:col-span-1" : "md:col-span-1"
+              }`}
             >
-              <img
-                src={reel.thumbnail}
-                alt={reel.title}
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div>
+              <button
+                onClick={() => setSelectedVideo(video)}
+                className="relative block aspect-video w-full overflow-hidden text-left"
+                aria-label={`${video.title} — videoni ko'rish`}
+              >
+                <img
+                  src={video.poster}
+                  alt={video.title}
+                  loading="lazy"
+                  className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
 
-              {/* Play Button Icon Overlay */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-12 h-12 rounded-full bg-brand text-slate-950 flex items-center justify-center shadow-xl group-hover:scale-115 transition-transform duration-200">
-                  <Play className="w-5 h-5 fill-slate-950 ml-0.5" />
-                </div>
+                {/* Play tugmasi */}
+                <span className="absolute left-1/2 top-1/2 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-brand-500 text-white shadow-glow transition-transform duration-300 group-hover:scale-110">
+                  <Play className="ml-0.5 h-6 w-6 fill-white" />
+                </span>
+
+                {/* Kategoriya */}
+                <span className="absolute left-4 top-4 rounded-full bg-black/50 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white backdrop-blur">
+                  {video.category}
+                </span>
+              </button>
+
+              <div className="p-5 sm:p-6">
+                <h3 className="font-display text-lg font-bold text-white">{video.title}</h3>
+                <p className="mt-1.5 text-sm leading-relaxed text-slate-400">{video.description}</p>
               </div>
-
-              {/* Bottom Details */}
-              <div className="absolute bottom-0 inset-x-0 p-3 sm:p-4">
-                <h4 className="text-xs sm:text-sm font-bold text-white leading-tight line-clamp-2 mb-2 group-hover:text-brand transition-colors">
-                  {reel.title}
-                </h4>
-
-                <div className="flex items-center justify-between text-[10px] text-slate-400">
-                  <span className="flex items-center gap-1">
-                    <Eye className="w-3 h-3 text-slate-400" />
-                    {reel.views}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Heart className="w-3 h-3 text-rose-400" />
-                    {reel.likes}
-                  </span>
-                </div>
-              </div>
-            </div>
+            </article>
           ))}
+        </div>
+
+        <div className="mt-8 flex flex-col items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-5 sm:flex-row">
+          <p className="text-sm text-slate-400">
+            Ko&apos;proq lavhalar va e&apos;lonlar — rasmiy Telegram kanalimizda.
+          </p>
+          <a
+            href={ECOSYSTEM_DATA.contact.telegram}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-white/10 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white transition hover:bg-brand-500"
+          >
+            <Send className="h-4 w-4" />
+            Telegram kanal
+            <ArrowUpRight className="h-3.5 w-3.5" />
+          </a>
         </div>
       </div>
 
-      {/* Direct Video Playback Modal */}
-      {isModalOpen && selectedVideo && (
+      {selectedVideo && (
         <VideoModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
+          isOpen={Boolean(selectedVideo)}
+          onClose={() => setSelectedVideo(null)}
           videoTitle={selectedVideo.title}
           videoUrl={selectedVideo.videoUrl}
-          instagramUrl={selectedVideo.instagramUrl}
         />
       )}
     </section>

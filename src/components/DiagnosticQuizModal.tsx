@@ -77,7 +77,7 @@ export default function DiagnosticQuizModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-lg bg-[#0b1329] border border-white/15 rounded-3xl p-6 sm:p-8 text-white shadow-2xl overflow-hidden">
+      <div className="relative w-full max-w-lg bg-night border border-white/15 rounded-3xl p-6 sm:p-8 text-white shadow-2xl overflow-hidden">
         {/* Close Button */}
         <button
           onClick={onClose}
@@ -89,7 +89,7 @@ export default function DiagnosticQuizModal({
 
         {analyzing ? (
           <div className="py-16 text-center space-y-4">
-            <Loader2 className="w-10 h-10 text-brand animate-spin mx-auto" />
+            <Loader2 className="w-10 h-10 text-brand-500 animate-spin mx-auto" />
             <h3 className="text-xl font-bold text-white">
               Natijangiz tahlil qilinmoqda...
             </h3>
@@ -100,11 +100,11 @@ export default function DiagnosticQuizModal({
         ) : step === 4 && result ? (
           <div className="py-4 space-y-6">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-brand/20 text-brand flex items-center justify-center">
+              <div className="w-10 h-10 rounded-full bg-brand-500/20 text-brand-500 flex items-center justify-center">
                 <Sparkles className="w-5 h-5" />
               </div>
               <div>
-                <span className="text-[10px] uppercase font-bold text-brand tracking-wider block">
+                <span className="text-[10px] uppercase font-bold text-brand-500 tracking-wider block">
                   Tavsiya etilgan kurs
                 </span>
                 <h3 className="text-xl font-black text-white">{result.title}</h3>
@@ -127,7 +127,7 @@ export default function DiagnosticQuizModal({
                   onClose();
                   onSelectCourse(result.title);
                 }}
-                className="flex-1 py-3.5 rounded-full bg-brand text-slate-950 font-bold text-xs hover:bg-brand-light transition flex items-center justify-center gap-2"
+                className="flex-1 py-3.5 rounded-full bg-brand-500 text-slate-950 font-bold text-xs hover:bg-brand-500-400 transition flex items-center justify-center gap-2"
               >
                 1-Dars Bepul Joy Olish <ArrowRight className="w-4 h-4" />
               </button>
@@ -142,7 +142,7 @@ export default function DiagnosticQuizModal({
         ) : (
           <div>
             <div className="mb-6">
-              <span className="text-[11px] font-bold text-brand uppercase tracking-wider block mb-1">
+              <span className="text-[11px] font-bold text-brand-500 uppercase tracking-wider block mb-1">
                 Kurs Tanlash Testi · {step}/3-bosqich
               </span>
               <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">
@@ -167,7 +167,7 @@ export default function DiagnosticQuizModal({
                       setInterest(item.id);
                       setStep(2);
                     }}
-                    className="w-full text-left p-4 rounded-2xl bg-white/5 border border-white/10 hover:border-brand hover:bg-white/10 transition text-sm font-semibold text-white flex items-center justify-between"
+                    className="w-full text-left p-4 rounded-2xl bg-white/5 border border-white/10 hover:border-brand-500 hover:bg-white/10 transition text-sm font-semibold text-white flex items-center justify-between"
                   >
                     <span>{item.label}</span>
                     <ArrowRight className="w-4 h-4 text-slate-400" />
@@ -188,7 +188,7 @@ export default function DiagnosticQuizModal({
                   <button
                     key={idx}
                     onClick={() => setStep(3)}
-                    className="w-full text-left p-4 rounded-2xl bg-white/5 border border-white/10 hover:border-brand hover:bg-white/10 transition text-sm font-semibold text-white flex items-center justify-between"
+                    className="w-full text-left p-4 rounded-2xl bg-white/5 border border-white/10 hover:border-brand-500 hover:bg-white/10 transition text-sm font-semibold text-white flex items-center justify-between"
                   >
                     <span>{item}</span>
                     <ArrowRight className="w-4 h-4 text-slate-400" />
@@ -209,10 +209,10 @@ export default function DiagnosticQuizModal({
                   <button
                     key={idx}
                     onClick={handleCalculate}
-                    className="w-full text-left p-4 rounded-2xl bg-white/5 border border-white/10 hover:border-brand hover:bg-white/10 transition text-sm font-semibold text-white flex items-center justify-between"
+                    className="w-full text-left p-4 rounded-2xl bg-white/5 border border-white/10 hover:border-brand-500 hover:bg-white/10 transition text-sm font-semibold text-white flex items-center justify-between"
                   >
                     <span>{item}</span>
-                    <ArrowRight className="w-4 h-4 text-brand" />
+                    <ArrowRight className="w-4 h-4 text-brand-500" />
                   </button>
                 ))}
               </div>

@@ -30,9 +30,9 @@ export default function DtmGrantBanner() {
   ];
 
   return (
-    <section className="bg-[#060a14] py-16 text-white border-b border-white/5">
+    <section className="bg-night-deep py-16 text-white border-b border-white/5">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="rounded-3xl bg-gradient-to-br from-[#0b1329] via-[#080e1e] to-[#060a14] p-8 sm:p-12 text-white border border-emerald-500/20 shadow-2xl relative overflow-hidden">
+        <div className="rounded-3xl bg-gradient-to-br from-night via-night-deep to-night-deep p-8 sm:p-12 text-white border border-emerald-500/20 shadow-2xl relative overflow-hidden">
           
           {/* Subtle Glow */}
           <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
@@ -40,7 +40,7 @@ export default function DtmGrantBanner() {
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 mb-10 pb-8 border-b border-white/10 relative z-10">
             <div>
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold uppercase tracking-wider mb-3">
-                <TrendingUp className="w-3.5 h-3.5 text-brand" /> Rasmiy Imtihon Natijalari
+                <TrendingUp className="w-3.5 h-3.5 text-brand-500" /> Rasmiy Imtihon Natijalari
               </div>
               <h3 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white uppercase tracking-tight">
                 Muvaffaqiyatli Ta'lim Natijalari
@@ -52,7 +52,7 @@ export default function DtmGrantBanner() {
 
             <div className="flex items-center gap-6 shrink-0 bg-white/[0.03] border border-white/10 px-6 py-4 rounded-2xl backdrop-blur-md">
               <div>
-                <span className="text-3xl font-black text-brand">98.5%</span>
+                <span className="text-3xl font-black text-brand-500">98.5%</span>
                 <p className="text-[11px] text-slate-400 font-semibold mt-0.5">OTM Grantiga kirish</p>
               </div>
               <div className="h-10 w-px bg-white/10"></div>
@@ -73,7 +73,7 @@ export default function DtmGrantBanner() {
                 <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider block mb-1">
                   {item.category}
                 </span>
-                <div className="text-3xl font-black text-white tracking-tight mb-1 group-hover:text-brand transition-colors">
+                <div className="text-3xl font-black text-white tracking-tight mb-1 group-hover:text-brand-500 transition-colors">
                   {item.score}
                 </div>
                 <h4 className="text-sm font-bold text-slate-200">

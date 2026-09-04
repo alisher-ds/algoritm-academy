@@ -50,7 +50,7 @@ export default function Hero({ onOpenLeadModal, onOpenVideoModal, onOpenQuizModa
                 </span>
               </h1>
               <p className="text-base sm:text-lg text-slate-600 max-w-xl font-medium leading-relaxed pt-2">
-                Prezident maktabiga tayyorlov (PMT), SAT 1400+, IELTS 8.0 va Matematika Milliy Sertifikat bo'yicha Qarshi shahridagi eng yuqori natijador innovatsion ta'lim markazi.
+                Prezident maktabiga tayyorlov (PMT), Digital SAT 1500+, IELTS 7.5+ va Matematika Milliy sertifikat (A+) yo&apos;nalishlarida Qarshi shahridagi yetakchi akademik tayyorlov markazi.
               </p>
             </div>
 
@@ -73,19 +73,19 @@ export default function Hero({ onOpenLeadModal, onOpenVideoModal, onOpenQuizModa
               </button>
             </div>
 
-            {/* Trust Metrics */}
+            {/* Trust Metrics — rasmiy natijalar (2026 arxivi) */}
             <div className="pt-6 border-t border-slate-200 grid grid-cols-3 gap-6 max-w-lg">
               <div>
-                <div className="text-2xl sm:text-3xl font-black text-slate-950 tracking-tight">250+</div>
-                <div className="text-xs text-slate-500 font-bold mt-0.5">Matematika Milliy sertifikati (A+)</div>
+                <div className="text-2xl sm:text-3xl font-black text-slate-950 tracking-tight">1520</div>
+                <div className="text-xs text-slate-500 font-bold mt-0.5 leading-snug">Digital SAT — 2026-yilgi eng yuqori natija</div>
               </div>
               <div className="border-x border-slate-200 px-4">
-                <div className="text-2xl sm:text-3xl font-black text-emerald-700 tracking-tight">Top 1</div>
-                <div className="text-xs text-slate-500 font-bold mt-0.5">PMT Qabul darajasi</div>
+                <div className="text-2xl sm:text-3xl font-black text-emerald-700 tracking-tight">27</div>
+                <div className="text-xs text-slate-500 font-bold mt-0.5 leading-snug">nafar o&apos;quvchi to&apos;liq davlat grantida</div>
               </div>
               <div>
-                <div className="text-2xl sm:text-3xl font-black text-slate-950 tracking-tight">98.5%</div>
-                <div className="text-xs text-slate-500 font-bold mt-0.5">OTM Grantiga kirish</div>
+                <div className="text-2xl sm:text-3xl font-black text-slate-950 tracking-tight">189</div>
+                <div className="text-xs text-slate-500 font-bold mt-0.5 leading-snug">OTM kirishda maksimal ball</div>
               </div>
             </div>
           </div>
@@ -97,8 +97,8 @@ export default function Hero({ onOpenLeadModal, onOpenVideoModal, onOpenQuizModa
               {/* Image Preview */}
               <div className="relative h-[400px] w-full rounded-2xl overflow-hidden bg-slate-100">
                 <img
-                  src="/images/demo/hero_cover.svg"
-                  alt="Algoritm Academy Interfaol Darslar"
+                  src="/images/slides/slide_5_live_class.jpg"
+                  alt="Algoritm Academy — jonli dars jarayoni"
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent"></div>

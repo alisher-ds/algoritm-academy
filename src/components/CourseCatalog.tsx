@@ -38,14 +38,14 @@ export default function CourseCatalog({ onOpenLeadModal }: CourseCatalogProps) {
   });
 
   return (
-    <section className="bg-[#080e1e] py-20 sm:py-28 text-white border-b border-emerald-500/10" id="kurslar">
+    <section className="bg-night-deep py-20 sm:py-28 text-white border-b border-emerald-500/10" id="kurslar">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 text-left">
           <div className="max-w-2xl">
             <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold uppercase tracking-wider mb-3">
-              <GraduationCap className="w-3.5 h-3.5 text-[#00E676]" /> Algoritm Repetitorlik & O'quv Markazi
+              <GraduationCap className="w-3.5 h-3.5 text-brand-400" /> Algoritm Repetitorlik & O'quv Markazi
             </span>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight uppercase text-white">
               Akademik Tayyorlov va Grant Kurslari
@@ -63,7 +63,7 @@ export default function CourseCatalog({ onOpenLeadModal }: CourseCatalogProps) {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Fan yoki yo'nalish bo'yicha qidirish..."
-              className="w-full pl-11 pr-4 py-3 rounded-full bg-white/[0.04] border border-white/10 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-[#00E676] focus:bg-white/[0.07] transition shadow-sm"
+              className="w-full pl-11 pr-4 py-3 rounded-full bg-white/[0.04] border border-white/10 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-brand-400 focus:bg-white/[0.07] transition shadow-sm"
             />
           </div>
         </div>
@@ -76,7 +76,7 @@ export default function CourseCatalog({ onOpenLeadModal }: CourseCatalogProps) {
               onClick={() => setActiveCategory(cat.id)}
               className={`whitespace-nowrap px-5 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all duration-200 ${
                 activeCategory === cat.id
-                  ? "bg-[#00E676] text-slate-950 shadow-[0_2px_15px_rgba(0,230,118,0.35)]"
+                  ? "bg-brand-400 text-slate-950 shadow-[0_2px_15px_rgba(0,230,118,0.35)]"
                   : "bg-white/[0.03] text-slate-400 hover:text-white hover:bg-white/[0.06] border border-white/10"
               }`}
             >
@@ -106,7 +106,7 @@ export default function CourseCatalog({ onOpenLeadModal }: CourseCatalogProps) {
                 </div>
 
                 {/* Course Title & Description */}
-                <h3 className="text-xl font-bold text-white mb-2 group-hover:text-[#00E676] transition-colors">
+                <h3 className="text-xl font-bold text-white mb-2 group-hover:text-brand-400 transition-colors">
                   {course.title}
                 </h3>
                 <p className="text-xs sm:text-sm text-slate-400 leading-relaxed mb-6">
@@ -116,11 +116,11 @@ export default function CourseCatalog({ onOpenLeadModal }: CourseCatalogProps) {
                 {/* Meta details */}
                 <div className="grid grid-cols-2 gap-3 py-4 border-y border-white/10 mb-6 text-xs text-slate-300">
                   <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-[#00E676] shrink-0" />
+                    <Clock className="w-4 h-4 text-brand-400 shrink-0" />
                     <span>Davomiyligi: <strong className="text-white">{course.duration}</strong></span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-[#00E676] shrink-0" />
+                    <Calendar className="w-4 h-4 text-brand-400 shrink-0" />
                     <span className="truncate">{course.weeklyHours}</span>
                   </div>
                 </div>
@@ -129,7 +129,7 @@ export default function CourseCatalog({ onOpenLeadModal }: CourseCatalogProps) {
                 <div className="space-y-2.5 mb-6">
                   {course.features.map((feat, idx) => (
                     <div key={idx} className="flex items-start gap-2 text-xs text-slate-300">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-[#00E676] shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-3.5 h-3.5 text-brand-400 shrink-0 mt-0.5" />
                       <span>{feat}</span>
                     </div>
                   ))}
@@ -150,7 +150,7 @@ export default function CourseCatalog({ onOpenLeadModal }: CourseCatalogProps) {
 
                 <button
                   onClick={() => onOpenLeadModal(course.title)}
-                  className="w-full py-3.5 rounded-2xl bg-white/[0.05] hover:bg-[#00E676] text-white hover:text-slate-950 text-xs font-bold uppercase tracking-wider transition-all duration-200 border border-white/10 hover:border-transparent flex items-center justify-center gap-2 shadow-sm"
+                  className="w-full py-3.5 rounded-2xl bg-white/[0.05] hover:bg-brand-400 text-white hover:text-slate-950 text-xs font-bold uppercase tracking-wider transition-all duration-200 border border-white/10 hover:border-transparent flex items-center justify-center gap-2 shadow-sm"
                 >
                   <span>Birinchi darsga yozilish (Bepul)</span>
                   <ArrowRight className="w-4 h-4" />
@@ -163,12 +163,12 @@ export default function CourseCatalog({ onOpenLeadModal }: CourseCatalogProps) {
         {/* Bottom Trust Guarantee Note */}
         <div className="mt-12 p-6 rounded-2xl bg-white/[0.02] border border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
           <div className="flex items-center gap-2 font-medium text-left">
-            <Sparkles className="w-5 h-5 text-[#00E676] shrink-0" />
+            <Sparkles className="w-5 h-5 text-brand-400 shrink-0" />
             <span>Har bir o'quvchi birinchi bepul darsda qatnashib, o'z bilim darajasini bepul diagnostika qildirishi mumkin.</span>
           </div>
           <button
             onClick={() => onOpenLeadModal("Kurslar umumiy konsultatsiya")}
-            className="text-[#00E676] hover:underline font-bold shrink-0"
+            className="text-brand-400 hover:underline font-bold shrink-0"
           >
             Bepul konsultatsiya olish →
           </button>

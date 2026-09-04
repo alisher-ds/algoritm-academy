@@ -77,11 +77,11 @@ export default function LeadBannerSection() {
             {/* Left Column: Heading & Value */}
             <div className="lg:col-span-6 space-y-6 text-left">
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 text-emerald-300 text-xs font-bold uppercase tracking-wider border border-white/15">
-                <ShieldCheck className="w-4 h-4 text-[#00E676]" /> Bepul Diagnostika & Suhbat
+                <ShieldCheck className="w-4 h-4 text-brand-400" /> Bepul Diagnostika & Suhbat
               </div>
               <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black uppercase tracking-tight text-white leading-tight">
                 Qabul 2026 Uchun <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-[#00E676]">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-brand-400">
                   Arizangizni Qoldiring
                 </span>
               </h2>
@@ -91,11 +91,11 @@ export default function LeadBannerSection() {
 
               <div className="pt-2 flex flex-col sm:flex-row items-start sm:items-center gap-4 text-xs text-slate-300 font-semibold">
                 <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-[#00E676] shrink-0" />
+                  <CheckCircle2 className="w-4 h-4 text-brand-400 shrink-0" />
                   <span>1-dars mutlaqo bepul</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-[#00E676] shrink-0" />
+                  <CheckCircle2 className="w-4 h-4 text-brand-400 shrink-0" />
                   <span>15 daqiqada mutaxassis aloqasi</span>
                 </div>
               </div>
@@ -176,7 +176,7 @@ export default function LeadBannerSection() {
                     <button
                       type="submit"
                       disabled={loading}
-                      className="w-full py-4 rounded-full bg-[#00C853] hover:bg-[#00E676] text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 mt-2 disabled:opacity-60"
+                      className="w-full py-4 rounded-full bg-brand-500 hover:bg-brand-400 text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 mt-2 disabled:opacity-60"
                     >
                       {loading ? (
                         <>
