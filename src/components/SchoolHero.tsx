@@ -20,42 +20,42 @@ export default function SchoolHero({ onOpenLeadModal }: AcademyHeroProps) {
       id: 1,
       image: "/images/slides/slide_1_gold_brand.jpg",
       highlightTitle: "ALGORITM ACADEMY",
-      mainTitle: "XUSUSIY MAKTAB & AKADEMIK KURSLAR",
+      mainTitle: "Xususiy maktab va akademik kurslar",
       desc: "1-11 sinf to'liq kunlik xususiy maktabi hamda Prezident maktabi, Digital SAT, IELTS va Davlat grantlariga Qarshidagi yetakchi tayyorlov ekotizimi.",
     },
     {
       id: 2,
       image: "/images/slides/slide_3_cambridge_room.jpg",
       highlightTitle: "PREZIDENT MAKTABI & SAT",
-      mainTitle: "KAFOLATLANGAN NATIJA VA GRANTLAR",
+      mainTitle: "Kafolatlangan natija va grantlar",
       desc: "100+ SAT 1200+ natija, 300+ ixtisoslashtirilgan maktablar va 150+ to'liq davlat granti ko'rsatkichlari.",
     },
     {
       id: 3,
       image: "/images/slides/slide_4_primary_circle.png",
       highlightTitle: "ALGORITM SCHOOL",
-      mainTitle: "1 – 11 CHUQURLASHTIRILGAN TA'LIM",
+      mainTitle: "1–11 chuqurlashtirilgan ta'lim",
       desc: "To'liq kunlik rejim (08:00–17:00), 3 mahal halol issiq ovqat, 15+ bepul to'garak va barcha uy vazifalari maktabda.",
     },
     {
       id: 4,
       image: "/images/slides/slide_2_it_ai_lab.jpg",
       highlightTitle: "IT & SUN'IY INTELLEKT",
-      mainTitle: "ROBOTOTEXNIKA LABORATORIYASI",
+      mainTitle: "Robototexnika laboratoriyasi",
       desc: "Python, C++, Java va amaliy texnologiyalarni maktab yoshidanoq chuqur o'rganish.",
     },
     {
       id: 5,
       image: "/images/slides/slide_5_live_class.jpg",
       highlightTitle: "KICHIK GURUHLAR",
-      mainTitle: "MAKSIMAL 15 O'QUVCHI SINFDA",
+      mainTitle: "Maksimal 15 o'quvchi sinfda",
       desc: "Har bir o'quvchining qobiliyatiga individual yondashuv, haftalik monitoring va mustahkam intizom.",
     },
     {
       id: 6,
       image: "/images/slides/slide_6_campus_hall.jpg",
       highlightTitle: "ZAMONAVIY SHAROIT",
-      mainTitle: "YOTOQXONA & XAVFSIZ TRANSPORT",
+      mainTitle: "Yotoqxona va xavfsiz transport",
       desc: "Uzoqdan kelganlar uchun qulay pansionat va Qarshi shahri bo'ylab xavfsiz avtobus qatnovi.",
     },
   ];
@@ -130,7 +130,7 @@ export default function SchoolHero({ onOpenLeadModal }: AcademyHeroProps) {
             <div className="text-lg sm:text-2xl lg:text-3xl font-black uppercase tracking-wider text-brand-400 leading-none">
               {slides[currentSlide].highlightTitle}
             </div>
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black uppercase tracking-tight text-white leading-tight">
+            <h1 className="font-display text-3xl font-extrabold tracking-tight text-white sm:text-4xl lg:text-5xl">
               {slides[currentSlide].mainTitle}
             </h1>
           </div>

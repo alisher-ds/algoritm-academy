@@ -8,6 +8,7 @@ import {
   ShieldCheck,
   Globe2
 } from "lucide-react";
+import SectionHeader from "@/components/SectionHeader";
 
 export default function SchoolResults() {
   return (
@@ -15,17 +16,14 @@ export default function SchoolResults() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* 1. Sarlavha */}
-        <div className="max-w-3xl mb-12 text-left">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold uppercase tracking-wider mb-3">
-            <Award className="w-3.5 h-3.5 text-emerald-600" /> Rasmiy Akademik Statistika va Ekotizim Yillik Hisoboti
-          </div>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-slate-950 uppercase leading-tight">
-            Akademik Natijalar va Ta'lim Sifati Ko'rsatkichlari
-          </h2>
-          <p className="mt-3 text-slate-600 text-base leading-relaxed">
-            Algoritm Academy ta'lim ekotizimi (Xususiy maktab va Akademik o'quv markazi) bo'yicha davlat grantlari, SAT, Prezident maktablari va fan sertifikatlarining rasmiy tasdiqlangan jamlangan natijalari.
-          </p>
-        </div>
+        <SectionHeader
+ eyebrow="Rasmiy statistika"
+ eyebrowIcon={Award}
+ title="Akademik natijalar va ta'lim sifati"
+ description="Algoritm Academy ta'lim ekotizimi (xususiy maktab va akademik o'quv markazi) bo'yicha davlat grantlari, SAT, Prezident maktablari va fan sertifikatlarining rasmiy tasdiqlangan jamlangan natijalari."
+ wide
+ className="mb-12"
+ />
 
         {/* 2. Asosiy Ko'rsatkichlar Paneli (6 ta Asosiy Blok) */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-8">

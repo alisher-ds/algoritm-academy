@@ -2,6 +2,7 @@
 
 import React from "react";
 import { CheckCircle2, ArrowRight, Heart, Sparkles, BookOpen, Globe, Cpu } from "lucide-react";
+import SectionHeader from "@/components/SectionHeader";
 
 interface SchoolAboutProps {
   onOpenLeadModal: (target?: string) => void;
@@ -40,17 +41,14 @@ export default function SchoolAbout({ onOpenLeadModal }: SchoolAboutProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}
-        <div className="max-w-3xl mb-16 text-left">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold uppercase tracking-wider mb-3">
-            <Sparkles className="w-3.5 h-3.5 text-emerald-600" /> Akademiya Falsafasi
-          </div>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-slate-950 uppercase leading-tight">
-            Nega Aynan <span className="text-emerald-600">Algoritm Academy</span>?
-          </h2>
-          <p className="mt-3 text-slate-600 text-base sm:text-lg leading-relaxed">
-            Biz o'quvchilarni shunchaki dars yodlashga emas, mustaqil fikrlashga, dunyo miqyosida raqobatlasha olishga va milliy o'zligini saqlagan holda yuksak natijalarga erishishga o'rgatamiz.
-          </p>
-        </div>
+        <SectionHeader
+ eyebrow="Akademiya falsafasi"
+ eyebrowIcon={Sparkles}
+ title={<>Nega aynan <span className="text-brand-600">Algoritm Academy</span>?</>}
+ description="Biz o'quvchilarni shunchaki dars yodlashga emas, mustaqil fikrlashga, dunyo miqyosida raqobatlasha olishga va milliy o'zligini saqlagan holda yuksak natijalarga erishishga o'rgatamiz."
+ wide
+ className="mb-16"
+ />
 
         {/* 4 Pillars Bento Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 mb-16">

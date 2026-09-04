@@ -3,6 +3,7 @@
 import React from "react";
 import { ArrowRight, UserPlus, } from "lucide-react";
 import { ECOSYSTEM_DATA } from "@/data/ecosystemData";
+import SectionHeader from "@/components/SectionHeader";
 
 interface AdmissionRoadmapProps {
   onOpenLeadModal: (target?: string) => void;
@@ -14,17 +15,13 @@ export default function AdmissionRoadmap({ onOpenLeadModal }: AdmissionRoadmapPr
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}
-        <div className="max-w-2xl mb-16 text-left">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold uppercase tracking-wider mb-3">
-            <UserPlus className="w-3.5 h-3.5 text-emerald-700" /> Shaffof Qabul 2026
-          </div>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-slate-950 uppercase leading-tight">
-            Maktabga Qabul Bosqichlari
-          </h2>
-          <p className="mt-3 text-slate-600 text-base">
-            Algoritm School o'quvchisi bo'lish uchun 4 oddiy va shaffof bosqich.
-          </p>
-        </div>
+        <SectionHeader
+ eyebrow="Shaffof qabul 2026"
+ eyebrowIcon={UserPlus}
+ title="Maktabga qabul bosqichlari"
+ description="Algoritm School o'quvchisi bo'lish uchun 4 oddiy va shaffof bosqich."
+ className="mb-16"
+ />
 
         {/* 4 Step Roadmap Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">

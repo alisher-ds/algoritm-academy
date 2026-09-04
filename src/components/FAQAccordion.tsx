@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { ChevronDown, HelpCircle, } from "lucide-react";
 import { ECOSYSTEM_DATA } from "@/data/ecosystemData";
+import SectionHeader from "@/components/SectionHeader";
 
 interface FAQAccordionProps {
   categoryFilter?: "maktab" | "markaz" | "kurslar" | "qabul" | "umumiy" | "hammasi";
@@ -32,14 +33,12 @@ export default function FAQAccordion({ categoryFilter = "hammasi" }: FAQAccordio
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}
-        <div className="max-w-2xl mb-14 text-left">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold uppercase tracking-wider mb-3">
-            <HelpCircle className="w-3.5 h-3.5 text-emerald-600" /> Savol-Javoblar
-          </div>
-          <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-950 uppercase">
-            Ko'p Beriladigan Savollar
-          </h2>
-        </div>
+        <SectionHeader
+ eyebrow="Savol-javoblar"
+ eyebrowIcon={HelpCircle}
+ title="Ko'p beriladigan savollar"
+ className="mb-14"
+ />
 
         <div className="space-y-4">
           {filteredFaqs.map((faq, idx) => {

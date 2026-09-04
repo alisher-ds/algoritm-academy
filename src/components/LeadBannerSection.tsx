@@ -79,7 +79,7 @@ export default function LeadBannerSection() {
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 text-emerald-300 text-xs font-bold uppercase tracking-wider border border-white/15">
                 <ShieldCheck className="w-4 h-4 text-brand-400" /> Bepul Diagnostika & Suhbat
               </div>
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black uppercase tracking-tight text-white leading-tight">
+              <h2 className="font-display text-3xl font-extrabold tracking-tight text-white sm:text-4xl lg:text-5xl">
                 Qabul 2026 Uchun <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-brand-400">
                   Arizangizni Qoldiring
@@ -109,7 +109,7 @@ export default function LeadBannerSection() {
                     <div className="w-16 h-16 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center mx-auto">
                       <CheckCircle2 className="w-9 h-9 text-emerald-600" />
                     </div>
-                    <h3 className="text-2xl font-black text-slate-950 uppercase">Arizangiz Qabul Qilindi!</h3>
+                    <h3 className="font-display text-2xl font-extrabold text-slate-950">Arizangiz Qabul Qilindi!</h3>
                     <p className="text-xs text-slate-600 max-w-xs mx-auto font-medium">
                       {error || "Tez orada Algoritm Academy mutaxassisi siz bilan bog'lanadi va bepul dars vaqtini kelishadi."}
                     </p>

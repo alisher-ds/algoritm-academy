@@ -7,6 +7,7 @@ import {
   Search, 
   } from "lucide-react";
 import { ECOSYSTEM_DATA } from "@/data/ecosystemData";
+import SectionHeader from "@/components/SectionHeader";
 
 export default function ResultsSection() {
   const [filter, setFilter] = useState<string>("all");
@@ -40,17 +41,7 @@ export default function ResultsSection() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Header */}
-        <div className="max-w-3xl mb-12 text-left">
-          <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold uppercase tracking-wider mb-3">
-            <Award className="w-3.5 h-3.5 text-emerald-700" /> Tasdiqlangan Natijalar Bazasi
-          </span>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-slate-950 uppercase leading-tight">
-            Akademik Natijadorlik Bazasi
-          </h2>
-          <p className="mt-3 text-slate-600 text-base leading-relaxed">
-            Respublika fan olimpiadalari, xalqaro Digital SAT imtihonlari, 189 maksimal ball hamda davlat grantlari bo'yicha to'liq va shaffof hisobot.
-          </p>
-        </div>
+        <SectionHeader wide eyebrow="Tasdiqlangan natijalar bazasi" eyebrowIcon={Award} title="Akademik natijadorlik bazasi" description="Respublika fan olimpiadalari, xalqaro Digital SAT imtihonlari, 189 maksimal ball hamda davlat grantlari bo'yicha to'liq va shaffof hisobot." className="mb-12" />
 
         {/* Qidiruv & Kategoriya Tanlovi */}
         <div className="bg-white p-4 sm:p-6 rounded-3xl border border-slate-200 shadow-sm mb-10">
