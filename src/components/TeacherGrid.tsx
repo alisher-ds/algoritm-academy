@@ -8,7 +8,17 @@ import {
   GraduationCap,
   Award,
   ArrowRight,
-  CheckCircle2
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Calculator,
+  Globe,
+  Code2,
+  Bot,
+  Atom,
+  BookOpen,
+  Brain,
+  Sparkles
 } from "lucide-react";
 import { ECOSYSTEM_DATA } from "@/data/ecosystemData";
 import SectionHeader from "@/components/SectionHeader";
@@ -26,18 +36,107 @@ const initials = (name: string) =>
     .join("")
     .toUpperCase();
 
-function TeacherAvatar({ name, image, className }: { name: string; image?: string; className?: string }) {
+function TeacherAvatar({
+  name,
+  image,
+  subject = "",
+  className,
+}: {
+  name: string;
+  image?: string;
+  subject?: string;
+  className?: string;
+}) {
   if (image) {
     return <img src={image} alt={name} className={className} />;
   }
+
+  // Fan yo'nalishi bo'yicha maxsus zamonaviy rang va grafik mavzu
+  const sub = subject.toLowerCase();
+  let theme = {
+    gradient: "from-slate-900 via-night-card to-emerald-950",
+    ring: "border-brand-500/50 text-brand-300",
+    Icon: Calculator,
+    label: "Matematika",
+  };
+
+  if (sub.includes("ingliz") || sub.includes("cambridge") || sub.includes("ielts")) {
+    theme = {
+      gradient: "from-slate-900 via-night-card to-teal-950",
+      ring: "border-teal-400/50 text-teal-300",
+      Icon: Globe,
+      label: "Ingliz Tili",
+    };
+  } else if (sub.includes("python") || sub.includes("it") || sub.includes("sun'iy")) {
+    theme = {
+      gradient: "from-slate-900 via-night-card to-cyan-950",
+      ring: "border-cyan-400/50 text-cyan-300",
+      Icon: Code2,
+      label: "IT & Sun'iy Intellekt",
+    };
+  } else if (sub.includes("robot") || sub.includes("lego") || sub.includes("muhandis")) {
+    theme = {
+      gradient: "from-slate-900 via-night-card to-sky-950",
+      ring: "border-sky-400/50 text-sky-300",
+      Icon: Bot,
+      label: "Robototexnika",
+    };
+  } else if (sub.includes("fizika") || sub.includes("stem")) {
+    theme = {
+      gradient: "from-slate-900 via-night-card to-indigo-950",
+      ring: "border-indigo-400/50 text-indigo-300",
+      Icon: Atom,
+      label: "Fizika & STEM",
+    };
+  } else if (sub.includes("boshlang'ich") || sub.includes("metodika")) {
+    theme = {
+      gradient: "from-slate-900 via-night-card to-amber-950",
+      ring: "border-amber-400/50 text-amber-300",
+      Icon: BookOpen,
+      label: "Boshlang'ich Ta'lim",
+    };
+  } else if (sub.includes("mental") || sub.includes("hisob") || sub.includes("shaxmat")) {
+    theme = {
+      gradient: "from-slate-900 via-night-card to-purple-950",
+      ring: "border-purple-400/50 text-purple-300",
+      Icon: Brain,
+      label: "Tezkor Hisob",
+    };
+  } else if (sub.includes("pmt") || sub.includes("mantiq")) {
+    theme = {
+      gradient: "from-slate-900 via-night-card to-emerald-950",
+      ring: "border-brand-400/50 text-brand-300",
+      Icon: Sparkles,
+      label: "PMT Mantiq",
+    };
+  }
+
+  const { Icon } = theme;
+
   return (
     <div
       aria-hidden
-      className={`${className} flex items-center justify-center bg-gradient-to-br from-night via-night-card to-night-deep`}
+      className={`${className} relative flex flex-col items-center justify-center bg-gradient-to-b ${theme.gradient} overflow-hidden`}
     >
-      <span className="font-display text-4xl font-extrabold tracking-tight text-brand-300/90 sm:text-5xl">
-        {initials(name)}
-      </span>
+      {/* Orqa fondagi nozik fanga oid suv belgisi (watermark) */}
+      <div className="absolute inset-0 flex items-center justify-center opacity-10 pointer-events-none">
+        <Icon className="w-32 h-32 text-white" />
+      </div>
+
+      {/* Markaziy elegant muhr va initsiallar */}
+      <div className={`relative z-10 w-20 h-20 sm:w-24 sm:h-24 rounded-full border-2 ${theme.ring} bg-slate-950/70 backdrop-blur-md flex items-center justify-center shadow-xl`}>
+        <span className="font-display text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
+          {initials(name)}
+        </span>
+      </div>
+
+      {/* Fanga oid pastki akademik nishon */}
+      <div className="relative z-10 mt-3 flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/15">
+        <Icon className="w-3.5 h-3.5 text-white/90" />
+        <span className="text-[10px] font-bold text-white/90 tracking-wide uppercase">
+          {theme.label}
+        </span>
+      </div>
     </div>
   );
 }
@@ -257,7 +356,168 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
   const [selectedMember, setSelectedMember] = useState<typeof teamMembers[0] | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
+  // Auto-scroll va drag boshqaruvi
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [isPaused, setIsPaused] = useState(false);
+  const isHoveredRef = useRef(false);
+  const isDraggingRef = useRef(false);
+  const startXRef = useRef(0);
+  const startScrollLeftRef = useRef(0);
+  const hasDraggedRef = useRef(false);
+  const resumeTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Tezlik: soniyasiga ~95px (foydalanuvchiga seziladigan, ravon va professional tezlik)
+  const SPEED_PX_PER_SEC = 95;
+
+  const pauseAutoScroll = useCallback(() => {
+    setIsPaused(true);
+    if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
+  }, []);
+
+  const scheduleResume = useCallback((delay = 2000) => {
+    if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
+    resumeTimerRef.current = setTimeout(() => {
+      if (!isHoveredRef.current && !isDraggingRef.current) {
+        setIsPaused(false);
+      }
+    }, delay);
+  }, []);
+
+  // 1. Silliq va uzluksiz avtomatik yurish (requestAnimationFrame)
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    // Boshlang'ich holatni o'rtadagi to'plamga surib qo'yish (ikkala tomonga cheksiz yurishi uchun)
+    const initScroll = () => {
+      const setWidth = el.scrollWidth / 3;
+      if (setWidth > 0 && el.scrollLeft === 0) {
+        el.scrollLeft = setWidth;
+      }
+    };
+    initScroll();
+
+    let rafId: number;
+    let lastTime = performance.now();
+
+    const tick = (now: number) => {
+      const dt = now - lastTime;
+      lastTime = now;
+
+      if (!isPaused && !isDraggingRef.current && !isHoveredRef.current && dt < 100) {
+        const px = (SPEED_PX_PER_SEC * dt) / 1000;
+        el.scrollLeft += px;
+
+        const setWidth = el.scrollWidth / 3;
+        if (setWidth > 0) {
+          if (el.scrollLeft >= 2 * setWidth) {
+            el.scrollLeft -= setWidth;
+          } else if (el.scrollLeft <= 0) {
+            el.scrollLeft += setWidth;
+          }
+        }
+      }
+
+      rafId = requestAnimationFrame(tick);
+    };
+
+    rafId = requestAnimationFrame(tick);
+    return () => {
+      cancelAnimationFrame(rafId);
+      if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
+    };
+  }, [isPaused]);
+
+  // 2. Foydalanuvchi qo'l bilan surganida chegaralarni cheksiz aylantirish
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const setWidth = el.scrollWidth / 3;
+    if (setWidth > 0) {
+      if (el.scrollLeft >= 2 * setWidth) {
+        el.scrollLeft -= setWidth;
+      } else if (el.scrollLeft <= 10) {
+        el.scrollLeft += setWidth;
+      }
+    }
+  }, []);
+
+  // 3. Sichqoncha bilan ushlab surish (Desktop Mouse Drag)
+  const handleMouseDown = (e: React.MouseEvent) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    isDraggingRef.current = true;
+    hasDraggedRef.current = false;
+    startXRef.current = e.pageX - el.offsetLeft;
+    startScrollLeftRef.current = el.scrollLeft;
+    pauseAutoScroll();
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDraggingRef.current || !scrollRef.current) return;
+    e.preventDefault();
+    const el = scrollRef.current;
+    const x = e.pageX - el.offsetLeft;
+    const walk = (x - startXRef.current) * 1.3;
+    if (Math.abs(walk) > 4) {
+      hasDraggedRef.current = true;
+    }
+    el.scrollLeft = startScrollLeftRef.current - walk;
+  };
+
+  const handleMouseUp = () => {
+    if (isDraggingRef.current) {
+      isDraggingRef.current = false;
+      scheduleResume(2000);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    isHoveredRef.current = false;
+    if (isDraggingRef.current) {
+      isDraggingRef.current = false;
+      scheduleResume(1500);
+    } else {
+      scheduleResume(800);
+    }
+  };
+
+  const handleMouseEnter = () => {
+    isHoveredRef.current = true;
+    pauseAutoScroll();
+  };
+
+  // 4. Barmoq bilan surish (Mobile Touch Events)
+  const handleTouchStart = () => {
+    pauseAutoScroll();
+    hasDraggedRef.current = false;
+  };
+
+  const handleTouchMove = () => {
+    hasDraggedRef.current = true;
+  };
+
+  const handleTouchEnd = () => {
+    scheduleResume(2500);
+  };
+
+  const handleWheel = () => {
+    pauseAutoScroll();
+    scheduleResume(2000);
+  };
+
+  // 5. Oldinga / Orqaga tugmalari
+  const handleStep = (direction: -1 | 1) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    pauseAutoScroll();
+    const stepAmount = 275; // kartochka kengligi + oraliq
+    el.scrollBy({ left: direction * stepAmount, behavior: "smooth" });
+    scheduleResume(3000);
+  };
+
   const handleOpenModal = (member: typeof teamMembers[0]) => {
+    if (hasDraggedRef.current) return;
     setSelectedMember(member);
   };
 
@@ -284,27 +544,28 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
     <div
       key={`${member.id}${keySuffix}`}
       onClick={() => handleOpenModal(member)}
-      className="group relative rounded-2xl sm:rounded-3xl overflow-hidden bg-white border border-slate-200/90 hover:border-brand-500 cursor-pointer shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
+      className="group relative select-none rounded-2xl sm:rounded-3xl overflow-hidden bg-white border border-slate-200/90 hover:border-brand-500 cursor-pointer shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between shrink-0 w-[220px] sm:w-[255px]"
     >
-      {/* 1. Toza, to'siqsiz fotosurat (hech qanday xalaqit beruvchi yorliqlarsiz) */}
-      <div className="relative aspect-[3/3.6] w-full overflow-hidden bg-slate-100">
+      {/* 1. Toza fotosurat yoki maxsus zamonaviy grafik portret */}
+      <div className="relative aspect-[3/3.6] w-full overflow-hidden bg-slate-950">
         <TeacherAvatar
           name={member.name}
           image={member.image}
+          subject={member.subject}
           className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
         />
 
         {/* Fani bo'yicha nozik burchak yorlig'i */}
-        <div className="absolute top-2.5 right-2.5">
-          <span className="px-2.5 py-1 rounded-full bg-slate-950/70 backdrop-blur-md text-white text-[10px] font-bold border border-white/15 shadow-sm">
+        <div className="absolute top-2.5 right-2.5 z-10">
+          <span className="px-2.5 py-1 rounded-full bg-slate-950/75 backdrop-blur-md text-white text-[10px] font-bold border border-white/15 shadow-sm">
             {member.subject.split("&")[0].trim()}
           </span>
         </div>
 
-        {/* Video mavjud bo'lsa, faqat sichqoncha borganda (hover) chiqadigan nafis Play belgisi */}
+        {/* Video mavjud bo'lsa, faqat hover qilinganda nafis Play belgisi */}
         {member.isRealVideo && (
-          <div className="absolute inset-0 bg-slate-950/25 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-            <div className="w-11 h-11 rounded-full bg-brand-500 text-white flex items-center justify-center shadow-xl transform scale-90 group-hover:scale-100 transition-transform">
+          <div className="absolute inset-0 bg-slate-950/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-10">
+            <div className="w-12 h-12 rounded-full bg-brand-500 text-white flex items-center justify-center shadow-xl transform scale-90 group-hover:scale-100 transition-transform">
               <Play className="w-4 h-4 fill-white ml-0.5" />
             </div>
           </div>
@@ -345,35 +606,91 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
     <section className="bg-white py-20 sm:py-28 text-slate-900 border-b border-slate-200/80 overflow-hidden" id="ustozlar">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        {/* Section Header */}
-        <SectionHeader
-          eyebrow="Pedagogik jamoa"
-          eyebrowIcon={GraduationCap}
-          title={<>Kuchli natijador <span className="text-brand-600">ustozlar jamoasi</span></>}
-          description="Algoritm ta'lim tizimining tajribali pedagoglari va repetitor-mentorlari."
-          wide
-          className="mb-8"
-        />
+        {/* Section Header & Navigation Buttons */}
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between mb-8 gap-4">
+          <SectionHeader
+            eyebrow="Pedagogik jamoa"
+            eyebrowIcon={GraduationCap}
+            title={<>Kuchli natijador <span className="text-brand-600">ustozlar jamoasi</span></>}
+            description="Algoritm ta'lim tizimining tajribali pedagoglari va repetitor-mentorlari."
+            wide
+            className="mb-0"
+          />
 
-        {/* Ustozlar bitta qatorda, silliq harakatlanuvchi jonli oqim (Marquee) */}
-        <div className="relative w-full overflow-hidden py-3 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
-          {/* Yon tomonlardagi silliq tuman (fade) */}
-          <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-12 sm:w-28 bg-gradient-to-r from-white via-white/80 to-transparent z-10" />
-          <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-12 sm:w-28 bg-gradient-to-l from-white via-white/80 to-transparent z-10" />
+          {/* Navigatsiya tugmalari (Oldingisi / Keyingisi) */}
+          <div className="flex items-center gap-2 self-start sm:self-end shrink-0">
+            <button
+              onClick={() => handleStep(-1)}
+              aria-label="Oldingi ustozlar"
+              title="Oldingisi"
+              className="w-10 h-10 rounded-full border border-slate-200 bg-white hover:bg-brand-500 hover:text-white hover:border-brand-500 text-slate-700 shadow-sm flex items-center justify-center transition-all duration-200 active:scale-95 cursor-pointer"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => handleStep(1)}
+              aria-label="Keyingi ustozlar"
+              title="Keyingisi"
+              className="w-10 h-10 rounded-full border border-slate-200 bg-white hover:bg-brand-500 hover:text-white hover:border-brand-500 text-slate-700 shadow-sm flex items-center justify-center transition-all duration-200 active:scale-95 cursor-pointer"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
 
-          {/* Silliq harakatlanuvchi lenta — sichqoncha borganda to'xtaydi */}
-          <div className="flex gap-4 sm:gap-5 w-max animate-marquee hover:[animation-play-state:paused] py-2 will-change-transform">
-            {[...teamMembers, ...teamMembers].map((member, idx) => (
-              <div key={`${member.id}-${idx}`} className="w-[210px] sm:w-[245px] shrink-0">
-                {renderCard(member, `-${idx}`)}
-              </div>
-            ))}
+        {/* Ustozlar interaktiv karuseli — o'zi ravon yuradi, qo'l/sichqoncha bilan suriladi */}
+        <div className="relative w-full group/carousel">
+          {/* Desktop floating yon tugmalari */}
+          <button
+            onClick={() => handleStep(-1)}
+            aria-label="Oldingi ustozlar"
+            className="hidden lg:flex absolute -left-3 top-1/2 -translate-y-1/2 z-30 w-11 h-11 rounded-full bg-white/95 shadow-lg border border-slate-200/90 text-slate-700 hover:bg-brand-500 hover:text-white hover:border-brand-500 items-center justify-center transition-all duration-200 active:scale-95 opacity-0 group-hover/carousel:opacity-100 cursor-pointer"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => handleStep(1)}
+            aria-label="Keyingi ustozlar"
+            className="hidden lg:flex absolute -right-3 top-1/2 -translate-y-1/2 z-30 w-11 h-11 rounded-full bg-white/95 shadow-lg border border-slate-200/90 text-slate-700 hover:bg-brand-500 hover:text-white hover:border-brand-500 items-center justify-center transition-all duration-200 active:scale-95 opacity-0 group-hover/carousel:opacity-100 cursor-pointer"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+
+          {/* Zamonaviy shaffof chekka (CSS Mask) — oqargan tuman yo'q, chekkalar tabiiy shaffoflashadi */}
+          <div
+            className="relative w-full overflow-hidden py-3 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8"
+            style={{
+              maskImage: "linear-gradient(to right, transparent 0%, black 48px, black calc(100% - 48px), transparent 100%)",
+              WebkitMaskImage: "linear-gradient(to right, transparent 0%, black 48px, black calc(100% - 48px), transparent 100%)",
+            }}
+          >
+            {/* Real interaktiv suriluvchi lenta (Touch swipe + Mouse drag + Wheel + RAF Auto-scroll) */}
+            <div
+              ref={scrollRef}
+              onScroll={handleScroll}
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseLeave}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+              onWheel={handleWheel}
+              onMouseEnter={handleMouseEnter}
+              className="flex gap-4 sm:gap-5 overflow-x-auto select-none py-2 will-change-scroll cursor-grab active:cursor-grabbing [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+            >
+              {[...teamMembers, ...teamMembers, ...teamMembers].map((member, idx) => (
+                <div key={`${member.id}-${idx}`} className="shrink-0">
+                  {renderCard(member, `-${idx}`)}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
         {/* Foydalanuvchiga qisqa eslatma */}
-        <p className="text-center text-xs text-slate-400 mt-4 flex items-center justify-center gap-1.5 font-medium">
-          <span>Ustoz haqida batafsil ma'lumot va video darsini ko'rish uchun kartochkani bosing</span>
+        <p className="text-center text-xs text-slate-400 mt-4 flex items-center justify-center gap-2 font-medium">
+          <span>👈 Barmoq yoki sichqoncha bilan surishingiz yoki ustoz kartochkasini bosishingiz mumkin 👉</span>
         </p>
 
         {/* Bottom Reassurance Banner */}
@@ -415,6 +732,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
                   <TeacherAvatar
                     name={selectedMember.name}
                     image={selectedMember.image}
+                    subject={selectedMember.subject}
                     className="h-full w-full object-cover object-top"
                   />
                 </div>
@@ -459,6 +777,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
                   <TeacherAvatar
                     name={selectedMember.name}
                     image={selectedMember.image}
+                    subject={selectedMember.subject}
                     className="h-56 w-full object-cover object-top sm:h-72"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
