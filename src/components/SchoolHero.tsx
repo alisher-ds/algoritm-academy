@@ -21,33 +21,33 @@ const slides: Slide[] = [
     id: 1,
     image: "/images/slides/slide_6_campus_hall.jpg",
     kicker: "ALGORITM ACADEMY",
-    title: "XUSUSIY MAKTAB VA AKADEMIYA",
-    desc: "O'zbekistondagi nufuzli 0-11 xususiy maktab va ixtisoslashtirilgan ta'lim ekotizimi.",
-    ctaText: "Birinchi bepul darsga yozilish",
+    title: "Xususiy Maktab & Akademiya",
+    desc: "0–11 sinf xususiy maktabi va ixtisoslashtirilgan ta'lim tizimi.",
+    ctaText: "Bepul sinov darsi",
   },
   {
     id: 2,
     image: "/images/slides/slide_3_cambridge_room.jpg",
     kicker: "CAMBRIDGE STANDARTLARI",
-    title: "INGLIZ TILI VA XALQARO TA'LIM",
-    desc: "Chuqurlashtirilgan chet tillari, individual yondashuv va jahon standartlari.",
+    title: "Ingliz Tili & Xalqaro Ta'lim",
+    desc: "Chuqurlashtirilgan chet tillari va individual yondashuv.",
     ctaText: "Sinov darsiga yozilish",
   },
   {
     id: 3,
     image: "/images/slides/slide_2_it_ai_lab.jpg",
     kicker: "ZAMONAVIY KO'NIKMALAR",
-    title: "ROBOTOTEXNIKA VA SUN'IY INTELLEKT",
-    desc: "Maktab davridanoq zamonaviy dasturlash, IT va robototexnika laboratoriyasi.",
-    ctaText: "Bepul konsultatsiya olish",
+    title: "Robototexnika & Sun'iy Intellekt",
+    desc: "Amaliy dasturlash va zamonaviy texnologiyalar laboratoriyasi.",
+    ctaText: "Konsultatsiya olish",
   },
   {
     id: 4,
     image: "/images/slides/slide_5_live_class.jpg",
-    kicker: "YUQORI AKADEMIK NATIJALAR",
-    title: "DIGITAL SAT VA PREZIDENT MAKTABLARI",
-    desc: "Nufuzli oliygohlar grantlari, xalqaro sertifikatlar va kafolatlangan ta'lim.",
-    ctaText: "Qabul uchun ariza qoldirish",
+    kicker: "YUQORI NATIJALAR",
+    title: "Digital SAT & Prezident Maktabi",
+    desc: "Xalqaro grantlar va nufuzli olimpiadalarga tayyorlov.",
+    ctaText: "Qabulga yozilish",
   },
 ];
 
@@ -83,7 +83,7 @@ export default function SchoolHero({ onOpenLeadModal }: SchoolHeroProps) {
 
   return (
     <section
-      className="relative flex min-h-screen w-full items-end overflow-hidden pb-12 sm:pb-16 lg:pb-20 pt-24 text-white"
+      className="relative flex h-[85svh] sm:h-[90svh] lg:h-screen min-h-[500px] w-full flex-col justify-end overflow-hidden pb-8 sm:pb-12 lg:pb-16 pt-20 text-white"
       aria-label="Algoritm ta'lim ekotizimi bosh sahifasi"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
@@ -97,7 +97,7 @@ export default function SchoolHero({ onOpenLeadModal }: SchoolHeroProps) {
         touchX.current = null;
       }}
     >
-      {/* 1. To'liq ekranli fotosuratlar (Inter Nation uslubida tiniq, yorqin, 4s crossfade) */}
+      {/* 1. To'liq ekranli fotosuratlar (mobilga mos fokus, cho'zilmaydi, 4s crossfade) */}
       <div className="absolute inset-0 z-0">
         {slides.map((s, idx) => (
           <div
@@ -110,43 +110,43 @@ export default function SchoolHero({ onOpenLeadModal }: SchoolHeroProps) {
             <img
               src={s.image}
               alt=""
-              className={`h-full w-full object-cover object-center ${
+              className={`h-full w-full object-cover object-[center_30%] sm:object-center ${
                 idx === currentSlide ? "animate-ken-burns" : ""
               }`}
             />
-            {/* Faqat chap-pastki matn o'qilishi uchun yengil tabiiy vinetka (ekranning 80% qismi ochiq va yorqin) */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/20 to-transparent" />
+            {/* Matn o'qilishi uchun yengil tabiiy vinetka — ekranning katta qismi ochiq va yorug' */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/25 to-transparent" />
           </div>
         ))}
       </div>
 
-      {/* 2. Chap-pastki burchakdagi toza, ixcham, qutisiz kontent (Inter Nation aniq analogi) */}
-      <div className="relative z-10 mx-auto w-full max-w-7xl px-5 sm:px-8 lg:px-12">
-        <div className="max-w-2xl text-left">
+      {/* 2. Chap-pastki burchakdagi ixcham, qutisiz, o'zimizning brend yashil uslubidagi kontent */}
+      <div className="relative z-10 mx-auto w-full max-w-7xl px-4 sm:px-8 lg:px-12">
+        <div className="max-w-xl text-left">
           
-          {/* Oltin/sariq rangdagi kichik brend sarlavhasi (Kicker) */}
-          <p className="animate-fade-up font-extrabold text-amber-400 text-xs sm:text-sm tracking-[0.22em] uppercase drop-shadow-md">
+          {/* O'zimizning brend yashil rangidagi ixcham nishon (Kicker) */}
+          <p className="animate-fade-up font-bold text-brand-400 text-[11px] sm:text-xs tracking-[0.2em] uppercase drop-shadow-md">
             {slide.kicker}
           </p>
 
-          {/* Katta, dadil va sof oq rangdagi H1 (Hech qanday keraksiz qutisiz, rasm ustida to'g'ridan-to'g'ri) */}
-          <h1 className="animate-fade-up mt-2 font-display text-3xl sm:text-5xl lg:text-6xl font-black uppercase leading-[1.08] tracking-tight text-white drop-shadow-lg [animation-delay:60ms]">
+          {/* Ixchamlashtirilgan, o'ta katta bo'lmagan H1 (mobilda 2 qatordan oshmaydi) */}
+          <h1 className="animate-fade-up mt-1.5 font-display text-2xl sm:text-3xl lg:text-4xl font-extrabold uppercase leading-tight tracking-tight text-white drop-shadow-md [animation-delay:60ms]">
             {slide.title}
           </h1>
 
-          {/* Birgina qisqa va aniq jumla (Ortiqcha detallashtirilgan uzun matnlar yo'q!) */}
-          <p className="animate-fade-up mt-3.5 text-sm sm:text-base text-slate-100/90 font-medium max-w-xl leading-relaxed drop-shadow-md [animation-delay:120ms]">
+          {/* Qisqa va lo'nda bitta jumla */}
+          <p className="animate-fade-up mt-2 text-xs sm:text-sm text-slate-200/90 font-medium max-w-md leading-relaxed drop-shadow-sm [animation-delay:120ms]">
             {slide.desc}
           </p>
 
-          {/* Bitta yorqin va chaqiruvchi sarg'ish/olovrang tugma */}
-          <div className="animate-fade-up mt-6 sm:mt-7 flex items-center gap-4 [animation-delay:180ms]">
+          {/* O'zimizning brend yashil rangidagi qulay tugma */}
+          <div className="animate-fade-up mt-4 sm:mt-5 flex items-center gap-3 [animation-delay:180ms]">
             <button
               onClick={() => onOpenLeadModal(`${slide.title} — Bepul dars`)}
-              className="inline-flex items-center gap-2.5 rounded-full bg-gradient-to-r from-amber-500 via-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black px-7 sm:px-9 py-3.5 sm:py-4 text-xs sm:text-sm uppercase tracking-wider shadow-2xl shadow-amber-500/30 transition-all duration-300 hover:scale-[1.02] active:scale-95 cursor-pointer"
+              className="inline-flex items-center gap-2 rounded-full bg-brand-500 hover:bg-brand-400 text-white font-bold px-6 sm:px-7 py-3 text-xs sm:text-sm uppercase tracking-wider shadow-lg shadow-brand-500/25 transition-all duration-200 active:scale-95 cursor-pointer"
             >
-              <Sparkles className="w-4 h-4 fill-slate-950 text-slate-950" />
+              <Sparkles className="w-4 h-4 fill-white text-white" />
               <span>{slide.ctaText}</span>
             </button>
           </div>
@@ -154,15 +154,15 @@ export default function SchoolHero({ onOpenLeadModal }: SchoolHeroProps) {
         </div>
       </div>
 
-      {/* 3. O'ng-pastki burchakdagi nozik, xalaqit bermaydigan slayd indikatorlari */}
-      <div className="absolute bottom-6 right-5 sm:bottom-8 sm:right-10 z-20 flex items-center gap-2">
+      {/* 3. O'ng-pastki burchakdagi nozik indikatorlar */}
+      <div className="absolute bottom-4 right-4 sm:bottom-6 sm:right-8 lg:bottom-10 lg:right-12 z-20 flex items-center gap-1.5">
         {slides.map((_, idx) => (
           <button
             key={idx}
             onClick={() => goTo(idx)}
             aria-label={`Slayd ${idx + 1}`}
-            className={`h-1.5 rounded-full transition-all duration-300 ${
-              idx === currentSlide ? "w-8 bg-amber-400" : "w-2.5 bg-white/35 hover:bg-white/60"
+            className={`h-1 rounded-full transition-all duration-300 ${
+              idx === currentSlide ? "w-6 bg-brand-400" : "w-2 bg-white/40 hover:bg-white/65"
             }`}
           />
         ))}
