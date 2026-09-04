@@ -10,14 +10,14 @@ interface Option {
 }
 
 const OPTIONS: Option[] = [
-  { value: "1-11 Sinf Xususiy Maktabi (To'liq kun)", type: "maktab" },
+  { value: "0–11 Sinf Xususiy Maktabi (To'liq kun)", type: "maktab" },
   { value: "0-Sinf & Maktabgacha Tayyorlov", type: "maktab" },
   { value: "Prezident Maktabiga Tayyorlov (PMT)", type: "kurs" },
-  { value: "Digital SAT & 100% Xalqaro Grantlar", type: "kurs" },
-  { value: "IELTS 7.5+ & CEFR Intensive", type: "kurs" },
-  { value: "Matematika Milliy Sertifikat (A+) & DTM", type: "kurs" },
-  { value: "Tarix va Ona tili Milliy Sertifikatlar", type: "kurs" },
-  { value: "Boshqa yo'nalish / Maslahat", type: "umumiy" },
+  { value: "Digital SAT & Xalqaro Universitetlar", type: "kurs" },
+  { value: "IELTS 7.5+ & Akademik Ingliz Tili", type: "kurs" },
+  { value: "Matematika (Milliy Sertifikat A+ & DTM)", type: "kurs" },
+  { value: "Robototexnika & Sun'iy Intellekt", type: "kurs" },
+  { value: "Boshqa yo'nalish / Maslahat olish", type: "umumiy" },
 ];
 
 export default function LeadBannerSection() {
