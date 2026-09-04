@@ -80,6 +80,15 @@ export default function AloqaPage() {
                       </span>
                     </div>
                     <div className="flex items-center gap-3">
+                      <Send className="w-5 h-5 text-emerald-600 shrink-0" />
+                      <span>
+                        <strong>Telegram admin:</strong>{" "}
+                        <a href={ECOSYSTEM_DATA.school.telegram} target="_blank" rel="noreferrer" className="text-emerald-700 font-bold hover:underline">
+                          @algoritm_xususiy_maktab
+                        </a>
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3">
                       <Clock className="w-5 h-5 text-emerald-600 shrink-0" />
                       <span>
                         <strong>Ish vaqti:</strong> {ECOSYSTEM_DATA.school.workingHours} (Dush - Shanba)
@@ -140,6 +149,10 @@ export default function AloqaPage() {
                         <strong>Telefon:</strong>{" "}
                         <a href={`tel:${ECOSYSTEM_DATA.academy.phone.replace(/\D/g, "")}`} className="text-emerald-700 font-bold hover:underline font-mono">
                           {ECOSYSTEM_DATA.academy.phone}
+                        </a>
+                        <span className="text-slate-400 font-medium">/</span>{" "}
+                        <a href={`tel:${(ECOSYSTEM_DATA.academy.phoneSecondary ?? "").replace(/\D/g, "")}`} className="text-emerald-700 font-bold hover:underline font-mono">
+                          {ECOSYSTEM_DATA.academy.phoneSecondary}
                         </a>
                       </span>
                     </div>

@@ -92,6 +92,21 @@ export default function Footer() {
                 <a href={`tel:${ECOSYSTEM_DATA.contact.phoneMain.replace(/\D/g, "")}`} className="hover:text-white font-mono">
                   {ECOSYSTEM_DATA.contact.phoneMain}
                 </a>
+                <span className="text-slate-600">— O'quv markazi</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Phone className="w-4 h-4 text-emerald-400 shrink-0" />
+                <a href={`tel:${ECOSYSTEM_DATA.contact.phoneSecondary.replace(/\D/g, "")}`} className="hover:text-white font-mono">
+                  {ECOSYSTEM_DATA.contact.phoneSecondary}
+                </a>
+                <span className="text-slate-600">— O'quv markazi 2-raqam</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Phone className="w-4 h-4 text-emerald-400 shrink-0" />
+                <a href={`tel:${ECOSYSTEM_DATA.school.phone.replace(/\D/g, "")}`} className="hover:text-white font-mono">
+                  {ECOSYSTEM_DATA.school.phone}
+                </a>
+                <span className="text-slate-600">— Maktab qabuli</span>
               </div>
             </div>
 

@@ -6,17 +6,20 @@ import { ECOSYSTEM_DATA } from "@/data/ecosystemData";
 
 interface FAQAccordionProps {
   categoryFilter?: "maktab" | "markaz" | "kurslar" | "qabul" | "umumiy" | "hammasi";
-  onOpenLeadModal?: () => void;
 }
 
-export default function FAQAccordion({ categoryFilter = "hammasi", onOpenLeadModal }: FAQAccordionProps) {
+export default function FAQAccordion({ categoryFilter = "hammasi" }: FAQAccordionProps) {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   const filteredFaqs = ECOSYSTEM_DATA.faqs.filter((f) => {
     if (categoryFilter === "hammasi") return true;
     if (f.category === categoryFilter) return true;
-    if (f.category === ("umumiy" as any)) return true;
+    // "umumiy" savollar har bir bo'limda foydali — doim qo'shiladi
+    if (f.category === "umumiy") return true;
+    // "kurslar" so'rovi markaz (o'quv markazi) savollarini anglatadi
     if (categoryFilter === "kurslar" && f.category === "markaz") return true;
+    // "qabul" so'rovi maktabga qabul savollari bilan birga umumiy savollarni ko'rsatadi
+    if (categoryFilter === "qabul" && f.category === "maktab") return true;
     return false;
   });
 

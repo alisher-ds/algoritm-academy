@@ -107,7 +107,7 @@ export default function ReelsShowcase() {
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
           <div className="max-w-2xl">
             <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold uppercase tracking-wider mb-3">
-              <Video className="w-3.5 h-3.5 text-brand" /> Video Lavhalar (Demo)
+              <Video className="w-3.5 h-3.5 text-brand" /> Video Lavhalar
             </span>
             <h2 className="text-3xl sm:text-4xl font-black tracking-tight uppercase text-white">
               Jonli Jarayon & Reels Videolar

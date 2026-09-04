@@ -63,10 +63,7 @@ export default function MarkazPage() {
         <ResultsSection />
 
         {/* 9. FAQ Accordion */}
-        <FAQAccordion
-          categoryFilter="markaz"
-          onOpenLeadModal={() => handleOpenLeadModal("O'quv markazi savoli")}
-        />
+        <FAQAccordion categoryFilter="markaz" />
 
         {/* 10. Lead Capture Banner */}
         <LeadBannerSection />
