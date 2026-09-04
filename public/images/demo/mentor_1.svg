@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="500" viewBox="0 0 400 500">
+  <defs>
+    <linearGradient id="avatarGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e293b" />
+      <stop offset="100%" stop-color="#0f172a" />
+    </linearGradient>
+  </defs>
+  <rect width="400" height="500" fill="url(#avatarGrad)" />
+  
+  <!-- Subtle Lighting -->
+  <circle cx="200" cy="200" r="120" fill="#00c853" fill-opacity="0.15" />
+  
+  <!-- Stylized Portrait Avatar Circle -->
+  <circle cx="200" cy="200" r="85" fill="#0b1329" stroke="#00c853" stroke-width="3" />
+  <text x="200" y="222" fill="#00c853" font-family="system-ui, -apple-system, sans-serif" font-size="54" font-weight="900" text-anchor="middle">AK</text>
+
+  <!-- Bottom Details -->
+  <rect x="0" y="380" width="400" height="120" fill="#0b1329" fill-opacity="0.95" />
+  <line x1="0" y1="380" x2="400" y2="380" stroke="#00c853" stroke-width="2" />
+  
+  <text x="200" y="425" fill="#ffffff" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="800" text-anchor="middle">Abdurashid Karimov</text>
+  <text x="200" y="455" fill="#00c853" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="600" text-anchor="middle">Bosh Matematika Mentori</text>
+</svg>

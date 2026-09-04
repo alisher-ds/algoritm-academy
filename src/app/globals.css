@@ -1,0 +1,70 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-inter: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  --brand-emerald: #00C853;
+  --brand-emerald-light: #00E676;
+  --brand-emerald-dark: #009624;
+  --brand-lime: #76FF03;
+  --bg-natural: #F8FAFC;
+  --bg-white: #FFFFFF;
+  --text-dark: #0F172A;
+  --text-muted: #475569;
+  --card-border: rgba(15, 23, 42, 0.08);
+}
+
+html {
+  scroll-behavior: smooth;
+  font-family: var(--font-inter);
+  background-color: #FFFFFF;
+  color: #0F172A;
+}
+
+body {
+  background-color: #FFFFFF;
+  color: #0F172A;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Inter Nation Style Glow & Shimmer */
+.glow-emerald {
+  box-shadow: 0 0 25px rgba(0, 230, 118, 0.25);
+}
+
+.glow-emerald-lg {
+  box-shadow: 0 10px 40px rgba(0, 200, 83, 0.15);
+}
+
+/* Marquee Carousel */
+@keyframes marquee {
+  0% { transform: translateX(0%); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  display: flex;
+  width: 200%;
+  animation: marquee 25s linear infinite;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 7px;
+}
+::-webkit-scrollbar-track {
+  background: #F1F5F9;
+}
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}

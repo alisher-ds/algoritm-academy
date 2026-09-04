@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="700" viewBox="0 0 900 700">
+  <defs>
+    <linearGradient id="heroGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="50%" stop-color="#0b1329" />
+      <stop offset="100%" stop-color="#020617" />
+    </linearGradient>
+    <radialGradient id="heroGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#00c853" stop-opacity="0.25" />
+      <stop offset="100%" stop-color="#00c853" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+  <rect width="900" height="700" fill="url(#heroGrad)" />
+  <rect width="900" height="700" fill="url(#heroGlow)" />
+
+  <!-- Modern Tech Geometric Shapes -->
+  <circle cx="450" cy="330" r="140" fill="none" stroke="#00c853" stroke-width="1.5" stroke-opacity="0.3" />
+  <circle cx="450" cy="330" r="100" fill="none" stroke="#00c853" stroke-width="1.5" stroke-dasharray="8,8" stroke-opacity="0.5" />
+
+  <!-- Center Big Play Button -->
+  <circle cx="450" cy="330" r="48" fill="#00c853" />
+  <polygon points="442,312 442,348 472,330" fill="#0b1329" />
+
+  <!-- Top Badge -->
+  <rect x="330" y="60" width="240" height="40" rx="20" fill="#00c853" fill-opacity="0.15" stroke="#00c853" stroke-width="1" />
+  <text x="450" y="85" fill="#00c853" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" letter-spacing="1">INTERFAOL DARSLAR</text>
+
+  <!-- Bottom Caption -->
+  <text x="450" y="520" fill="#ffffff" font-family="system-ui, -apple-system, sans-serif" font-size="28" font-weight="900" text-anchor="middle">Zamonaviy Dars &amp; Ta'lim Muhiti</text>
+  <text x="450" y="560" fill="#94a3b8" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="500" text-anchor="middle">Jonli dars jarayoni va video darsliklar ko'rgazmasi</text>
+</svg>

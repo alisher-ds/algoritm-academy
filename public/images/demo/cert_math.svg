@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="750" viewBox="0 0 600 750">
+  <rect width="600" height="750" fill="#ffffff" stroke="#cbd5e1" stroke-width="2" rx="8" />
+  
+  <!-- Top Gold Header -->
+  <rect x="0" y="0" width="600" height="90" fill="#0b1329" />
+  <circle cx="60" cy="45" r="22" fill="#00c853" />
+  <text x="60" y="52" font-family="Arial, sans-serif" font-size="20" font-weight="900" fill="#0b1329" text-anchor="middle">A</text>
+  
+  <text x="100" y="40" font-family="Arial, sans-serif" font-size="16" font-weight="900" fill="#ffffff" letter-spacing="1">O'ZBEKISTON RESPUBLIKASI</text>
+  <text x="100" y="60" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#00c853">BILIM VA MALAKALARNI BAHOLASH AGENTLIGI (DTM)</text>
+
+  <!-- Title -->
+  <text x="300" y="140" font-family="Georgia, serif" font-size="24" font-weight="bold" fill="#0f172a" text-anchor="middle">MILLIY SERTIFIKAT</text>
+  <text x="300" y="165" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#009624" text-anchor="middle">UMUMTA'LIM FANLARINI BILISH DARAJASI BO'YICHA</text>
+
+  <!-- Candidate Details -->
+  <rect x="40" y="200" width="520" height="150" fill="#f8fafc" stroke="#e2e8f0" rx="8" />
+  <text x="65" y="235" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#64748b">F.I.SH:</text>
+  <text x="65" y="260" font-family="Arial, sans-serif" font-size="18" font-weight="900" fill="#0b1329">ABDURASHID KARIMOV</text>
+
+  <text x="65" y="300" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#64748b">FAN NOMI:</text>
+  <text x="65" y="325" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#009624">MATEMATIKA (CHUQURLASHTIRILGAN)</text>
+
+  <text x="360" y="235" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#64748b">REYTING DARAJASI:</text>
+  <rect x="360" y="245" width="100" height="50" fill="#00c853" rx="6" />
+  <text x="410" y="280" font-family="Arial, sans-serif" font-size="28" font-weight="900" fill="#0b1329" text-anchor="middle">A+</text>
+
+  <!-- Score Breakdown -->
+  <rect x="40" y="380" width="520" height="160" fill="#f1f5f9" rx="8" />
+  <text x="65" y="415" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#334155">To'plangan Ball: <tspan font-weight="900" font-size="20" fill="#009624">100.0 / 100.0 (Maksimal)</tspan></text>
+  <text x="65" y="450" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#64748b">Foiz ko'rsatkichi: <tspan fill="#0f172a">100% Imtiyozli Sertifikat</tspan></text>
+  <text x="65" y="485" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#64748b">OTM Kirish Imtiyozi: <tspan fill="#009624" font-weight="bold">Maksimal Ball (Imtihonsiz)</tspan></text>
+  <text x="65" y="515" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#64748b">Sertifikat Raqami: <tspan font-family="monospace">MS-2025-984421</tspan></text>
+
+  <!-- Gold Seal Stamp -->
+  <g transform="translate(380, 560)">
+    <circle cx="80" cy="60" r="50" fill="#00c853" fill-opacity="0.15" stroke="#00c853" stroke-width="2" />
+    <circle cx="80" cy="60" r="40" fill="none" stroke="#009624" stroke-width="1.5" stroke-dasharray="6,3" />
+    <text x="80" y="55" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#009624" text-anchor="middle">DAVLAT TEST</text>
+    <text x="80" y="70" font-family="Arial, sans-serif" font-size="10" font-weight="900" fill="#009624" text-anchor="middle">MARKAZI</text>
+  </g>
+
+  <text x="40" y="710" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#94a3b8">QASHQADARYO VILOYATI · ALGORITM ACADEMY · RASMIY MA'LUMOT</text>
+</svg>
