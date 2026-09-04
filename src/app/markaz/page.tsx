@@ -69,7 +69,7 @@ export default function MarkazPage() {
         />
 
         {/* 10. Lead Capture Banner */}
-        <LeadBannerSection onOpenLeadModal={handleOpenLeadModal} />
+        <LeadBannerSection />
       </main>
 
       {/* Footer */}

@@ -1,40 +1,79 @@
 "use client";
 
 import React, { useState } from "react";
-import { ArrowRight, CheckCircle2, ShieldCheck } from "lucide-react";
+import { ArrowRight, CheckCircle2, ShieldCheck, Loader2, Info } from "lucide-react";
+import { submitLead, type LeadType } from "@/lib/leads";
 
-interface LeadBannerSectionProps {
-  onOpenLeadModal?: (targetName?: string) => void;
+interface Option {
+  value: string;
+  type: LeadType;
 }
 
-export default function LeadBannerSection({ onOpenLeadModal }: LeadBannerSectionProps) {
+const OPTIONS: Option[] = [
+  { value: "1-11 Sinf Xususiy Maktabi (To'liq kun)", type: "maktab" },
+  { value: "0-Sinf & Maktabgacha Tayyorlov", type: "maktab" },
+  { value: "Prezident Maktabiga Tayyorlov (PMT)", type: "kurs" },
+  { value: "Digital SAT & 100% Xalqaro Grantlar", type: "kurs" },
+  { value: "IELTS 7.5+ & CEFR Intensive", type: "kurs" },
+  { value: "Matematika Milliy Sertifikat (A+) & DTM", type: "kurs" },
+  { value: "Tarix va Ona tili Milliy Sertifikatlar", type: "kurs" },
+  { value: "Boshqa yo'nalish / Maslahat", type: "umumiy" },
+];
+
+export default function LeadBannerSection() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [direction, setDirection] = useState("1-11 Sinf Xususiy Maktabi");
+  const [direction, setDirection] = useState(OPTIONS[0].value);
+  const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !phone) return;
-    setSubmitted(true);
-    setTimeout(() => {
+    const digits = phone.replace(/\D/g, "");
+    if (!name.trim() || digits.length < 9) return;
+
+    setLoading(true);
+    setError(null);
+    const option = OPTIONS.find((o) => o.value === direction) ?? OPTIONS[0];
+    const res = await submitLead({
+      name: name.trim(),
+      phone: phone.trim(),
+      type: option.type,
+      targetInterest: option.value,
+      source: "Sayt — pastki ariza formasi",
+    });
+
+    setLoading(false);
+    if (res.ok) {
+      setSubmitted(true);
+      setError(null);
       setName("");
       setPhone("");
-      setSubmitted(false);
-    }, 4000);
+      setTimeout(() => setSubmitted(false), 5000);
+    } else if (res.storedLocally) {
+      // Server ulanmagan bo'lsa ham lokal saqlanadi, foydalanuvchiga halol xabar
+      setSubmitted(true);
+      setError("Serverga ulanish imkoni bo'lmadi — ariza shu qurilmada saqlandi. Tez orada qayta urinib ko'ring yoki qo'ng'iroq qiling.");
+      setName("");
+      setPhone("");
+      setTimeout(() => {
+        setSubmitted(false);
+        setError(null);
+      }, 8000);
+    } else {
+      setError(res.error || "Xatolik yuz berdi, qayta urinib ko'ring");
+    }
   };
 
   return (
     <section className="bg-slate-50 py-20 sm:py-28 text-slate-900 border-b border-slate-200/80" id="ariza">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
         <div className="rounded-3xl bg-slate-950 text-white p-8 sm:p-14 lg:p-16 relative overflow-hidden shadow-2xl">
-          
           {/* Ambient Glow */}
           <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-500/15 rounded-full blur-3xl pointer-events-none"></div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center relative z-10">
-            
             {/* Left Column: Heading & Value */}
             <div className="lg:col-span-6 space-y-6 text-left">
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 text-emerald-300 text-xs font-bold uppercase tracking-wider border border-white/15">
@@ -72,7 +111,7 @@ export default function LeadBannerSection({ onOpenLeadModal }: LeadBannerSection
                     </div>
                     <h3 className="text-2xl font-black text-slate-950 uppercase">Arizangiz Qabul Qilindi!</h3>
                     <p className="text-xs text-slate-600 max-w-xs mx-auto font-medium">
-                      Tez orada Algoritm Academy mutaxassisi siz bilan bog'lanadi va bepul dars vaqtini kelishadi.
+                      {error || "Tez orada Algoritm Academy mutaxassisi siz bilan bog'lanadi va bepul dars vaqtini kelishadi."}
                     </p>
                   </div>
                 ) : (
@@ -84,6 +123,7 @@ export default function LeadBannerSection({ onOpenLeadModal }: LeadBannerSection
                       <input
                         type="text"
                         required
+                        minLength={2}
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         placeholder="Masalan: Sardorbek Alimov"
@@ -99,7 +139,10 @@ export default function LeadBannerSection({ onOpenLeadModal }: LeadBannerSection
                         type="tel"
                         required
                         value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
+                        onChange={(e) => {
+                          const digits = e.target.value.replace(/\D/g, "");
+                          setPhone(digits ? `+998 ${digits.replace(/^998/, "")}` : "");
+                        }}
                         placeholder="+998 (90) 123-45-67"
                         className="w-full px-4 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 text-sm font-mono focus:outline-none focus:border-emerald-600 focus:bg-white transition shadow-xs"
                       />
@@ -114,30 +157,44 @@ export default function LeadBannerSection({ onOpenLeadModal }: LeadBannerSection
                         onChange={(e) => setDirection(e.target.value)}
                         className="w-full px-4 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 text-sm font-medium focus:outline-none focus:border-emerald-600 focus:bg-white transition shadow-xs"
                       >
-                        <option value="1-11 Sinf Xususiy Maktabi">🏫 1-11 Sinf Xususiy Maktabi (To'liq kun)</option>
-                        <option value="Prezident Maktabiga Tayyorlov (PMT)">🎯 Prezident Maktabiga Tayyorlov (PMT 3-4 sinf)</option>
-                        <option value="Digital SAT & 100% Xalqaro Grantlar">🌐 Digital SAT (1200+, 1500+ Elita)</option>
-                        <option value="IELTS 7.5+ & CEFR Intensive">🇬🇧 IELTS 7.5+ & CEFR Intensive</option>
-                        <option value="Matematika Milliy Sertifikat (A+) & DTM">📐 Matematika Milliy Sertifikat (A+) & DTM</option>
-                        <option value="Tarix va Ona tili Milliy Sertifikat">📚 Tarix va Ona tili Milliy Sertifikatlari</option>
+                        {OPTIONS.map((o) => (
+                          <option key={o.value} value={o.value}>
+                            {o.type === "maktab" ? "🏫 " : o.type === "kurs" ? "🎓 " : "📋 "}
+                            {o.value}
+                          </option>
+                        ))}
                       </select>
                     </div>
 
+                    {error && !submitted && (
+                      <p className="flex items-start gap-2 text-xs text-rose-600 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2.5">
+                        <Info className="w-4 h-4 shrink-0 mt-0.5" />
+                        <span>{error}</span>
+                      </p>
+                    )}
+
                     <button
                       type="submit"
-                      className="w-full py-4 rounded-full bg-[#00C853] hover:bg-[#00E676] text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 mt-2"
+                      disabled={loading}
+                      className="w-full py-4 rounded-full bg-[#00C853] hover:bg-[#00E676] text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 mt-2 disabled:opacity-60"
                     >
-                      <span>Arizani Topshirish</span>
-                      <ArrowRight className="w-4 h-4" />
+                      {loading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" /> Yuborilmoqda...
+                        </>
+                      ) : (
+                        <>
+                          <span>Arizani Topshirish</span>
+                          <ArrowRight className="w-4 h-4" />
+                        </>
+                      )}
                     </button>
                   </form>
                 )}
               </div>
             </div>
-
           </div>
         </div>
-
       </div>
     </section>
   );
