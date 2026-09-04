@@ -72,10 +72,7 @@ export default function HomePage() {
         <AdmissionRoadmap onOpenLeadModal={handleOpenLeadModal} />
 
         {/* 12. Savol-Javoblar (FAQ) */}
-        <FAQAccordion
-          categoryFilter="umumiy"
-          onOpenLeadModal={() => handleOpenLeadModal("Umumiy savol")}
-        />
+        <FAQAccordion categoryFilter="umumiy" />
 
         {/* 13. Universal Ariza Topshirish Bloki */}
         <LeadBannerSection />

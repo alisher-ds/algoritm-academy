@@ -82,7 +82,7 @@ export default function Hero({ onOpenLeadModal, onOpenVideoModal, onOpenQuizModa
             <div className="pt-6 border-t border-slate-200 grid grid-cols-3 gap-6 max-w-lg">
               <div>
                 <div className="text-2xl sm:text-3xl font-black text-slate-950 tracking-tight">250+</div>
-                <div className="text-xs text-slate-500 font-bold mt-0.5">Milliy sertifikat (A+)</div>
+                <div className="text-xs text-slate-500 font-bold mt-0.5">Matematika Milliy sertifikati (A+)</div>
               </div>
               <div className="border-x border-slate-200 px-4">
                 <div className="text-2xl sm:text-3xl font-black text-emerald-700 tracking-tight">Top 1</div>

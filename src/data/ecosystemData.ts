@@ -9,14 +9,6 @@ export interface SchoolProgram {
   badge: string;
 }
 
-export interface SchoolFeature {
-  id: string;
-  title: string;
-  description: string;
-  icon: string;
-  badge?: string;
-}
-
 export interface Course {
   id: string;
   title: string;
@@ -38,27 +30,6 @@ export interface Course {
   isPopular?: boolean;
 }
 
-export interface Teacher {
-  id: string;
-  name: string;
-  role: string;
-  subject: string;
-  type: "maktab" | "markaz" | "hammasi";
-  score: string;
-  scoreLabel: string;
-  certType: string;
-  experience: string;
-  studentsCount: string;
-  education: string;
-  image: string;
-  classThumbnail: string;
-  classBadge: string;
-  certificateImage: string;
-  videoUrl: string;
-  bio: string;
-  achievements: string[];
-}
-
 export interface Achievement {
   id: string;
   studentName: string;
@@ -70,23 +41,6 @@ export interface Achievement {
   universityOrCert?: string;
   image?: string;
 }
-
-export const COMPARISON_STATS_2025_2026 = [
-  { metric: "SAT 1200+ Natijalari", y2025: "32 Nafar", y2026: "57 Nafar", change: "+78% O'sish", isPositive: true },
-  { metric: "Eng Yuqori SAT Bali", y2025: "1510 Ball", y2026: "1520 Ball (Top 1% Global)", change: "+10 Ball (Top 1%)", isPositive: true },
-  { metric: "SAT orqali 4 Yillik Davlat Granti", y2025: "— (Yangi)", y2026: "27 Nafar (Iqtisodiyot, Milliy OTM, IT)", change: "27 Nafar Byudjet", isPositive: true },
-  { metric: "Tarix Milliy Sertifikatlari", y2025: "93 Ta", y2026: "400+ Ta", change: "4x Barobardan Ko'p", isPositive: true },
-  { metric: "Ona Tili Milliy Sertifikatlari", y2025: "40+ Ta", y2026: "80+ Ta", change: "2x Barobar", isPositive: true },
-  { metric: "IELTS Eng Yuqori Natija", y2025: "IELTS 6.5", y2026: "IELTS 8.0 (Global Top)", change: "+1.5 Ball", isPositive: true },
-  { metric: "OTM Qabullari (Nomma-nom)", y2025: "25 Nafar (7 Grant)", y2026: "85+ Nafar (46+ Grant)", change: "Grantlar 6.5x", isPositive: true },
-  { metric: "189.0 Maksimal Ball (Muddatidan oldin)", y2025: "1 Nafar", y2026: "12 Nafar (Muddatidan oldin)", change: "12x O'sish", isPositive: true },
-  { metric: "PMT 2-Bosqichga O'tganlar", y2025: "39+ Nafar (4 tasi 100%)", y2026: "80+ Nafar (135 dan 82 / 61%)", change: "2x Barobar", isPositive: true },
-  { metric: "Al-Xorazmiy Maktablariga Qabul", y2025: "3 Nafar", y2026: "44 Nafar (22 ta 4-sinf, 22 ta 5-9)", change: "14x Portlash!", isPositive: true },
-  { metric: "Muhandislik Maktabiga Qabul", y2025: "—", y2026: "25 Nafar", change: "Yangi Yo'nalish", isPositive: true },
-  { metric: "Shahar Ixtisoslashtirilgan Maktab", y2025: "10–11 Nafar", y2026: "28–33 Nafar", change: "3x Barobar", isPositive: true },
-  { metric: "Prezident Maktabi Yakuniy Qabul", y2025: "6 Nafar (4, 10, 13, 17...)", y2026: "5 Nafar (4, 12, 14, 15, 21)", change: "Stabil Yuqori", isPositive: true },
-  { metric: "Respublika Olimpiada Bosh Mukofoti", y2025: "KHISO 1-o'rin", y2026: "60 000 000 UZS (94 Ball)", change: "Respublika Chempioni", isPositive: true },
-];
 
 export interface FAQ {
   question: string;
@@ -107,7 +61,7 @@ export const ECOSYSTEM_DATA = {
   ],
   contact: {
     phoneMain: "+998 (90) 895-05-05",
-    phoneSecondary: "+998 (94) 895-05-05",
+    phoneSecondary: "+998 (88) 895-05-05",
     telegram: "https://t.me/Algoritm_Academy",
     instagram: "https://instagram.com/algoritm.academy",
     address: "Qarshi shahri, Mustaqillik shoh ko'chasi (Geolog MFY)",
@@ -121,7 +75,9 @@ export const ECOSYSTEM_DATA = {
     description: "Qarshi shahridagi matematika, ingliz tili va IT chuqurlashtirilgan, 3 mahal parhezli issiq ovqat, to'garaklar va to'liq kunlik ta'lim dasturiga ega zamonaviy xususiy maktab.",
     address: "Qarshi shahri, Mustaqillik shoh ko'chasi (Geolog MFY)",
     landmark: "Mo'ljal: Yangi Shifoxona qarshisida",
-    phone: "+998 (90) 895-05-05",
+    // Maktab qabul raqami — data_mastery_algoritm.md (message arxivi) asosida
+    phone: "+998 (99) 141-05-05",
+    telegram: "https://t.me/algoritm_xususiy_maktab",
     workingHours: "08:00 - 18:00",
     stats: [
       { label: "Sinf kvotasi", value: "Qat'iy 15 nafar", icon: "Sparkles" },
@@ -244,7 +200,9 @@ export const ECOSYSTEM_DATA = {
     description: "Prezident maktabiga tayyorlov (PMT), SAT 1400+, IELTS 8.0, Matematika Milliy Sertifikat va DTM grant repetitorlik kurslari.",
     address: "Qarshi shahri, Islom Karimov ko'chasi 291V-uy",
     landmark: "Mo'ljal: Zulfina Med klinikasi yonida",
+    // O'quv markazi raqamlari — data_mastery_algoritm.md asosida
     phone: "+998 (90) 895-05-05",
+    phoneSecondary: "+998 (88) 895-05-05",
     workingHours: "08:00 - 20:00",
   },
   courses: [
@@ -344,32 +302,6 @@ export const ECOSYSTEM_DATA = {
       },
       badge: "IELTS 8.5",
       isPopular: true,
-    },
-  ],
-  teachers: [
-    {
-      id: "t1",
-      name: "Abdurashid Karimov",
-      role: "Bosh Matematika Mentori",
-      subject: "Matematika & DTM",
-      type: "hammasi" as const,
-      score: "A+",
-      scoreLabel: "Milliy Sertifikat",
-      certType: "Davlat A+ Sertifikati",
-      experience: "5 yil",
-      studentsCount: "650+",
-      education: "Oliy toifali matematika pedagogi",
-      image: "/images/demo/mentor_1.svg",
-      classThumbnail: "/images/demo/reel_3.svg",
-      classBadge: "450+ O'quvchilar",
-      certificateImage: "/images/demo/cert_math.svg",
-      videoUrl: "/videos/reel_math4d.mp4",
-      bio: "Matematika fanidan o'quvchilarni milliy sertifikat va OTM grantlariga tayyorlovchi yetakchi murabbiy.",
-      achievements: [
-        "Matematika milliy sertifikatiga tayyorlov yetakchisi",
-        "OTM grantlariga yuzlab o'quvchilarni kiritgan",
-        "Algoritm ta'lim tizimi bosh murabbiyi",
-      ],
     },
   ],
   achievements: [
@@ -785,42 +717,100 @@ export const ECOSYSTEM_DATA = {
     {
       category: "maktab" as const,
       question: "Algoritm School xususiy maktabiga qabul qanday bo'ladi?",
-      answer: "Qabul 1-11 sinf o'quvchilari uchun matematika va mantiqiy fikrlash bo'yicha bepul diagnostik sinov testi hamda psixolog suhbati asosida amalga oshiriladi.",
+      answer: "Qabul 1-11 sinf o'quvchilari uchun 1 kunlik 100% bepul sinov darsi, ochiq eshiklar kuni hamda matematika va ingliz tili bo'yicha bilim monitoringi asosida amalga oshiriladi. Yuqori sinflar (7-10) uchun alohida GRAND imtihoni mavjud.",
+    },
+    {
+      category: "maktab" as const,
+      question: "Sinf va 0-sinf uchun nechta o'rin bor?",
+      answer: "Har bir sinf uchun qat'iy 15 nafar o'quvchi kvotasi belgilangan (1-«A» o'zbek, rus va boshqa sinflar). 0-sinf (maktabgacha tayyorlov) uchun esa atigi 18 ta o'rin mavjud — qabul cheklangan.",
     },
     {
       category: "maktab" as const,
       question: "Maktabda dars vaqti va ovqatlanish qanday tashkil etilgan?",
-      answer: "Darslar soat 08:30 dan 17:00 gacha to'liq kunlik rejimda bo'lib, o'quvchilarga kuniga 3 mahal parhezli issiq taom, darsdan so'ng to'garaklar va uy vazifalarini bajarish xizmati taqdim etiladi.",
+      answer: "Darslar 08:00 dan 17:00 gacha to'liq kunlik rejimda bo'lib, o'quvchilarga kuniga 3 mahal halol issiq taom, darsdan so'ng 15 dan ortiq bepul to'garaklar (robototexnika, shaxmat, karate, raqs, mental arifmetika) hamda uy vazifalarini bajarish xizmati taqdim etiladi.",
     },
     {
       category: "maktab" as const,
-      question: "Maktab avtobusi (transport) xizmati bormi?",
-      answer: "Ha, Qarshi shahrining barcha yo'nalishlari bo'yicha o'quvchilarni xavfsiz olib kelish va uyga kuzatish uchun maxsus transport xizmati yo'lga qo'yilgan.",
+      question: "Maktab avtobusi (transport) va yotoqxona bormi?",
+      answer: "Ha, Qarshi shahrining barcha yo'nalishlari bo'yicha maxsus avtobus qatnovi va viloyat tumanlaridan keluvchilar uchun qulay yotoqxona (pansionat) xizmati mavjud. Kun davomida doimiy shifokor nazorati ham ta'minlanadi.",
+    },
+    {
+      category: "maktab" as const,
+      question: "Xalqaro olimpiadalarga tayyorgarlik qanday yo'lga qo'yilgan?",
+      answer: "Algoritm maktabi xalqaro olimpiadalar markazi hisoblanadi: KHISO (8-17-bosqichlar maktab binosida o'tkaziladi), IMEC, JSEO, TasIMO, EINSTEIN va boshqa nufuzli olimpiadalarda o'quvchilar muntazam qatnashadi. Matematika va ingliz tili chuqurlashtirilgan holda o'qitiladi.",
+    },
+    {
+      category: "maktab" as const,
+      question: "GRAND imtihoni nima?",
+      answer: "7-8-9-10-sinf o'quvchilari o'zlari tanlagan 2 ta fan bo'yicha imtihon topshirib, 1 yil davomida bepul yoki katta chegirma asosida o'qish grantini qo'lga kiritishi mumkin. Imtihonlar muntazam o'tkaziladi.",
+    },
+    {
+      category: "maktab" as const,
+      question: "Maktabda rus sinflari bormi?",
+      answer: "Ha, to'liq rus tilida ta'lim beruvchi alohida rus sinflari faoliyat yuritadi (1-rus, 2-rus va boshqalar). Rus guruhlarida malakali mutaxassislar dars beradi, shuningdek 0-sinf uchun rus va o'zbek tayyorlov guruhlari mavjud.",
     },
     {
       category: "markaz" as const,
       question: "Algoritm Academy o'quv markazida qanday repetitorlik kurslari bor?",
-      answer: "O'quv markazimizda Prezident maktabiga tayyorlov (PMT), SAT 1400+, IELTS 7.5+, Matematika Milliy Sertifikat (A+) va DTM grant kurslari faoliyat yuritadi.",
+      answer: "O'quv markazimizda Prezident maktabiga tayyorlov (PMT), Digital SAT 1500+ va xalqaro grantlar, IELTS 7.5+, Matematika Milliy Sertifikat (A+) hamda DTM grant kurslari faoliyat yuritadi. Har bir kursga 1-dars bepul.",
+    },
+    {
+      category: "umumiy" as const,
+      question: "Sinov darsi va konsultatsiya bepulmi?",
+      answer: "Ha. Barcha yo'nalishlar uchun 1 kunlik (maktab) yoki 1-dars (kurslar) 100% bepul sinov imkoniyati mavjud. Shuningdek, metodist bilan bepul diagnostika suhbati o'tkaziladi — ariza qoldirish kifoya.",
+    },
+    {
+      category: "umumiy" as const,
+      question: "Arizani qanday topshirish mumkin?",
+      answer: "Saytdagi istalgan formani to'ldirish orqali (ism va telefon) yoki to'g'ridan-to'g'ri qo'ng'iroq qilish orqali: maktab uchun +998 (99) 141-05-05, o'quv markazi uchun +998 (90) 895-05-05 / +998 (88) 895-05-05. Mutaxassislarimiz 15 daqiqa ichida bog'lanadi.",
+    },
+    {
+      category: "umumiy" as const,
+      question: "O'qish to'lovida chegirma yoki grant imkoniyatlari bormi?",
+      answer: "Ha. Ochiq eshiklar kunlarida yillik maxsus chegirmalar taqdim etiladi, yuqori sinflar uchun GRAND imtihoni (1 yil bepul o'qish) va har oylik monitoringda 1-o'rin uchun naqd stipendiya mavjud.",
+    },
+    {
+      category: "umumiy" as const,
+      question: "Qanday natijalarga erishgan o'quvchilar bor?",
+      answer: "Haqiqiy natijalar bazasidan namunalar: SAT 1430 + IELTS 6.5 (Sohibov Asilbek), SAT 1260 + IELTS 7.0 (Imomyorova Mohinur), 2026-yil yakunida 189.0 maksimal ball sohiblari, Al-Xorazmiy maktablariga 44 nafar qabul va respublika olimpiadasida 60 000 000 so'm bosh mukofot.",
     },
   ],
   gallery: [
     {
       id: "g1",
-      title: "Zamonaviy dars xonalari",
+      title: "IT va sun'iy intellekt laboratoriyasi",
       category: "darslar",
-      image: "/images/demo/hero_cover.svg",
+      image: "/images/slides/slide_2_it_ai_lab.jpg",
     },
     {
       id: "g2",
-      title: "PMT sinov imtihoni jarayoni",
-      category: "mashgulotlar",
-      image: "/images/demo/reel_1.svg",
+      title: "Cambridge uslubidagi til xonasi",
+      category: "darslar",
+      image: "/images/slides/slide_3_cambridge_room.jpg",
     },
     {
       id: "g3",
-      title: "SAT va Xalqaro Grantlar darsi",
+      title: "Jonli dars jarayoni",
       category: "darslar",
-      image: "/images/demo/reel_2.svg",
+      image: "/images/slides/slide_5_live_class.jpg",
+    },
+    {
+      id: "g4",
+      title: "Boshlang'ich sinf jamoasi",
+      category: "darslar",
+      image: "/images/slides/slide_4_primary_circle.png",
+    },
+    {
+      id: "g5",
+      title: "Algoritm brend taqdimoti",
+      category: "tadbirlar",
+      image: "/images/slides/slide_1_gold_brand.jpg",
+    },
+    {
+      id: "g6",
+      title: "Kampus zali va ochiq muhit",
+      category: "sharoitlar",
+      image: "/images/slides/slide_6_campus_hall.jpg",
     },
   ],
 };

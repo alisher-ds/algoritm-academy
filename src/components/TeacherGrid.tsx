@@ -1,24 +1,16 @@
 "use client";
 
 import React, { useState, useRef } from "react";
-import { 
-  X, 
-  Play, 
-  Pause,
-  Phone, 
-  GraduationCap, 
-  Award, 
+import {
+  X,
+  Play,
+  Phone,
+  GraduationCap,
+  Award,
   ArrowRight,
-  ZoomIn,
-  Users,
-  Clock,
-  CheckCircle2,
-  Sparkles,
-  Volume2,
-  VolumeX,
-  Maximize2
+  CheckCircle2
 } from "lucide-react";
-import { ECOSYSTEM_DATA, Teacher } from "@/data/ecosystemData";
+import { ECOSYSTEM_DATA } from "@/data/ecosystemData";
 
 interface TeacherGridProps {
   onSelectTeacherForConsultation?: (teacherName: string) => void;
@@ -30,23 +22,23 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
     {
       id: "tm-aziz",
       name: "AZIZ XOLMURODOV",
-      role: "Xalqaro IELTS & Cambridge Mentori",
-      subject: "IELTS 9.0 & Speaking",
-      scoreBadge: "IELTS 9.0",
-      scoreLabel: "IELTS BAND",
-      qualBadge: "CELTA",
-      qualLabel: "QUALIFICATION",
+      role: "Maktab Matematika Ustozi",
+      subject: "Matematika & Milliy Sertifikat",
+      scoreBadge: "A+",
+      scoreLabel: "MILLIY SERTIFIKAT",
+      qualBadge: "A+ DARAJA",
+      qualLabel: "MALAKA",
       experience: "10 yil",
       students: "3 500+",
       image: "/images/aziz_xolmurodov.png",
-      certImage: "/images/demo/cert_ielts.svg",
+      certImage: "/images/demo/cert_math.svg",
       videoUrl: "/videos/aziz_teacher_intro.mp4",
-      bio: "Xalqaro IELTS 9.0 sertifikati egasi, Cambridge metodikasi bo'yicha erkin so'zlashuv va nufuzli universitetlar grantlariga yuzlab o'quvchilarni tayyorlagan oliy toifali murabbiy.",
+      bio: "Algoritm maktabining matematika ustozi — Milliy sertifikatning eng yuqori A+ darajasi sohibi. O'quvchilarni milliy sertifikat, DTM va xalqaro olimpiada imtihonlariga yuqori natija bilan tayyorlaydi.",
       highlights: [
-        "Shaxsiy IELTS 9.0 va CELTA xalqaro sertifikati",
+        "Milliy sertifikat (A+) oliy darajasi",
         "10 yillik professional pedagogik tajriba",
-        "3 500+ muvaffaqiyatli bitiruvchilar",
-        "Haftalik bepul Speaking Club va mock imtihonlari"
+        "3 500+ muvaffaqiyatli o'quvchilar",
+        "DTM, SAT Math va olimpiada tayyorlovi"
       ],
       isRealVideo: true
     },
@@ -63,7 +55,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
       students: "3 500+",
       image: "/images/demo/mentor_1.svg",
       certImage: "/images/demo/cert_math.svg",
-      videoUrl: "/videos/aziz_teacher_intro.mp4",
+      videoUrl: "",
       bio: "Matematika fanidan Milliy sertifikat (A+) va xalqaro olimpiadalarga tayyorlovchi yetakchi pedagog.",
       highlights: [
         "Milliy sertifikat (A+) maksimal ball natijalari",
@@ -85,7 +77,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
       students: "4 200+",
       image: "/images/demo/mentor_2.svg",
       certImage: "/images/demo/cert_ielts.svg",
-      videoUrl: "/videos/aziz_teacher_intro.mp4",
+      videoUrl: "",
       bio: "Boshlang'ich sinf o'quvchilarida husnixat, tezkor hisoblash va mantiqiy tafakkurni shakllantirish bo'yicha mutaxassis.",
       highlights: [
         "1-4 sinf bolalar psixologiyasi mutaxassisi",
@@ -107,7 +99,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
       students: "1 500+",
       image: "/images/demo/mentor_4.svg",
       certImage: "/images/demo/cert_sat.svg",
-      videoUrl: "/videos/aziz_teacher_intro.mp4",
+      videoUrl: "",
       bio: "AQSH va Yevropaning nufuzli oliygohlariga 100% to'liq grant yutish bo'yicha mutaxassis.",
       highlights: [
         "SAT 1480+ Digital rasmiy ball sohibi",
@@ -129,7 +121,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
       students: "2 900+",
       image: "/images/demo/mentor_1.svg",
       certImage: "/images/demo/cert_pmt.svg",
-      videoUrl: "/videos/aziz_teacher_intro.mp4",
+      videoUrl: "",
       bio: "Mantiqiy va tanqidiy fikrlash bo'yicha Prezident va Al-Xorazmiy maktablariga tayyorlovchi yetakchi ekspert.",
       highlights: [
         "PMT 100% qabul ko'rsatkichi",
@@ -151,7 +143,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
       students: "1 800+",
       image: "/images/demo/mentor_2.svg",
       certImage: "/images/demo/cert_ielts.svg",
-      videoUrl: "/videos/aziz_teacher_intro.mp4",
+      videoUrl: "",
       bio: "Erta yoshdan ingliz tilida ravon gapirish va xalqaro muloqot ko'nikmalarini rivojlantiruvchi ustoz.",
       highlights: [
         "IELTS 8.5 va TESOL xalqaro malaka",
@@ -172,7 +164,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
       students: "2 100+",
       image: "/images/demo/mentor_3.svg",
       certImage: "/images/demo/cert_sat.svg",
-      videoUrl: "/videos/aziz_teacher_intro.mp4",
+      videoUrl: "",
       bio: "Maktab o'quvchilariga zamonaviy dasturlash, sun'iy intellekt va amaliy texnologiyalarni o'rgatuvchi muhandis.",
       highlights: [
         "Python, C++, Java va robototexnika",
@@ -193,7 +185,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
       students: "3 200+",
       image: "/images/demo/mentor_2.svg",
       certImage: "/images/demo/cert_math.svg",
-      videoUrl: "/videos/aziz_teacher_intro.mp4",
+      videoUrl: "",
       bio: "Mental arifmetika bo'yicha xalqaro olimpiadalar g'oliblarini tayyorlagan oliy toifali mutaxassis.",
       highlights: [
         "Xalqaro olimpiadalar hakamlik tajribasi",
@@ -214,7 +206,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
       students: "5 000+",
       image: "/images/demo/mentor_4.svg",
       certImage: "/images/demo/cert_sat.svg",
-      videoUrl: "/videos/aziz_teacher_intro.mp4",
+      videoUrl: "",
       bio: "Laboratoriya tajribalari va fizika fanini amaliyot bilan bog'lab o'rgatuvchi tajribali pedagog.",
       highlights: [
         "14 yillik oliy toifali pedagogik faoliyat",
@@ -235,7 +227,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
       students: "1 400+",
       image: "/images/demo/mentor_1.svg",
       certImage: "/images/demo/cert_pmt.svg",
-      videoUrl: "/videos/aziz_teacher_intro.mp4",
+      videoUrl: "",
       bio: "Xalqaro robototexnika musobaqalari chempioni, bolalarda konstruktorlik tafakkurini rivojlantiruvchi ustoz.",
       highlights: [
         "WRO robototexnika sovrindori",
@@ -246,12 +238,10 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
   ];
 
   const [selectedMember, setSelectedMember] = useState<typeof teamMembers[0] | null>(null);
-  const [isPlaying, setIsPlaying] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const handleOpenModal = (member: typeof teamMembers[0]) => {
     setSelectedMember(member);
-    setIsPlaying(true);
   };
 
   const handleCloseModal = () => {
@@ -271,7 +261,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
             Kuchli Natijador <span className="text-[#00C853]">Ustozlar Jamoasi</span>
           </h2>
           <p className="mt-2 text-slate-600 text-sm sm:text-base font-normal">
-            Har bir ustozning rasmiy sertifikatlari, yutuqlari va jonli dars jarayoni bilan tanishing.
+            Har bir ustozning rasmiy sertifikatlari, yutuqlari va tajribasi bilan tanishing.
           </p>
         </div>
 
@@ -296,10 +286,12 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
                 {/* Dark Vignette Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
 
-                {/* Top Right Floating Frosted Play Button */}
-                <div className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/30 backdrop-blur-md border border-white/20 text-white flex items-center justify-center shadow-lg group-hover:bg-[#00C853] group-hover:scale-110 transition-all duration-300">
-                  <Play className="w-3.5 h-3.5 fill-white ml-0.5" />
-                </div>
+                {/* Top Right Floating Frosted Play Button — faqat real video mavjud bo'lsa */}
+                {member.isRealVideo && (
+                  <div className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/30 backdrop-blur-md border border-white/20 text-white flex items-center justify-center shadow-lg group-hover:bg-[#00C853] group-hover:scale-110 transition-all duration-300">
+                    <Play className="w-3.5 h-3.5 fill-white ml-0.5" />
+                  </div>
+                )}
 
                 {/* Real Video Badge */}
                 {member.isRealVideo && (
@@ -447,19 +439,30 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
             {/* Modal Body */}
             <div className="p-5 sm:p-7 space-y-6 overflow-y-auto">
               
-              {/* Native HD Video Player with Teacher's Cover Poster */}
-              <div className="relative aspect-video w-full rounded-2xl overflow-hidden bg-black border border-white/15 shadow-2xl group">
-                <video
-                  ref={videoRef}
-                  src={selectedMember.videoUrl}
-                  poster={selectedMember.image}
-                  controls
-                  autoPlay
-                  playsInline
-                  preload="metadata"
-                  className="w-full h-full object-contain bg-black"
-                />
-              </div>
+              {/* Real video bo'lsa — native player, aks holda profil rasmi */}
+              {selectedMember.isRealVideo && selectedMember.videoUrl ? (
+                <div className="relative aspect-video w-full rounded-2xl overflow-hidden bg-black border border-white/15 shadow-2xl group">
+                  <video
+                    ref={videoRef}
+                    src={selectedMember.videoUrl}
+                    poster={selectedMember.image}
+                    controls
+                    autoPlay
+                    playsInline
+                    preload="metadata"
+                    className="w-full h-full object-contain bg-black"
+                  />
+                </div>
+              ) : (
+                <div className="relative w-full rounded-2xl overflow-hidden bg-slate-900 border border-white/15 shadow-2xl">
+                  <img
+                    src={selectedMember.image}
+                    alt={selectedMember.name}
+                    className="w-full h-56 sm:h-72 object-cover object-top"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
+                </div>
+              )}
 
               {/* Ustoz Bio & Key Highlights */}
               <div className="space-y-3">
@@ -508,7 +511,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
                 <button
                   onClick={() => {
                     handleCloseModal();
-                    onSelectTeacherForConsultation && onSelectTeacherForConsultation(selectedMember.name);
+                    if (onSelectTeacherForConsultation) onSelectTeacherForConsultation(selectedMember.name);
                   }}
                   className="w-full py-3.5 rounded-full bg-[#00C853] hover:bg-[#00E676] text-white font-bold text-xs uppercase tracking-wider shadow-lg shadow-emerald-600/30 transition flex items-center justify-center gap-2"
                 >

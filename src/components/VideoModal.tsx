@@ -16,7 +16,7 @@ export default function VideoModal({
   onClose,
   videoTitle = "Algoritm School & Academy — Dars Jarayoni va Maktab Hayoti",
   videoUrl = "/videos/reel_sat1430.mp4",
-  instagramUrl = "https://www.instagram.com/algoritm_school_",
+  instagramUrl = "",
 }: VideoModalProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(true);
