@@ -77,6 +77,10 @@ export default {
           "0%": { transform: "scale(1)" },
           "100%": { transform: "scale(1.08)" },
         },
+        marquee: {
+          "0%": { transform: "translateX(0%)" },
+          "100%": { transform: "translateX(-50%)" },
+        },
         shimmer: {
           "0%": { backgroundPosition: "-200% 0" },
           "100%": { backgroundPosition: "200% 0" },
@@ -86,6 +90,7 @@ export default {
         "fade-up": "fade-up .6s ease-out both",
         "fade-in": "fade-in .5s ease-out both",
         "ken-burns": "ken-burns 14s ease-out both",
+        marquee: "marquee 35s linear infinite",
         shimmer: "shimmer 2.2s linear infinite",
       },
     },

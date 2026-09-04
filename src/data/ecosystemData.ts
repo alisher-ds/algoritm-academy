@@ -180,12 +180,12 @@ export const ECOSYSTEM_DATA = {
       },
     ],
     dailySchedule: [
-      { time: "08:00 - 08:30", title: "O'quvchilarni kutib olish va ertalabki nonushta", icon: "☕" },
-      { time: "08:30 - 13:00", title: "Asosiy akademik darslar (Matematika & Tillar)", icon: "📚" },
-      { time: "13:00 - 14:00", title: "3 mahal halol issiq tushlik va toza havoda hordiq", icon: "🍲" },
-      { time: "14:00 - 15:30", title: "15+ Bepul to'garaklar (Robototexnika, Shaxmat, Karate, Raqs)", icon: "🤖" },
-      { time: "15:30 - 16:30", title: "O'qituvchi nazoratida uyga vazifalarni to'liq bajarish", icon: "✍️" },
-      { time: "16:30 - 17:00", title: "Ikkinchi tushlik (poldnik) va xavfsiz transportda kuzatish", icon: "🚌" },
+      { time: "08:00 - 08:30", title: "O'quvchilarni kutib olish va ertalabki nonushta", icon: "Coffee" },
+      { time: "08:30 - 13:00", title: "Asosiy akademik darslar (Matematika & Tillar)", icon: "BookOpen" },
+      { time: "13:00 - 14:00", title: "3 mahal halol issiq tushlik va toza havoda hordiq", icon: "Utensils" },
+      { time: "14:00 - 15:30", title: "15+ Bepul to'garaklar (Robototexnika, Shaxmat, Karate, Raqs)", icon: "Bot" },
+      { time: "15:30 - 16:30", title: "O'qituvchi nazoratida uyga vazifalarni to'liq bajarish", icon: "PenLine" },
+      { time: "16:30 - 17:00", title: "Ikkinchi tushlik (poldnik) va xavfsiz transportda kuzatish", icon: "Bus" },
     ],
     admissionSteps: [
       { step: "01", title: "1 Kunlik BEPUL Sinov Darsi", description: "Farzandingiz bilan kelib darslar, muhit va 3 mahal ovqatlanish jarayoni bilan bepul tanishasiz." },

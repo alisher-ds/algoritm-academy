@@ -67,7 +67,7 @@ const microStats = [
   { icon: Sparkles, label: "3 mahal halol issiq ovqat" },
 ];
 
-const SLIDE_INTERVAL = 7000;
+const SLIDE_INTERVAL = 4000;
 
 export default function SchoolHero({ onOpenLeadModal }: SchoolHeroProps) {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -130,9 +130,9 @@ export default function SchoolHero({ onOpenLeadModal }: SchoolHeroProps) {
               alt=""
               className={`h-full w-full object-cover ${idx === currentSlide ? "animate-ken-burns" : ""}`}
             />
-            {/* Kinematik qatlamlar */}
-            <div className="absolute inset-0 bg-gradient-to-t from-night-deep via-night-deep/50 to-night-deep/70" />
-            <div className="absolute inset-0 bg-gradient-to-r from-night-deep/95 via-night-deep/60 to-night-deep/20" />
+            {/* Kinematik qatlamlar — image-first: fotolar yorqin va aniq ko'rinadi */}
+            <div className="absolute inset-0 bg-gradient-to-t from-night-deep via-night-deep/35 to-black/20" />
+            <div className="absolute inset-0 bg-gradient-to-r from-night-deep/85 via-night-deep/45 to-transparent" />
           </div>
         ))}
       </div>
