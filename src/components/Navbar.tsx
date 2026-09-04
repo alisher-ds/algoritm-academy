@@ -11,7 +11,7 @@ interface NavbarProps {
 }
 
 const NAV_LINKS = [
-  { href: "/#maktab", label: "Maktab 0–11", icon: School },
+  { href: "/#dasturlar", label: "Maktab 0–11", icon: School },
   { href: "/#kurslar", label: "Kurslar", icon: GraduationCap },
   { href: "/#natijalar", label: "Natijalar" },
   { href: "/#sharoitlar", label: "Sharoitlar" },

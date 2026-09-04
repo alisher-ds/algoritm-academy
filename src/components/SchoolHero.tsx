@@ -1,198 +1,105 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { 
-  ArrowRight,
-  School,
-  GraduationCap,
-  ChevronLeft,
-  ChevronRight
-} from "lucide-react";
+import React from "react";
+import Link from "next/link";
+import { ArrowRight, School, GraduationCap, Users, Sparkles, Award } from "lucide-react";
+import { ECOSYSTEM_DATA } from "@/data/ecosystemData";
 
-interface AcademyHeroProps {
+interface SchoolHeroProps {
   onOpenLeadModal: (targetName?: string) => void;
-  onOpenVideoModal?: () => void;
 }
 
-export default function SchoolHero({ onOpenLeadModal }: AcademyHeroProps) {
-  const slides = [
-    {
-      id: 1,
-      image: "/images/slides/slide_1_gold_brand.jpg",
-      highlightTitle: "ALGORITM ACADEMY",
-      mainTitle: "Xususiy maktab va akademik kurslar",
-      desc: "1-11 sinf to'liq kunlik xususiy maktabi hamda Prezident maktabi, Digital SAT, IELTS va Davlat grantlariga Qarshidagi yetakchi tayyorlov ekotizimi.",
-    },
-    {
-      id: 2,
-      image: "/images/slides/slide_3_cambridge_room.jpg",
-      highlightTitle: "PREZIDENT MAKTABI & SAT",
-      mainTitle: "Kafolatlangan natija va grantlar",
-      desc: "100+ SAT 1200+ natija, 300+ ixtisoslashtirilgan maktablar va 150+ to'liq davlat granti ko'rsatkichlari.",
-    },
-    {
-      id: 3,
-      image: "/images/slides/slide_4_primary_circle.png",
-      highlightTitle: "ALGORITM SCHOOL",
-      mainTitle: "1–11 chuqurlashtirilgan ta'lim",
-      desc: "To'liq kunlik rejim (08:00–17:00), 3 mahal halol issiq ovqat, 15+ bepul to'garak va barcha uy vazifalari maktabda.",
-    },
-    {
-      id: 4,
-      image: "/images/slides/slide_2_it_ai_lab.jpg",
-      highlightTitle: "IT & SUN'IY INTELLEKT",
-      mainTitle: "Robototexnika laboratoriyasi",
-      desc: "Python, C++, Java va amaliy texnologiyalarni maktab yoshidanoq chuqur o'rganish.",
-    },
-    {
-      id: 5,
-      image: "/images/slides/slide_5_live_class.jpg",
-      highlightTitle: "KICHIK GURUHLAR",
-      mainTitle: "Maksimal 15 o'quvchi sinfda",
-      desc: "Har bir o'quvchining qobiliyatiga individual yondashuv, haftalik monitoring va mustahkam intizom.",
-    },
-    {
-      id: 6,
-      image: "/images/slides/slide_6_campus_hall.jpg",
-      highlightTitle: "ZAMONAVIY SHAROIT",
-      mainTitle: "Yotoqxona va xavfsiz transport",
-      desc: "Uzoqdan kelganlar uchun qulay pansionat va Qarshi shahri bo'ylab xavfsiz avtobus qatnovi.",
-    },
-  ];
+const HERO_VIDEO = "/videos/aziz_teacher_intro.mp4";
+const HERO_POSTER = "/images/slides/slide_5_live_class.jpg";
 
-  const [currentSlide, setCurrentSlide] = useState(0);
+const microStats = [
+  { icon: Users, label: "Sinfda maksimal 15 o'quvchi" },
+  { icon: Award, label: "Xalqaro olimpiadalar markazi" },
+  { icon: Sparkles, label: "3 mahal halol issiq ovqat" },
+];
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % slides.length);
-    }, 3500);
-
-    return () => clearInterval(timer);
-  }, [slides.length]);
-
-  const handlePrev = () => {
-    setCurrentSlide((prev) => (prev === 0 ? slides.length - 1 : prev - 1));
-  };
-
-  const handleNext = () => {
-    setCurrentSlide((prev) => (prev + 1) % slides.length);
-  };
-
+export default function SchoolHero({ onOpenLeadModal }: SchoolHeroProps) {
   return (
-    <section className="relative w-full min-h-[90vh] sm:min-h-screen flex items-end pb-12 sm:pb-16 pt-28 sm:pt-32 overflow-hidden bg-night-deep text-white">
-      
-      {/* Background Image Slider */}
-      <div className="absolute inset-0 z-0">
-        {slides.map((slide, index) => (
-          <div
-            key={slide.id}
-            className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
-              index === currentSlide ? "opacity-100 z-10" : "opacity-0 z-0 pointer-events-none"
-            }`}
-          >
-            <img
-              src={slide.image}
-              alt={slide.mainTitle}
-              className="w-full h-full object-cover object-center"
-            />
-            
-            {/* Cinematic Gradient Vignette */}
-            <div className="absolute inset-0 bg-gradient-to-t from-night-deep/95 via-night-deep/40 to-night-deep/60"></div>
-            <div className="absolute inset-0 bg-gradient-to-r from-night-deep/90 via-night-deep/40 to-transparent"></div>
-          </div>
-        ))}
-      </div>
+    <section className="relative flex min-h-[92svh] items-center overflow-hidden bg-night-deep pb-20 pt-32 text-white">
+      {/* Video fon (avto-o'ynash, ovozsiz, loop) — poster sifatida real dars fotosi */}
+      <video
+        className="absolute inset-0 h-full w-full object-cover"
+        src={HERO_VIDEO}
+        poster={HERO_POSTER}
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="metadata"
+        aria-hidden
+      />
 
-      {/* Hero Content Overlay */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-20 w-full">
-        <div className="max-w-3xl text-left space-y-4 sm:space-y-5">
-          
-          {/* Dual-Track Selector Badges */}
-          <div className="flex flex-wrap items-center gap-2.5 pt-2">
-            <a
-              href="#maktab"
-              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white text-xs font-bold uppercase tracking-wider transition-all"
+      {/* Overlay: matn o'qilishi uchun yumshoq gradientlar */}
+      <div className="absolute inset-0 bg-gradient-to-r from-night-deep via-night-deep/85 to-night-deep/40" />
+      <div className="absolute inset-0 bg-gradient-to-t from-night-deep via-transparent to-night-deep/60" />
+
+      <div className="relative z-10 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="max-w-3xl">
+          {/* Yo'nalish belgilari */}
+          <div className="mb-6 flex flex-wrap items-center gap-2.5">
+            <Link
+              href="/#dasturlar"
+              className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-[11px] font-bold uppercase tracking-wider text-white backdrop-blur transition hover:border-brand-400/60 hover:text-brand-400"
             >
-              <School className="w-3.5 h-3.5 text-brand-400" />
-              <span>1–11 Xususiy Maktab</span>
-            </a>
-            <a
-              href="#kurslar"
-              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white text-xs font-bold uppercase tracking-wider transition-all"
+              <School className="h-3.5 w-3.5 text-brand-400" />
+              0–11 xususiy maktab
+            </Link>
+            <Link
+              href="/#kurslar"
+              className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-[11px] font-bold uppercase tracking-wider text-white backdrop-blur transition hover:border-brand-400/60 hover:text-brand-400"
             >
-              <GraduationCap className="w-3.5 h-3.5 text-brand-400" />
-              <span>O'quv Markazi Kurslari</span>
-            </a>
+              <GraduationCap className="h-3.5 w-3.5 text-brand-400" />
+              PMT · SAT · IELTS kurslari
+            </Link>
           </div>
 
-          {/* Main Headline */}
-          <div className="space-y-1">
-            <div className="text-lg sm:text-2xl lg:text-3xl font-black uppercase tracking-wider text-brand-400 leading-none">
-              {slides[currentSlide].highlightTitle}
-            </div>
-            <h1 className="font-display text-3xl font-extrabold tracking-tight text-white sm:text-4xl lg:text-5xl">
-              {slides[currentSlide].mainTitle}
-            </h1>
-          </div>
+          {/* Asosiy sarlavha */}
+          <h1 className="font-display text-4xl font-extrabold leading-[1.08] tracking-tight sm:text-5xl lg:text-6xl">
+            Kelajak egalari uchun{" "}
+            <span className="bg-gradient-to-r from-brand-400 to-brand-300 bg-clip-text text-transparent">
+              zamonaviy ta&apos;lim
+            </span>{" "}
+            — Qarshida
+          </h1>
 
-          {/* Subtitle */}
-          <p className="text-sm sm:text-base text-slate-200 font-normal leading-relaxed max-w-2xl">
-            {slides[currentSlide].desc}
+          <p className="mt-6 max-w-xl text-base leading-relaxed text-slate-300 sm:text-lg">
+            0–11 sinf to&apos;liq kunlik xususiy maktab hamda Prezident maktabi (PMT), Digital SAT,
+            IELTS va davlat grantlariga tayyorlov — bitta manzilda, tasdiqlangan natijalar bilan.
           </p>
 
-          {/* Action Buttons */}
-          <div className="pt-2 flex flex-wrap items-center gap-3.5">
+          {/* CTA tugmalari */}
+          <div className="mt-8 flex flex-wrap items-center gap-3.5">
             <button
               onClick={() => onOpenLeadModal("Birinchi bepul darsga yozilish")}
-              className="px-7 py-3.5 rounded-full bg-brand-500 hover:bg-brand-400 text-white font-bold text-xs sm:text-sm uppercase tracking-wider transition-all duration-200 shadow-lg shadow-emerald-600/30 hover:shadow-emerald-600/50 hover:scale-105 flex items-center gap-2"
+              className="group inline-flex items-center gap-2 rounded-xl bg-brand-500 px-7 py-4 text-sm font-bold uppercase tracking-wider text-white shadow-glow transition-all hover:bg-brand-400 active:scale-[0.98]"
             >
-              <span>Birinchi bepul darsga yozilish</span>
-              <ArrowRight className="w-4 h-4" />
+              Birinchi bepul darsga yozilish
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </button>
-            
-            <a
-              href="#natijalar"
-              className="px-6 py-3.5 rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/15 text-xs sm:text-sm font-bold uppercase tracking-wider transition-all"
+            <Link
+              href="/#natijalar"
+              className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/5 px-6 py-4 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/10"
             >
               Natijalar bilan tanishish
-            </a>
+            </Link>
           </div>
 
-        </div>
-
-        {/* Bottom Slide Indicators & Controls */}
-        <div className="mt-8 pt-4 border-t border-white/10 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            {slides.map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => setCurrentSlide(idx)}
-                className={`h-1.5 rounded-full transition-all duration-300 ${
-                  idx === currentSlide ? "w-8 bg-brand-400" : "w-2.5 bg-white/30 hover:bg-white/50"
-                }`}
-                aria-label={`Slide ${idx + 1}`}
-              />
+          {/* Mikro-statistika */}
+          <div className="mt-10 flex flex-wrap items-center gap-x-8 gap-y-3 border-t border-white/10 pt-6 text-sm text-slate-300">
+            {microStats.map((s) => (
+              <span key={s.label} className="flex items-center gap-2.5">
+                <s.icon className="h-4 w-4 shrink-0 text-brand-400" />
+                {s.label}
+              </span>
             ))}
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handlePrev}
-              className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition"
-              aria-label="Oldingi slayd"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <button
-              onClick={handleNext}
-              className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition"
-              aria-label="Keyingi slayd"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
+            <span className="text-slate-500">· Litsenziya {ECOSYSTEM_DATA.licenseNumber}</span>
           </div>
         </div>
-
       </div>
     </section>
   );
