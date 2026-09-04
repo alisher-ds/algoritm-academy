@@ -169,7 +169,7 @@ export default function SchoolHero({ onOpenLeadModal }: SchoolHeroProps) {
                     {/* O'zimizning brend yashil rangidagi qulay tugma */}
                     <div className="mt-4 sm:mt-5 flex items-center gap-3">
                       <button
-                        onClick={() => onOpenLeadModal(`${s.title} — Bepul dars`)}
+                        onClick={() => onOpenLeadModal(s.title)}
                         tabIndex={isCurrent ? 0 : -1}
                         className="inline-flex items-center gap-2 rounded-full bg-brand-500 hover:bg-brand-400 text-white font-bold px-6 sm:px-7 py-3 text-xs sm:text-sm uppercase tracking-wider shadow-lg shadow-brand-500/25 transition-all duration-200 active:scale-95 cursor-pointer"
                       >
