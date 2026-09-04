@@ -43,7 +43,6 @@ function TeacherAvatar({ name, image, className }: { name: string; image?: strin
 }
 
 export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherGridProps) {
-  const [viewMode, setViewMode] = useState<"marquee" | "grid">("marquee");
   // 10 Team members with Aziz Xolmurodov featured with his real photo and video
   const teamMembers = [
     {
@@ -285,165 +284,97 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
     <div
       key={`${member.id}${keySuffix}`}
       onClick={() => handleOpenModal(member)}
-      className={`group relative rounded-2xl sm:rounded-[24px] overflow-hidden bg-white border cursor-pointer shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between ${
-        member.isRealVideo ? "border-brand-500 ring-2 ring-brand-400/30" : "border-slate-200/90 hover:border-brand-500"
-      }`}
+      className="group relative rounded-2xl sm:rounded-3xl overflow-hidden bg-white border border-slate-200/90 hover:border-brand-500 cursor-pointer shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
     >
-      {/* Photo Frame with Glowing Aura & Real Photo Cover */}
-      <div className="relative aspect-[3/4.2] w-full overflow-hidden bg-gradient-to-b from-amber-100/50 via-slate-800/40 to-slate-950">
+      {/* 1. Toza, to'siqsiz fotosurat (hech qanday xalaqit beruvchi yorliqlarsiz) */}
+      <div className="relative aspect-[3/3.6] w-full overflow-hidden bg-slate-100">
         <TeacherAvatar
           name={member.name}
           image={member.image}
-          className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
+          className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
         />
 
-        {/* Dark Vignette Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
-
-        {/* Top Right Floating Frosted Play Button — faqat real video mavjud bo'lsa */}
-        {member.isRealVideo && (
-          <div className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/30 backdrop-blur-md border border-white/20 text-white flex items-center justify-center shadow-lg group-hover:bg-brand-500 group-hover:scale-110 transition-all duration-300">
-            <Play className="w-3.5 h-3.5 fill-white ml-0.5" />
-          </div>
-        )}
-
-        {/* Real Video Badge */}
-        {member.isRealVideo && (
-          <div className="absolute top-3 left-3">
-            <span className="px-2 py-0.5 rounded-full bg-brand-500 text-slate-950 text-[9px] font-black uppercase tracking-wider flex items-center gap-1 shadow-md">
-              <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span>
-              Video Dars
-            </span>
-          </div>
-        )}
-
-        {/* Bottom Content Area */}
-        <div className="absolute bottom-3 left-3 right-3 text-left space-y-1.5">
-          {/* Bold Uppercase Name */}
-          <h3 className="font-display text-[13px] font-bold text-white leading-tight drop-shadow-sm">
-            {member.name}
-          </h3>
-
-          {/* Badges Grid */}
-          <div className="grid grid-cols-2 gap-1 pt-0.5">
-            {/* Score Badge */}
-            <div className="rounded-md bg-black/40 backdrop-blur-sm border border-white/10 px-1.5 py-0.5">
-              <span className="block text-[7.5px] uppercase tracking-wider text-slate-400 font-bold leading-none">
-                {member.scoreLabel}
-              </span>
-              <span className="block text-[9.5px] sm:text-[10.5px] font-black uppercase text-amber-400 leading-tight mt-0.5">
-                {member.scoreBadge}
-              </span>
-            </div>
-
-            {/* Qualification Badge */}
-            <div className="rounded-md bg-black/40 backdrop-blur-sm border border-white/10 px-1.5 py-0.5">
-              <span className="block text-[7.5px] uppercase tracking-wider text-slate-400 font-bold leading-none">
-                {member.qualLabel}
-              </span>
-              <span className="block text-[9.5px] sm:text-[10.5px] font-black uppercase text-white leading-tight mt-0.5 truncate">
-                {member.qualBadge}
-              </span>
-            </div>
-
-            {/* Experience Badge */}
-            <div className="rounded-md bg-black/40 backdrop-blur-sm border border-white/10 px-1.5 py-0.5">
-              <span className="block text-[7.5px] uppercase tracking-wider text-slate-400 font-bold leading-none">
-                TAJRIBA
-              </span>
-              <span className="block text-[9.5px] sm:text-[10.5px] font-bold text-white leading-tight mt-0.5">
-                {member.experience}
-              </span>
-            </div>
-
-            {/* Students Badge */}
-            <div className="rounded-md bg-black/40 backdrop-blur-sm border border-white/10 px-1.5 py-0.5">
-              <span className="block text-[7.5px] uppercase tracking-wider text-slate-400 font-bold leading-none">
-                O'QUVCHILAR
-              </span>
-              <span className="block text-[9.5px] sm:text-[10.5px] font-bold text-brand-400 leading-tight mt-0.5">
-                {member.students}
-              </span>
-            </div>
-          </div>
+        {/* Fani bo'yicha nozik burchak yorlig'i */}
+        <div className="absolute top-2.5 right-2.5">
+          <span className="px-2.5 py-1 rounded-full bg-slate-950/70 backdrop-blur-md text-white text-[10px] font-bold border border-white/15 shadow-sm">
+            {member.subject.split("&")[0].trim()}
+          </span>
         </div>
+
+        {/* Video mavjud bo'lsa, faqat sichqoncha borganda (hover) chiqadigan nafis Play belgisi */}
+        {member.isRealVideo && (
+          <div className="absolute inset-0 bg-slate-950/25 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+            <div className="w-11 h-11 rounded-full bg-brand-500 text-white flex items-center justify-center shadow-xl transform scale-90 group-hover:scale-100 transition-transform">
+              <Play className="w-4 h-4 fill-white ml-0.5" />
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* CARD FOOTER BAR ("Batafsil" Action) */}
-      <div className="p-3 bg-white border-t border-slate-100 flex items-center justify-between text-xs">
-        <span className="font-bold text-slate-700 text-[11px] truncate max-w-[95px] sm:max-w-[110px]">
-          {member.subject}
-        </span>
-        <span className="text-brand-500 font-black uppercase text-[11px] flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+      {/* 2. Rasm ostidagi toza, tartibli ma'lumotlar bloki (oq fonda) */}
+      <div className="p-4 flex flex-col justify-between flex-1 bg-white text-left">
+        <div>
+          <h3 className="font-display text-sm sm:text-base font-bold text-slate-900 group-hover:text-brand-600 transition-colors leading-tight line-clamp-1">
+            {member.name}
+          </h3>
+          <p className="text-[11px] text-slate-500 font-medium mt-1 line-clamp-1">
+            {member.role}
+          </p>
+
+          {/* 2 ta ixcham nishon (Daraja + Tajriba) */}
+          <div className="flex items-center gap-1.5 mt-2.5 flex-wrap">
+            <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200/80 text-[10px] font-extrabold font-mono">
+              {member.scoreBadge} {member.scoreLabel}
+            </span>
+            <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200 text-[10px] font-semibold">
+              {member.experience} tajriba
+            </span>
+          </div>
+        </div>
+
+        {/* Batafsil ma'lumot havolasi */}
+        <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs text-brand-600 font-bold">
           <span>Batafsil</span>
-          <ArrowRight className="w-3.5 h-3.5" />
-        </span>
+          <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+        </div>
       </div>
     </div>
   );
 
   return (
-    <section className="bg-white py-24 sm:py-32 text-slate-900 border-b border-slate-200/80" id="ustozlar">
+    <section className="bg-white py-20 sm:py-28 text-slate-900 border-b border-slate-200/80 overflow-hidden" id="ustozlar">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}
         <SectionHeader
-          eyebrow="Professional pedagogik jamoa"
+          eyebrow="Pedagogik jamoa"
           eyebrowIcon={GraduationCap}
           title={<>Kuchli natijador <span className="text-brand-600">ustozlar jamoasi</span></>}
-          description="Har bir ustozning rasmiy sertifikatlari, yutuqlari va tajribasi bilan tanishing."
+          description="Algoritm ta'lim tizimining tajribali pedagoglari va repetitor-mentorlari."
           wide
           className="mb-8"
         />
 
-        {/* Controls / View Toggle */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-          <p className="text-xs text-slate-500 font-medium">
-            Har bir ustoz kartochkasi ustiga bosib, uning darsi va yutuqlari bilan tanishing
-          </p>
-          <div className="inline-flex items-center self-start sm:self-auto rounded-xl bg-slate-100 p-1 border border-slate-200 shrink-0">
-            <button
-              onClick={() => setViewMode("marquee")}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                viewMode === "marquee"
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-500 hover:text-slate-900"
-              }`}
-            >
-              Harakatlanuvchi lenta
-            </button>
-            <button
-              onClick={() => setViewMode("grid")}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                viewMode === "grid"
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-500 hover:text-slate-900"
-              }`}
-            >
-              To'liq ro'yxat
-            </button>
+        {/* Ustozlar bitta qatorda, silliq harakatlanuvchi jonli oqim (Marquee) */}
+        <div className="relative w-full overflow-hidden py-3 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
+          {/* Yon tomonlardagi silliq tuman (fade) */}
+          <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-12 sm:w-28 bg-gradient-to-r from-white via-white/80 to-transparent z-10" />
+          <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-12 sm:w-28 bg-gradient-to-l from-white via-white/80 to-transparent z-10" />
+
+          {/* Silliq harakatlanuvchi lenta — sichqoncha borganda to'xtaydi */}
+          <div className="flex gap-4 sm:gap-5 w-max animate-marquee hover:[animation-play-state:paused] py-2 will-change-transform">
+            {[...teamMembers, ...teamMembers].map((member, idx) => (
+              <div key={`${member.id}-${idx}`} className="w-[210px] sm:w-[245px] shrink-0">
+                {renderCard(member, `-${idx}`)}
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* Team Cards (Marquee / Grid) */}
-        {viewMode === "marquee" ? (
-          <div className="relative w-full overflow-hidden py-3 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
-            <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-10 sm:w-20 bg-gradient-to-r from-white to-transparent z-10" />
-            <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-10 sm:w-20 bg-gradient-to-l from-white to-transparent z-10" />
-
-            <div className="flex gap-4 sm:gap-5 w-max animate-marquee hover:[animation-play-state:paused] py-2">
-              {[...teamMembers, ...teamMembers].map((member, idx) => (
-                <div key={`${member.id}-${idx}`} className="w-[190px] sm:w-[225px] shrink-0">
-                  {renderCard(member, `-${idx}`)}
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 sm:gap-5">
-            {teamMembers.map((member) => renderCard(member))}
-          </div>
-        )}
+        {/* Foydalanuvchiga qisqa eslatma */}
+        <p className="text-center text-xs text-slate-400 mt-4 flex items-center justify-center gap-1.5 font-medium">
+          <span>Ustoz haqida batafsil ma'lumot va video darsini ko'rish uchun kartochkani bosing</span>
+        </p>
 
         {/* Bottom Reassurance Banner */}
         <div className="mt-14 p-6 sm:p-8 rounded-3xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-6 text-left">
