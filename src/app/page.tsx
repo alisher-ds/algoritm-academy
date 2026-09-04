@@ -32,44 +32,44 @@ export default function HomePage() {
       <Navbar onOpenLeadModal={handleOpenLeadModal} />
 
       <main className="flex-1">
-        {/* 2. Flagship Academy Hero (School + Courses Dual Tracks) */}
+        {/* 1. Asosiy Hero (Bosh Sahifa & Kinetik Slayder) */}
         <SchoolHero onOpenLeadModal={handleOpenLeadModal} />
 
-        {/* 3. Ekotizimning 6 Ta Tasdiqlangan Natijasi (School + Academy 80%) */}
-        <SchoolResults />
-
-        {/* 4. Biz Kimmiz? & Akademiya Missiyasi */}
-        <SchoolAbout onOpenLeadModal={handleOpenLeadModal} />
-
-        {/* 5. 1-QANOT: 0 – 11 Sinf Xususiy Maktab Dasturlari */}
+        {/* 2. 1-QANOT: 0 – 11 Sinf Xususiy Maktab Dasturlari */}
         <SchoolPrograms onOpenLeadModal={handleOpenLeadModal} />
 
-        {/* 6. Maktab Sharoitlari (3 mahal taom, yotoqxona, xavfsiz transport, 15+ to'garaklar) */}
+        {/* 3. Maktab Sharoitlari (3 mahal ovqat, yotoqxona, xavfsiz transport, 15+ to'garak) */}
         <SchoolFeatures />
 
-        {/* 7. Kun Tartibi (08:00 - 17:00) */}
+        {/* 4. Kun Tartibi (08:00 - 17:00 bir kunlik muvozanatli rejim) */}
         <DailyScheduleSection />
 
-        {/* 8. 2-QANOT: Algoritm Kurslari (PMT, Digital SAT, IELTS, Matematika A+, DTM) */}
+        {/* 5. Akademik Natijalar (Ekotizim Faxri: 6 ta rasmiy blok — 600+ OTM, 100+ SAT, 300+ PMT) */}
+        <SchoolResults />
+
+        {/* 6. Biz Kimmiz? & Akademiya Missiyasi (Ta'lim falsafasi) */}
+        <SchoolAbout onOpenLeadModal={handleOpenLeadModal} />
+
+        {/* 7. 2-QANOT: Algoritm Kurslari (PMT, Digital SAT, IELTS, Matematika A+, DTM) */}
         <CourseCatalog onOpenLeadModal={handleOpenLeadModal} />
 
-        {/* 9. Pedagogik Tarkib & Mentorlar Kengashi */}
+        {/* 8. Pedagogik Tarkib & Mentorlar Kengashi (Ustozlar jonli oqimi) */}
         <TeacherGrid
           onSelectTeacherForConsultation={(teacher) =>
             handleOpenLeadModal(`${teacher} bilan suhbat`)
           }
         />
 
-        {/* 10. Ota-onalar Fikri & Samimiy Tavsiyalar */}
+        {/* 9. Ota-onalar Fikri & Samimiy Tavsiyalar */}
         <TestimonialsSection />
 
-        {/* 11. 4 Bosqichli Shaffof Qabul Yo'l Xaritasi */}
+        {/* 10. 4 Bosqichli Shaffof Qabul Yo'l Xaritasi */}
         <AdmissionRoadmap onOpenLeadModal={handleOpenLeadModal} />
 
-        {/* 12. Savol-Javoblar (FAQ) */}
+        {/* 11. Savol-Javoblar (FAQ) */}
         <FAQAccordion categoryFilter="umumiy" />
 
-        {/* 13. Universal Ariza Topshirish Bloki */}
+        {/* 12. Universal Ariza Topshirish Bloki */}
         <LeadBannerSection />
       </main>
 
