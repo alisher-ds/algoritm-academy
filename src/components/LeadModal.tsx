@@ -100,7 +100,7 @@ export default function LeadModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-lg rounded-3xl bg-[#0b1329] border border-white/20 p-6 sm:p-8 shadow-2xl text-white max-h-[92vh] overflow-y-auto">
+      <div className="relative w-full max-w-lg rounded-3xl bg-night border border-white/20 p-6 sm:p-8 shadow-2xl text-white max-h-[92vh] overflow-y-auto">
         {/* Close Button */}
         <button
           onClick={handleClose}
@@ -112,8 +112,8 @@ export default function LeadModal({
 
         {submitted ? (
           <div className="text-center py-8 space-y-4">
-            <div className="w-16 h-16 rounded-full bg-brand/20 border border-brand/40 flex items-center justify-center mx-auto text-brand animate-in zoom-in-95 duration-200">
-              <CheckCircle2 className="w-8 h-8 text-brand" />
+            <div className="w-16 h-16 rounded-full bg-brand-500/20 border border-brand-500/40 flex items-center justify-center mx-auto text-brand-500 animate-in zoom-in-95 duration-200">
+              <CheckCircle2 className="w-8 h-8 text-brand-500" />
             </div>
             <h3 className="text-2xl font-black uppercase text-white">
               Arizangiz Qabul Qilindi!
@@ -129,7 +129,7 @@ export default function LeadModal({
             )}
             <button
               onClick={handleClose}
-              className="mt-4 px-8 py-3 rounded-full bg-brand text-slate-950 font-bold text-xs hover:bg-brand-light transition"
+              className="mt-4 px-8 py-3 rounded-full bg-brand-500 text-slate-950 font-bold text-xs hover:bg-brand-500-400 transition"
             >
               Tushunarli
             </button>
@@ -137,7 +137,7 @@ export default function LeadModal({
         ) : (
           <div>
             <div className="mb-6">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand/15 text-brand text-xs font-bold uppercase tracking-wider mb-2 border border-brand/30">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-500/15 text-brand-500 text-xs font-bold uppercase tracking-wider mb-2 border border-brand-500/30">
                 <Sparkles className="w-3.5 h-3.5" /> 1-Dars Bepul Sinov Darsi
               </span>
               <h3 className="text-2xl font-black uppercase text-white">
@@ -162,7 +162,7 @@ export default function LeadModal({
                     placeholder="Masalan: Jasur Rahimov"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full pl-11 pr-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-brand"
+                    className="w-full pl-11 pr-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-brand-500"
                   />
                 </div>
               </div>
@@ -182,7 +182,7 @@ export default function LeadModal({
                       const digits = e.target.value.replace(/\D/g, "");
                       setPhone(digits ? `+998 ${digits.replace(/^998/, "")}` : "+998");
                     }}
-                    className="w-full pl-11 pr-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-brand"
+                    className="w-full pl-11 pr-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-brand-500"
                   />
                 </div>
               </div>
@@ -194,7 +194,7 @@ export default function LeadModal({
                 <select
                   value={courseValue}
                   onChange={(e) => setCourseValue(e.target.value)}
-                  className="w-full px-4 py-3 rounded-2xl bg-slate-900 border border-white/15 text-white text-xs focus:outline-none focus:border-brand"
+                  className="w-full px-4 py-3 rounded-2xl bg-slate-900 border border-white/15 text-white text-xs focus:outline-none focus:border-brand-500"
                 >
                   {options.map((o) => (
                     <option key={o.value} value={o.value} className="bg-slate-900">
@@ -209,7 +209,7 @@ export default function LeadModal({
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-4 rounded-full bg-brand hover:bg-brand-light text-slate-950 font-bold text-xs shadow-md transition flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="w-full py-4 rounded-full bg-brand-500 hover:bg-brand-500-400 text-slate-950 font-bold text-xs shadow-md transition flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {loading ? (
                     <>

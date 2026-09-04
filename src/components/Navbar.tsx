@@ -1,192 +1,201 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { 
-  Phone, 
-  Menu, 
-  X, 
-  GraduationCap, 
-  School, 
-  } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { Phone, Menu, X, GraduationCap, School } from "lucide-react";
 import { ECOSYSTEM_DATA } from "@/data/ecosystemData";
 
 interface NavbarProps {
   onOpenLeadModal?: (targetName?: string) => void;
 }
 
+const NAV_LINKS = [
+  { href: "/#maktab", label: "Maktab 0–11", icon: School },
+  { href: "/#kurslar", label: "Kurslar", icon: GraduationCap },
+  { href: "/#natijalar", label: "Natijalar" },
+  { href: "/#sharoitlar", label: "Sharoitlar" },
+  { href: "/#ustozlar", label: "Ustozlar" },
+  { href: "/#qabul", label: "Qabul" },
+] as const;
+
 export default function Navbar({ onOpenLeadModal }: NavbarProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState<string>("");
+  const pathname = usePathname();
+
+  // Bosh sahifada bo'limlar kesishganda faol havolani belgilash
+  useEffect(() => {
+    if (pathname !== "/") return undefined;
+    const ids = NAV_LINKS.map((l) => l.href.replace("/#", ""));
+    const sections = ids
+      .map((id) => document.getElementById(id))
+      .filter((el): el is HTMLElement => Boolean(el));
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) setActiveSection(entry.target.id);
+        }
+      },
+      { rootMargin: "-45% 0px -50% 0px" }
+    );
+    sections.forEach((s) => observer.observe(s));
+    return () => observer.disconnect();
+  }, [pathname]);
 
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
-    };
-    window.addEventListener("scroll", handleScroll);
+    const handleScroll = () => setIsScrolled(window.scrollY > 12);
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Mobile menyu ochiqda body scroll'ni bloklash
+  useEffect(() => {
+    document.body.style.overflow = mobileMenuOpen ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileMenuOpen]);
+
+  const openLead = useCallback(
+    (target: string) => {
+      setMobileMenuOpen(false);
+      onOpenLeadModal?.(target);
+    },
+    [onOpenLeadModal]
+  );
+
+  const isHome = pathname === "/";
+  // Bosh sahifa — maktab qabuli; boshqa sahifalar — o'quv markazi raqami
+  const primaryPhone = isHome
+    ? ECOSYSTEM_DATA.school.phone
+    : ECOSYSTEM_DATA.contact.phoneMain;
+  const phoneLabel = isHome ? "Maktab qabuli" : "O'quv markazi";
+
   return (
-    <header className="fixed top-4 sm:top-6 inset-x-0 z-50 px-4 sm:px-8">
+    <header className="fixed inset-x-0 top-0 z-50 px-3 sm:px-6">
       <div
-        className={`max-w-7xl mx-auto rounded-full transition-all duration-300 px-5 sm:px-7 py-3 flex items-center justify-between border ${
-          isScrolled
-            ? "bg-[#0c121e]/90 backdrop-blur-xl border-white/15 shadow-2xl text-white"
-            : "bg-[#0c121e]/75 backdrop-blur-md border-white/10 shadow-xl text-white"
+        className={`mx-auto mt-3 max-w-7xl rounded-2xl border px-4 sm:px-5 transition-all duration-300 ${
+          isScrolled || mobileMenuOpen
+            ? "border-white/10 bg-night-deep/90 shadow-card backdrop-blur-2xl"
+            : "border-white/10 bg-night-deep/70 backdrop-blur-xl"
         }`}
       >
-        {/* Brand Logo & Name */}
-        <Link href="/" className="flex items-center gap-3 group">
-          <div className="w-8 h-8 rounded-full p-0.5 bg-white/10 border border-white/20 flex items-center justify-center group-hover:scale-105 transition-transform">
-            <img
-              src="/logo.png"
-              alt="Algoritm Logo"
-              className="w-full h-full object-contain"
-            />
-          </div>
-          <div className="flex flex-col text-left">
-            <span className="text-sm sm:text-base font-black uppercase tracking-tight text-white leading-none">
-              ALGORITM
+        <div className="flex h-14 items-center justify-between gap-3">
+          {/* Brand */}
+          <Link href="/" className="group flex items-center gap-2.5" aria-label="Algoritm Academy — bosh sahifa">
+            <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-white/10 ring-1 ring-white/15 transition-transform duration-200 group-hover:scale-105">
+              <img src="/logo.png" alt="" className="h-full w-full object-contain" />
             </span>
-            <span className="text-[9px] text-[#00E676] font-bold uppercase tracking-wider mt-0.5">
-              Academy
+            <span className="flex flex-col leading-none">
+              <span className="font-display text-sm font-extrabold tracking-tight text-white">
+                Algoritm
+              </span>
+              <span className="text-[9px] font-bold uppercase tracking-[0.28em] text-brand-400">
+                Academy
+              </span>
             </span>
-          </div>
-        </Link>
-
-        {/* Desktop Navigation Links */}
-        <nav className="hidden lg:flex items-center gap-7 text-xs sm:text-[13px] font-medium text-slate-200">
-          <Link href="/#maktab" className="hover:text-[#00E676] transition-colors flex items-center gap-1.5">
-            <School className="w-3.5 h-3.5 text-[#00E676]" />
-            <span>Maktab (1-11)</span>
           </Link>
-          <Link href="/#kurslar" className="hover:text-[#00E676] transition-colors flex items-center gap-1.5">
-            <GraduationCap className="w-3.5 h-3.5 text-[#00E676]" />
-            <span>Kurslar (PMT, SAT)</span>
-          </Link>
-          <Link href="/#natijalar" className="hover:text-[#00E676] transition-colors">
-            Natijalar
-          </Link>
-          <Link href="/#sharoitlar" className="hover:text-[#00E676] transition-colors">
-            Sharoitlar
-          </Link>
-          <Link href="/#ustozlar" className="hover:text-[#00E676] transition-colors">
-            Ustozlar
-          </Link>
-          <Link href="/#qabul" className="hover:text-[#00E676] transition-colors">
-            Qabul 2026
-          </Link>
-        </nav>
 
-        {/* Right Section: Phone & CTA */}
-        <div className="hidden sm:flex items-center gap-3">
-          <a
-            href={`tel:${ECOSYSTEM_DATA.contact.phoneMain.replace(/\D/g, "")}`}
-            className="text-xs font-semibold text-slate-200 hover:text-white font-mono flex items-center gap-1.5 px-3 py-1.5 rounded-full hover:bg-white/10 transition"
-          >
-            <Phone className="w-3.5 h-3.5 text-[#00E676]" />
-            <span>{ECOSYSTEM_DATA.contact.phoneMain}</span>
-          </a>
-
-          {/* Consultation / Application Button */}
-          <button
-            onClick={() => { if (onOpenLeadModal) onOpenLeadModal("Header ariza"); }}
-            className="px-4 py-2 rounded-full bg-[#00C853] hover:bg-[#00E676] text-white font-bold text-xs uppercase tracking-wider transition-all shadow-md shadow-emerald-500/20"
-          >
-            Ariza qoldirish
-          </button>
-        </div>
-
-        {/* Mobile Hamburger Toggle */}
-        <div className="flex sm:hidden items-center gap-2">
-          <button
-            onClick={() => { if (onOpenLeadModal) onOpenLeadModal("Mobil header ariza"); }}
-            className="px-3 py-1.5 rounded-full bg-[#00C853] text-white text-[11px] font-bold uppercase"
-          >
-            Ariza
-          </button>
-
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-1.5 rounded-full bg-white/10 text-white hover:bg-white/20 transition"
-            aria-label="Menyu"
-          >
-            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
-        </div>
-      </div>
-
-      {/* Mobile Menu Drawer */}
-      {mobileMenuOpen && (
-        <div className="sm:hidden mt-2 max-w-7xl mx-auto rounded-3xl bg-[#0c121e]/95 backdrop-blur-2xl border border-white/15 p-5 shadow-2xl text-white animate-in slide-in-from-top-3 duration-200">
-          <nav className="flex flex-col space-y-3 text-sm font-medium">
-            <Link
-              href="/#maktab"
-              onClick={() => setMobileMenuOpen(false)}
-              className="py-1 text-slate-200 hover:text-[#00E676] flex items-center gap-2"
-            >
-              <School className="w-4 h-4 text-[#00E676]" />
-              <span>1-11 Sinf Xususiy Maktabi</span>
-            </Link>
-            <Link
-              href="/#kurslar"
-              onClick={() => setMobileMenuOpen(false)}
-              className="py-1 text-slate-200 hover:text-[#00E676] flex items-center gap-2"
-            >
-              <GraduationCap className="w-4 h-4 text-[#00E676]" />
-              <span>O'quv Markazi Kurslari (PMT, SAT, IELTS)</span>
-            </Link>
-            <Link
-              href="/#natijalar"
-              onClick={() => setMobileMenuOpen(false)}
-              className="py-1 text-slate-200 hover:text-[#00E676]"
-            >
-              Akademik Natijalar
-            </Link>
-            <Link
-              href="/#sharoitlar"
-              onClick={() => setMobileMenuOpen(false)}
-              className="py-1 text-slate-200 hover:text-[#00E676]"
-            >
-              Sharoitlar (3 Mahal taom, Transport, Yotoqxona)
-            </Link>
-            <Link
-              href="/#ustozlar"
-              onClick={() => setMobileMenuOpen(false)}
-              className="py-1 text-slate-200 hover:text-[#00E676]"
-            >
-              Ustozlar Kengashi
-            </Link>
-            <Link
-              href="/#qabul"
-              onClick={() => setMobileMenuOpen(false)}
-              className="py-1 text-slate-200 hover:text-[#00E676]"
-            >
-              Qabul 2026
-            </Link>
+          {/* Desktop nav */}
+          <nav className="hidden items-center gap-1 lg:flex" aria-label="Asosiy navigatsiya">
+            {NAV_LINKS.map((link) => {
+              const isActive = isHome && activeSection === link.href.replace("/#", "");
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  aria-current={isActive ? "true" : undefined}
+                  className={`relative rounded-lg px-3 py-2 text-[13px] font-medium transition-colors ${
+                    isActive ? "text-brand-400" : "text-slate-300 hover:text-white"
+                  }`}
+                >
+                  {isActive && (
+                    <span className="absolute inset-x-3 -bottom-px h-px bg-gradient-to-r from-transparent via-brand-400 to-transparent" />
+                  )}
+                  {link.label}
+                </Link>
+              );
+            })}
           </nav>
 
-          <div className="pt-4 mt-3 border-t border-white/10 space-y-2">
+          {/* Right cluster */}
+          <div className="flex items-center gap-2.5">
             <a
-              href={`tel:${ECOSYSTEM_DATA.contact.phoneMain.replace(/\D/g, "")}`}
-              className="w-full py-2.5 rounded-xl bg-white/10 text-white font-mono text-xs flex items-center justify-center gap-2"
+              href={`tel:${primaryPhone.replace(/\D/g, "")}`}
+              className="hidden items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-300 transition-colors hover:text-white xl:flex"
             >
-              <Phone className="w-4 h-4 text-[#00E676]" />
-              <span>{ECOSYSTEM_DATA.contact.phoneMain}</span>
+              <Phone className="h-3.5 w-3.5 text-brand-400" />
+              <span className="font-mono tracking-tight">{primaryPhone}</span>
+              <span className="text-slate-500">— {phoneLabel}</span>
             </a>
+
             <button
-              onClick={() => {
-                setMobileMenuOpen(false);
-                if (onOpenLeadModal) onOpenLeadModal("Mobil qabul arizasi");
-              }}
-              className="w-full py-3 rounded-full bg-[#00C853] text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg"
+              onClick={() => openLead("Navbar ariza")}
+              className="hidden rounded-xl bg-brand-500 px-4 py-2 text-xs font-bold uppercase tracking-wider text-white shadow-glow transition-all hover:bg-brand-400 active:scale-[0.98] sm:block"
             >
-              <span>Qabulga ariza qoldirish</span>
+              Ariza qoldirish
+            </button>
+
+            {/* Mobile: CTA + burger */}
+            <button
+              onClick={() => openLead("Mobil header ariza")}
+              className="rounded-xl bg-brand-500 px-3.5 py-2 text-[11px] font-bold uppercase tracking-wider text-white transition hover:bg-brand-400 sm:hidden"
+            >
+              Ariza
+            </button>
+            <button
+              onClick={() => setMobileMenuOpen((v) => !v)}
+              aria-expanded={mobileMenuOpen}
+              aria-controls="mobile-menu"
+              aria-label={mobileMenuOpen ? "Menyuni yopish" : "Menyuni ochish"}
+              className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-white transition hover:bg-white/20 lg:hidden"
+            >
+              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
           </div>
         </div>
-      )}
+
+        {/* Mobile panel */}
+        {mobileMenuOpen && (
+          <nav
+            id="mobile-menu"
+            aria-label="Mobil navigatsiya"
+            className="animate-fade-in border-t border-white/10 py-3 lg:hidden"
+          >
+            <div className="flex flex-col">
+              {NAV_LINKS.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="rounded-xl px-3 py-2.5 text-sm font-medium text-slate-200 transition-colors hover:bg-white/5 hover:text-white"
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </div>
+            <div className="mt-3 flex flex-col gap-2 border-t border-white/10 pt-3">
+              <a
+                href={`tel:${primaryPhone.replace(/\D/g, "")}`}
+                className="flex items-center justify-center gap-2 rounded-xl bg-white/10 px-4 py-3 text-sm font-semibold text-white"
+              >
+                <Phone className="h-4 w-4 text-brand-400" />
+                <span className="font-mono">{primaryPhone}</span>
+                <span className="text-xs text-slate-400">{phoneLabel}</span>
+              </a>
+              <button
+                onClick={() => openLead("Mobil qabul arizasi")}
+                className="w-full rounded-xl bg-brand-500 px-4 py-3 text-xs font-bold uppercase tracking-wider text-white transition hover:bg-brand-400"
+              >
+                Qabulga ariza qoldirish — 1-dars bepul
+              </button>
+            </div>
+          </nav>
+        )}
+      </div>
     </header>
   );
 }

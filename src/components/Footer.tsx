@@ -2,147 +2,192 @@
 
 import React from "react";
 import Link from "next/link";
-import { 
-  Phone, 
-  MapPin, 
-  Send, 
-  Globe,
-  School,
-  GraduationCap
-} from "lucide-react";
+import { MapPin, Send, Globe, School, GraduationCap, Clock } from "lucide-react";
 import { ECOSYSTEM_DATA } from "@/data/ecosystemData";
+
+const schoolLinks = [
+  { href: "/#haqida", label: "Maktab haqida" },
+  { href: "/#dasturlar", label: "0–11 sinf dasturlari" },
+  { href: "/#sharoitlar", label: "Ovqat, transport, yotoqxona" },
+  { href: "/#kun-tartibi", label: "Kun tartibi" },
+  { href: "/#natijalar", label: "Akademik natijalar" },
+  { href: "/#qabul", label: "Qabul & sinov darsi" },
+];
+
+const courseLinks = [
+  { href: "/#kurslar", label: "Prezident maktabi (PMT)" },
+  { href: "/#kurslar", label: "Digital SAT 1500+" },
+  { href: "/#kurslar", label: "IELTS 7.5+ va CEFR" },
+  { href: "/#kurslar", label: "Matematika — Milliy A+" },
+  { href: "/markaz", label: "O'quv markazi sahifasi" },
+];
 
 export default function Footer() {
   return (
-    <footer className="bg-slate-950 text-white border-t border-slate-900">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-10 lg:gap-8 pb-12 border-b border-slate-800">
-          
-          {/* Col 1: Brand & Logo */}
-          <div className="lg:col-span-4 space-y-4 text-left">
-            <Link href="/" className="flex items-center gap-3 group">
-              <div className="w-11 h-11 rounded-2xl p-1 bg-white/10 border border-white/20 flex items-center justify-center">
-                <img
-                  src="/logo.png"
-                  alt="Algoritm Logo"
-                  className="w-full h-full object-contain"
-                />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-xl font-black uppercase tracking-tight text-white leading-none">
-                  ALGORITM
+    <footer className="relative overflow-hidden bg-night-deep text-slate-300">
+      {/* Yuqori aksent chizig'i */}
+      <div className="h-px w-full bg-gradient-to-r from-transparent via-brand-500/70 to-transparent" />
+
+      {/* Orqa fon glow */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-40 left-1/2 h-80 w-[42rem] -translate-x-1/2 rounded-full bg-brand-500/10 blur-3xl"
+      />
+
+      <div className="relative mx-auto max-w-7xl px-4 pb-10 pt-16 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 gap-12 border-b border-white/10 pb-12 md:grid-cols-2 lg:grid-cols-12 lg:gap-8">
+          {/* Brand */}
+          <div className="space-y-5 lg:col-span-4">
+            <Link href="/" className="group flex items-center gap-3">
+              <span className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl bg-white/10 ring-1 ring-white/15 transition-transform group-hover:scale-105">
+                <img src="/logo.png" alt="" className="h-full w-full object-contain" />
+              </span>
+              <span className="flex flex-col leading-none">
+                <span className="font-display text-lg font-extrabold tracking-tight text-white">
+                  Algoritm
                 </span>
-                <span className="text-[10px] text-emerald-400 font-extrabold tracking-wider uppercase mt-1">
+                <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-brand-400">
                   Academy
                 </span>
-              </div>
+              </span>
             </Link>
 
-            <p className="text-xs text-slate-400 leading-relaxed max-w-sm font-medium">
-              1-11 sinf xususiy maktabi hamda Prezident maktablari, Digital SAT va Davlat grantlariga professional tayyorlovni birlashtirgan flagman ta'lim ekotizimi.
+            <p className="max-w-sm text-sm leading-relaxed text-slate-400">
+              0–11 sinf xususiy maktabi hamda Prezident maktabi (PMT), Digital SAT va davlat
+              grantlariga tayyorlovni birlashtirgan ta&apos;lim ekotizimi — Qarshi.
             </p>
 
-            <div className="text-xs text-slate-400 space-y-1">
-              <div>Davlat Litsenziyasi: <strong className="text-slate-200">{ECOSYSTEM_DATA.licenseNumber}</strong></div>
-              <div>Ta'lim tili: <strong className="text-slate-200">O'zbek / Rus</strong></div>
-            </div>
-          </div>
-
-          {/* Col 2: School Links */}
-          <div className="lg:col-span-3 space-y-3 text-left">
-            <h4 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-1.5">
-              <School className="w-4 h-4 text-emerald-400" /> Algoritm School (1-11 Sinf)
-            </h4>
-            <ul className="space-y-2 text-xs text-slate-400 font-medium">
-              <li><Link href="/#haqida" className="hover:text-emerald-400 transition">Maktab Missiyasi</Link></li>
-              <li><Link href="/#maktab" className="hover:text-emerald-400 transition">0-11 Sinf Dasturlari</Link></li>
-              <li><Link href="/#sharoitlar" className="hover:text-emerald-400 transition">3 Mahal Ovqat &amp; Transport</Link></li>
-              <li><Link href="/#kun-tartibi" className="hover:text-emerald-400 transition">Kun Tartibi (08:00–17:00)</Link></li>
-              <li><Link href="/#natijalar" className="hover:text-emerald-400 transition">Akademik Natijalar</Link></li>
-              <li><Link href="/#qabul" className="hover:text-emerald-400 transition">Qabul 2026</Link></li>
-            </ul>
-          </div>
-
-          {/* Col 3: Academy Links */}
-          <div className="lg:col-span-2 space-y-3 text-left">
-            <h4 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-1.5">
-              <GraduationCap className="w-4 h-4 text-emerald-400" /> Algoritm Kurslari
-            </h4>
-            <ul className="space-y-2 text-xs text-slate-400 font-medium">
-              <li><Link href="/#kurslar" className="hover:text-emerald-400 transition">Prezident Maktabi (PMT)</Link></li>
-              <li><Link href="/#kurslar" className="hover:text-emerald-400 transition">Digital SAT 1500+</Link></li>
-              <li><Link href="/#kurslar" className="hover:text-emerald-400 transition">IELTS 7.5+ &amp; CEFR</Link></li>
-              <li><Link href="/#kurslar" className="hover:text-emerald-400 transition">Matematika Milliy A+</Link></li>
-              <li><Link href="/#kurslar" className="hover:text-emerald-400 transition">DTM Davlat Granti</Link></li>
-            </ul>
-          </div>
-
-          {/* Col 4: Contact & Address */}
-          <div className="lg:col-span-3 space-y-3 text-left">
-            <h4 className="text-xs font-black text-white uppercase tracking-wider">
-              Aloqa &amp; Manzil
-            </h4>
-            <div className="space-y-2.5 text-xs text-slate-400 font-medium">
-              <div className="flex items-start gap-2">
-                <MapPin className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                <span>{ECOSYSTEM_DATA.contact.address} ({ECOSYSTEM_DATA.contact.landmark})</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Phone className="w-4 h-4 text-emerald-400 shrink-0" />
-                <a href={`tel:${ECOSYSTEM_DATA.contact.phoneMain.replace(/\D/g, "")}`} className="hover:text-white font-mono">
-                  {ECOSYSTEM_DATA.contact.phoneMain}
-                </a>
-                <span className="text-slate-600">— O'quv markazi</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Phone className="w-4 h-4 text-emerald-400 shrink-0" />
-                <a href={`tel:${ECOSYSTEM_DATA.contact.phoneSecondary.replace(/\D/g, "")}`} className="hover:text-white font-mono">
-                  {ECOSYSTEM_DATA.contact.phoneSecondary}
-                </a>
-                <span className="text-slate-600">— O'quv markazi 2-raqam</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Phone className="w-4 h-4 text-emerald-400 shrink-0" />
-                <a href={`tel:${ECOSYSTEM_DATA.school.phone.replace(/\D/g, "")}`} className="hover:text-white font-mono">
-                  {ECOSYSTEM_DATA.school.phone}
-                </a>
-                <span className="text-slate-600">— Maktab qabuli</span>
-              </div>
+            <div className="space-y-1.5 text-xs text-slate-500">
+              <p>
+                Davlat litsenziyasi:{" "}
+                <span className="font-semibold text-slate-300">{ECOSYSTEM_DATA.licenseNumber}</span>
+              </p>
+              <p>
+                Ta&apos;lim tili:{" "}
+                <span className="font-semibold text-slate-300">O&apos;zbek / Rus</span>
+              </p>
             </div>
 
-            <div className="pt-2 flex items-center gap-3">
+            <div className="flex items-center gap-2.5 pt-1">
               <a
                 href={ECOSYSTEM_DATA.contact.telegram}
                 target="_blank"
                 rel="noreferrer"
-                className="w-9 h-9 rounded-full bg-white/10 hover:bg-emerald-600 flex items-center justify-center text-white transition"
+                className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 text-slate-300 ring-1 ring-white/10 transition hover:bg-brand-500 hover:text-white hover:ring-brand-500"
                 aria-label="Telegram"
               >
-                <Send className="w-4 h-4" />
+                <Send className="h-4 w-4" />
               </a>
               <a
                 href={ECOSYSTEM_DATA.contact.instagram}
                 target="_blank"
                 rel="noreferrer"
-                className="w-9 h-9 rounded-full bg-white/10 hover:bg-emerald-600 flex items-center justify-center text-white transition"
+                className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 text-slate-300 ring-1 ring-white/10 transition hover:bg-brand-500 hover:text-white hover:ring-brand-500"
                 aria-label="Instagram"
               >
-                <Globe className="w-4 h-4" />
+                <Globe className="h-4 w-4" />
               </a>
             </div>
           </div>
 
+          {/* Maktab havolalari */}
+          <nav className="lg:col-span-3" aria-label="Maktab bo'limlari">
+            <h4 className="mb-4 flex items-center gap-2 text-[13px] font-bold text-white">
+              <School className="h-4 w-4 text-brand-400" />
+              Algoritm School
+            </h4>
+            <ul className="space-y-2.5 text-sm">
+              {schoolLinks.map((l) => (
+                <li key={l.label}>
+                  <Link
+                    href={l.href}
+                    className="text-slate-400 transition-colors hover:text-brand-400"
+                  >
+                    {l.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+
+          {/* Kurs havolalari */}
+          <nav className="lg:col-span-2" aria-label="Kurs bo'limlari">
+            <h4 className="mb-4 flex items-center gap-2 text-[13px] font-bold text-white">
+              <GraduationCap className="h-4 w-4 text-brand-400" />
+              O'quv markazi
+            </h4>
+            <ul className="space-y-2.5 text-sm">
+              {courseLinks.map((l) => (
+                <li key={l.label}>
+                  <Link
+                    href={l.href}
+                    className="text-slate-400 transition-colors hover:text-brand-400"
+                  >
+                    {l.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+
+          {/* Aloqa */}
+          <div className="space-y-4 lg:col-span-3">
+            <h4 className="text-[13px] font-bold text-white">Aloqa va manzil</h4>
+
+            <p className="flex items-start gap-2.5 text-sm text-slate-400">
+              <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-brand-400" />
+              <span>
+                {ECOSYSTEM_DATA.contact.address}
+                <br />
+                <span className="text-xs text-slate-500">{ECOSYSTEM_DATA.contact.landmark}</span>
+              </span>
+            </p>
+
+            <p className="flex items-center gap-2.5 text-sm">
+              <School className="h-4 w-4 shrink-0 text-brand-400" />
+              <a
+                href={`tel:${ECOSYSTEM_DATA.school.phone.replace(/\D/g, "")}`}
+                className="font-mono text-slate-300 transition-colors hover:text-brand-400"
+              >
+                {ECOSYSTEM_DATA.school.phone}
+              </a>
+              <span className="text-xs text-slate-500">— maktab</span>
+            </p>
+            <p className="flex items-center gap-2.5 text-sm">
+              <GraduationCap className="h-4 w-4 shrink-0 text-brand-400" />
+              <span className="font-mono text-slate-300">
+                {ECOSYSTEM_DATA.contact.phoneMain} · {ECOSYSTEM_DATA.contact.phoneSecondary}
+              </span>
+              <span className="text-xs text-slate-500">— markaz</span>
+            </p>
+
+            <p className="flex items-center gap-2.5 text-sm text-slate-400">
+              <Clock className="h-4 w-4 shrink-0 text-brand-400" />
+              <span>
+                Maktab: {ECOSYSTEM_DATA.school.workingHours}
+                <span className="mx-2 text-slate-600">·</span>
+                Markaz: {ECOSYSTEM_DATA.academy.workingHours}
+              </span>
+            </p>
+          </div>
         </div>
 
-        {/* Copyright */}
-        <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
-          <div>
-            © 2026 Algoritm Academy. Barcha huquqlar himoyalangan.
-          </div>
-          <div className="flex items-center gap-6">
-            <Link href="/#maktab" className="hover:text-white transition">Xususiy Maktab</Link>
-            <Link href="/#kurslar" className="hover:text-white transition">O'quv Markazi</Link>
-            <Link href="/aloqa" className="hover:text-white transition">Aloqa</Link>
+        {/* Pastki qator */}
+        <div className="flex flex-col items-center justify-between gap-4 pt-8 text-xs text-slate-500 sm:flex-row">
+          <p>© 2026 Algoritm Academy. Barcha huquqlar himoyalangan.</p>
+          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+            <Link href="/maktab" className="transition-colors hover:text-slate-200">
+              Maktab (0–11)
+            </Link>
+            <Link href="/markaz" className="transition-colors hover:text-slate-200">
+              O'quv markazi
+            </Link>
+            <Link href="/galereya" className="transition-colors hover:text-slate-200">
+              Galereya
+            </Link>
+            <Link href="/aloqa" className="transition-colors hover:text-slate-200">
+              Aloqa
+            </Link>
           </div>
         </div>
       </div>

@@ -254,11 +254,11 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
         
         {/* Section Header */}
         <div className="max-w-3xl mb-14 text-left">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-[#00C853] text-xs font-bold uppercase tracking-wider mb-3">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-brand-500 text-xs font-bold uppercase tracking-wider mb-3">
             <GraduationCap className="w-4 h-4" /> Professional Pedagogik Jamoa
           </div>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-slate-950 uppercase leading-tight">
-            Kuchli Natijador <span className="text-[#00C853]">Ustozlar Jamoasi</span>
+            Kuchli Natijador <span className="text-brand-500">Ustozlar Jamoasi</span>
           </h2>
           <p className="mt-2 text-slate-600 text-sm sm:text-base font-normal">
             Har bir ustozning rasmiy sertifikatlari, yutuqlari va tajribasi bilan tanishing.
@@ -288,7 +288,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
 
                 {/* Top Right Floating Frosted Play Button — faqat real video mavjud bo'lsa */}
                 {member.isRealVideo && (
-                  <div className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/30 backdrop-blur-md border border-white/20 text-white flex items-center justify-center shadow-lg group-hover:bg-[#00C853] group-hover:scale-110 transition-all duration-300">
+                  <div className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/30 backdrop-blur-md border border-white/20 text-white flex items-center justify-center shadow-lg group-hover:bg-brand-500 group-hover:scale-110 transition-all duration-300">
                     <Play className="w-3.5 h-3.5 fill-white ml-0.5" />
                   </div>
                 )}
@@ -365,7 +365,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
                 <span className="font-bold text-slate-700 text-[11px] truncate max-w-[95px] sm:max-w-[110px]">
                   {member.subject}
                 </span>
-                <span className="text-[#00C853] font-black uppercase text-[11px] flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                <span className="text-brand-500 font-black uppercase text-[11px] flex items-center gap-1 group-hover:translate-x-1 transition-transform">
                   <span>Batafsil</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </span>
@@ -378,7 +378,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
         {/* Bottom Reassurance Banner */}
         <div className="mt-14 p-6 sm:p-8 rounded-3xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-6 text-left">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-[#00C853]/10 border border-[#00C853]/20 flex items-center justify-center text-[#00C853] shrink-0">
+            <div className="w-12 h-12 rounded-2xl bg-brand-500/10 border border-brand-500/20 flex items-center justify-center text-brand-500 shrink-0">
               <Award className="w-6 h-6" />
             </div>
             <div>
@@ -393,7 +393,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
 
           <a
             href={`tel:${ECOSYSTEM_DATA.contact.phoneMain.replace(/\D/g, "")}`}
-            className="px-6 py-3 rounded-full bg-slate-900 hover:bg-[#00C853] text-white font-bold text-xs uppercase tracking-wider transition shrink-0 shadow-sm flex items-center gap-2"
+            className="px-6 py-3 rounded-full bg-slate-900 hover:bg-brand-500 text-white font-bold text-xs uppercase tracking-wider transition shrink-0 shadow-sm flex items-center gap-2"
           >
             <Phone className="w-3.5 h-3.5" />
             <span>Ustoz Bilan Bog'lanish</span>
@@ -405,7 +405,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
       {/* DETAILED USER-FRIENDLY VIDEO & PROFILE MODAL */}
       {selectedMember && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-xl animate-in fade-in duration-200">
-          <div className="relative w-full max-w-3xl bg-[#0b101b] rounded-3xl overflow-hidden shadow-2xl border border-white/20 text-white text-left max-h-[92vh] flex flex-col">
+          <div className="relative w-full max-w-3xl bg-night rounded-3xl overflow-hidden shadow-2xl border border-white/20 text-white text-left max-h-[92vh] flex flex-col">
             
             {/* Modal Header */}
             <div className="p-5 sm:p-6 bg-slate-950/80 backdrop-blur-md flex items-center justify-between border-b border-white/10 shrink-0">
@@ -502,7 +502,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
                 </div>
                 <div className="p-3 rounded-xl bg-white/5 border border-white/10">
                   <div className="text-[9px] font-bold text-slate-400 uppercase">O'quvchilar</div>
-                  <div className="text-sm sm:text-base font-bold text-[#00E676] mt-0.5">{selectedMember.students}</div>
+                  <div className="text-sm sm:text-base font-bold text-brand-400 mt-0.5">{selectedMember.students}</div>
                 </div>
               </div>
 
@@ -513,7 +513,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
                     handleCloseModal();
                     if (onSelectTeacherForConsultation) onSelectTeacherForConsultation(selectedMember.name);
                   }}
-                  className="w-full py-3.5 rounded-full bg-[#00C853] hover:bg-[#00E676] text-white font-bold text-xs uppercase tracking-wider shadow-lg shadow-emerald-600/30 transition flex items-center justify-center gap-2"
+                  className="w-full py-3.5 rounded-full bg-brand-500 hover:bg-brand-400 text-white font-bold text-xs uppercase tracking-wider shadow-lg shadow-emerald-600/30 transition flex items-center justify-center gap-2"
                 >
                   <span>{selectedMember.name} Darsiga Yozilish</span>
                   <ArrowRight className="w-4 h-4" />

@@ -79,7 +79,7 @@ export default function SchoolHero({ onOpenLeadModal }: AcademyHeroProps) {
   };
 
   return (
-    <section className="relative w-full min-h-[90vh] sm:min-h-screen flex items-end pb-12 sm:pb-16 pt-28 sm:pt-32 overflow-hidden bg-[#070b14] text-white">
+    <section className="relative w-full min-h-[90vh] sm:min-h-screen flex items-end pb-12 sm:pb-16 pt-28 sm:pt-32 overflow-hidden bg-night-deep text-white">
       
       {/* Background Image Slider */}
       <div className="absolute inset-0 z-0">
@@ -97,8 +97,8 @@ export default function SchoolHero({ onOpenLeadModal }: AcademyHeroProps) {
             />
             
             {/* Cinematic Gradient Vignette */}
-            <div className="absolute inset-0 bg-gradient-to-t from-[#070b14]/95 via-[#070b14]/40 to-[#070b14]/60"></div>
-            <div className="absolute inset-0 bg-gradient-to-r from-[#070b14]/90 via-[#070b14]/40 to-transparent"></div>
+            <div className="absolute inset-0 bg-gradient-to-t from-night-deep/95 via-night-deep/40 to-night-deep/60"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-night-deep/90 via-night-deep/40 to-transparent"></div>
           </div>
         ))}
       </div>
@@ -113,21 +113,21 @@ export default function SchoolHero({ onOpenLeadModal }: AcademyHeroProps) {
               href="#maktab"
               className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white text-xs font-bold uppercase tracking-wider transition-all"
             >
-              <School className="w-3.5 h-3.5 text-[#00E676]" />
+              <School className="w-3.5 h-3.5 text-brand-400" />
               <span>1–11 Xususiy Maktab</span>
             </a>
             <a
               href="#kurslar"
               className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white text-xs font-bold uppercase tracking-wider transition-all"
             >
-              <GraduationCap className="w-3.5 h-3.5 text-[#00E676]" />
+              <GraduationCap className="w-3.5 h-3.5 text-brand-400" />
               <span>O'quv Markazi Kurslari</span>
             </a>
           </div>
 
           {/* Main Headline */}
           <div className="space-y-1">
-            <div className="text-lg sm:text-2xl lg:text-3xl font-black uppercase tracking-wider text-[#00E676] leading-none">
+            <div className="text-lg sm:text-2xl lg:text-3xl font-black uppercase tracking-wider text-brand-400 leading-none">
               {slides[currentSlide].highlightTitle}
             </div>
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black uppercase tracking-tight text-white leading-tight">
@@ -144,7 +144,7 @@ export default function SchoolHero({ onOpenLeadModal }: AcademyHeroProps) {
           <div className="pt-2 flex flex-wrap items-center gap-3.5">
             <button
               onClick={() => onOpenLeadModal("Birinchi bepul darsga yozilish")}
-              className="px-7 py-3.5 rounded-full bg-[#00C853] hover:bg-[#00E676] text-white font-bold text-xs sm:text-sm uppercase tracking-wider transition-all duration-200 shadow-lg shadow-emerald-600/30 hover:shadow-emerald-600/50 hover:scale-105 flex items-center gap-2"
+              className="px-7 py-3.5 rounded-full bg-brand-500 hover:bg-brand-400 text-white font-bold text-xs sm:text-sm uppercase tracking-wider transition-all duration-200 shadow-lg shadow-emerald-600/30 hover:shadow-emerald-600/50 hover:scale-105 flex items-center gap-2"
             >
               <span>Birinchi bepul darsga yozilish</span>
               <ArrowRight className="w-4 h-4" />
@@ -168,7 +168,7 @@ export default function SchoolHero({ onOpenLeadModal }: AcademyHeroProps) {
                 key={idx}
                 onClick={() => setCurrentSlide(idx)}
                 className={`h-1.5 rounded-full transition-all duration-300 ${
-                  idx === currentSlide ? "w-8 bg-[#00E676]" : "w-2.5 bg-white/30 hover:bg-white/50"
+                  idx === currentSlide ? "w-8 bg-brand-400" : "w-2.5 bg-white/30 hover:bg-white/50"
                 }`}
                 aria-label={`Slide ${idx + 1}`}
               />

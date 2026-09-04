@@ -27,7 +27,7 @@ export default function AloqaPage() {
         {/* Header */}
         <section className="relative pt-20 pb-16 bg-slate-950 border-b border-white/10">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center max-w-3xl">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#00E676] block mb-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-brand-400 block mb-2">
               Markazimiz & Aloqa
             </span>
             <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight uppercase mb-4">

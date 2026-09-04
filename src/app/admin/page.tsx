@@ -205,15 +205,15 @@ export default function AdminPage() {
   // --- Login ekrani ---
   if (authState === "login") {
     return (
-      <div className="flex flex-col min-h-screen bg-[#0b1329] text-white">
+      <div className="flex flex-col min-h-screen bg-night text-white">
         <Navbar />
         <main className="flex-1 flex items-center justify-center px-4 py-20">
           <form
             onSubmit={handleLogin}
             className="w-full max-w-md rounded-3xl bg-white/5 border border-white/10 p-8 sm:p-10 text-center space-y-5"
           >
-            <div className="w-14 h-14 rounded-full bg-brand/20 border border-brand/40 flex items-center justify-center mx-auto">
-              <Lock className="w-6 h-6 text-brand" />
+            <div className="w-14 h-14 rounded-full bg-brand-500/20 border border-brand-500/40 flex items-center justify-center mx-auto">
+              <Lock className="w-6 h-6 text-brand-500" />
             </div>
             <div>
               <h1 className="text-2xl font-black uppercase text-white">CRM Kirish</h1>
@@ -227,7 +227,7 @@ export default function AdminPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Maxfiy parol"
-              className="w-full px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white text-sm placeholder:text-slate-500 focus:outline-none focus:border-brand text-center"
+              className="w-full px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white text-sm placeholder:text-slate-500 focus:outline-none focus:border-brand-500 text-center"
             />
             {loginError && (
               <p className="text-xs text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-xl px-3 py-2.5 flex items-center gap-2">
@@ -237,7 +237,7 @@ export default function AdminPage() {
             <button
               type="submit"
               disabled={busy || !password}
-              className="w-full py-3.5 rounded-full bg-brand hover:bg-brand-light text-slate-950 font-black text-xs uppercase tracking-wider transition disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full py-3.5 rounded-full bg-brand-500 hover:bg-brand-500-400 text-slate-950 font-black text-xs uppercase tracking-wider transition disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
               Kirish
@@ -254,10 +254,10 @@ export default function AdminPage() {
 
   if (authState === "tekshirilmoqda") {
     return (
-      <div className="flex flex-col min-h-screen bg-[#0b1329] text-white">
+      <div className="flex flex-col min-h-screen bg-night text-white">
         <Navbar />
         <main className="flex-1 flex items-center justify-center">
-          <Loader2 className="w-8 h-8 text-brand animate-spin" />
+          <Loader2 className="w-8 h-8 text-brand-500 animate-spin" />
         </main>
         <Footer />
       </div>
@@ -265,7 +265,7 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#0b1329] text-white">
+    <div className="flex flex-col min-h-screen bg-night text-white">
       <Navbar />
 
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-10">
@@ -273,7 +273,7 @@ export default function AdminPage() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="px-3 py-1 rounded-full bg-brand/15 text-brand text-xs font-bold uppercase tracking-wider border border-brand/30">
+              <span className="px-3 py-1 rounded-full bg-brand-500/15 text-brand-500 text-xs font-bold uppercase tracking-wider border border-brand-500/30">
                 CRM Portal
               </span>
               <span className="text-xs text-slate-400 font-mono">{leads.length} ta jami ariza</span>
@@ -288,7 +288,7 @@ export default function AdminPage() {
               onClick={exportCSV}
               className="px-5 py-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-bold border border-white/15 transition flex items-center gap-2 self-start md:self-auto"
             >
-              <Download className="w-4 h-4 text-brand" /> Excel / CSV Eksport
+              <Download className="w-4 h-4 text-brand-500" /> Excel / CSV Eksport
             </button>
             <button
               onClick={handleLogout}
@@ -318,14 +318,14 @@ export default function AdminPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Ism, telefon yoki kurs bo'yicha qidiruv..."
-              className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-white/5 border border-white/10 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-brand"
+              className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-white/5 border border-white/10 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-brand-500"
             />
           </div>
 
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
-            className="w-full px-4 py-2.5 rounded-2xl bg-white/5 border border-white/10 text-white text-xs focus:outline-none focus:border-brand"
+            className="w-full px-4 py-2.5 rounded-2xl bg-white/5 border border-white/10 text-white text-xs focus:outline-none focus:border-brand-500"
           >
             <option value="hammasi" className="bg-slate-900">Barcha Yo'nalishlar</option>
             <option value="maktab" className="bg-slate-900">Algoritm Maktabi</option>
@@ -336,7 +336,7 @@ export default function AdminPage() {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="w-full px-4 py-2.5 rounded-2xl bg-white/5 border border-white/10 text-white text-xs focus:outline-none focus:border-brand"
+            className="w-full px-4 py-2.5 rounded-2xl bg-white/5 border border-white/10 text-white text-xs focus:outline-none focus:border-brand-500"
           >
             <option value="hammasi" className="bg-slate-900">Barcha Statuslar</option>
             {STATUS_OPTIONS.map((s) => (
@@ -384,9 +384,9 @@ export default function AdminPage() {
                       <td className="py-4 px-6 font-mono text-slate-300">
                         <a
                           href={`tel:${lead.phone.replace(/\D/g, "")}`}
-                          className="hover:text-brand transition flex items-center gap-1.5"
+                          className="hover:text-brand-500 transition flex items-center gap-1.5"
                         >
-                          <Phone className="w-3.5 h-3.5 text-brand" /> {lead.phone}
+                          <Phone className="w-3.5 h-3.5 text-brand-500" /> {lead.phone}
                         </a>
                       </td>
                       <td className="py-4 px-6">
@@ -395,7 +395,7 @@ export default function AdminPage() {
                             lead.type === "maktab"
                               ? "bg-sky-500/20 text-sky-400 border border-sky-500/30"
                               : lead.type === "kurs"
-                                ? "bg-brand/20 text-brand border border-brand/30"
+                                ? "bg-brand-500/20 text-brand-500 border border-brand-500/30"
                                 : "bg-white/10 text-slate-300 border border-white/15"
                           }`}
                         >
@@ -423,7 +423,7 @@ export default function AdminPage() {
                               : lead.status === "boglangan"
                                 ? "bg-sky-500/20 text-sky-400 border-sky-500/30"
                                 : lead.status === "qabul_qilindi"
-                                  ? "bg-brand/20 text-brand border border-brand/30"
+                                  ? "bg-brand-500/20 text-brand-500 border border-brand-500/30"
                                   : "bg-rose-500/20 text-rose-400 border-rose-500/30"
                           }`}
                         >

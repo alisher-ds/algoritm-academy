@@ -3,33 +3,40 @@
 @tailwind utilities;
 
 :root {
-  --font-inter: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  --brand-emerald: #00C853;
-  --brand-emerald-light: #00E676;
-  --brand-emerald-dark: #009624;
-  --brand-lime: #76FF03;
-  --bg-natural: #F8FAFC;
-  --bg-white: #FFFFFF;
-  --text-dark: #0F172A;
-  --text-muted: #475569;
-  --card-border: rgba(15, 23, 42, 0.08);
+  --background: #ffffff;
+  --foreground: #0f172a;
+  --brand: #00c853;
 }
 
 html {
   scroll-behavior: smooth;
-  font-family: var(--font-inter);
-  background-color: #FFFFFF;
-  color: #0F172A;
 }
 
 body {
-  background-color: #FFFFFF;
-  color: #0F172A;
+  background-color: var(--background);
+  color: var(--foreground);
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
-/* Inter Nation Style Glow & Shimmer */
+/* Sarlavhalar yagona display shriftidan foydalanadi (Manrope Variable) */
+h1,
+h2,
+h3,
+h4 {
+  font-family: "Manrope Variable", "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: -0.02em;
+}
+
+/* Fokus holati — klaviatura foydalanuvchilari uchun ko'rinadigan ring */
+:where(a, button, input, select, textarea, summary):focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: 0.375rem;
+}
+
+/* Glow & shimmer (orqa fon effektlari) */
 .glow-emerald {
   box-shadow: 0 0 25px rgba(0, 230, 118, 0.25);
 }
@@ -54,17 +61,47 @@ body {
   animation-play-state: paused;
 }
 
+/* Scroll-reveal — IntersectionObserver'siz, 'animate-fade-up'ga bog'liq bo'lmagan yordamchi */
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1), transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.reveal.reveal-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Img elementlarida tasodifiy skeleton rang oldini olish */
+img {
+  background-color: transparent;
+}
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 7px;
 }
 ::-webkit-scrollbar-track {
-  background: #F1F5F9;
+  background: #f1f5f9;
 }
 ::-webkit-scrollbar-thumb {
-  background: #CBD5E1;
+  background: #cbd5e1;
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #94A3B8;
+  background: #94a3b8;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
