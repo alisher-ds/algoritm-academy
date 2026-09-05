@@ -17,22 +17,27 @@ export interface LeadOption {
 }
 
 export const LEAD_OPTIONS: LeadOption[] = [
-  // Maktab bo'limi
-  { value: "0–11 Sinf Xususiy Maktabi (To'liq kun)", type: "maktab", label: "🏫 0–11 Sinf Xususiy Maktabi (To'liq kun)" },
-  { value: "0-Sinf & Maktabgacha Tayyorlov", type: "maktab", label: "🏫 0-Sinf & Maktabgacha Tayyorlov" },
-  { value: "1–4 Sinf: Boshlang'ich & PMT poydevori", type: "maktab", label: "🏫 1–4 Sinf: Boshlang'ich & PMT" },
-  { value: "5–8 Sinf: O'rta Ta'lim & Olimpiadalar", type: "maktab", label: "🏫 5–8 Sinf: O'rta Maktab & Olimpiadalar" },
-  { value: "9–11 Sinf: Yuqori Sinf & SAT/OTM Grant", type: "maktab", label: "🏫 9–11 Sinf: Yuqori Sinf & SAT/OTM Grant" },
+  // Maktab
+  { value: "0–11 Sinf Xususiy Maktabi", type: "maktab", label: "0–11 Sinf Xususiy Maktabi" },
+  { value: "Maktabgacha tayyorlov", type: "maktab", label: "Maktabgacha tayyorlov" },
 
-  // O'quv markazi kurslari
-  { value: "Prezident Maktabiga Tayyorlov (PMT)", type: "kurs", label: "🎓 Prezident Maktabiga Tayyorlov (PMT)" },
-  { value: "Digital SAT & Xalqaro Universitetlar", type: "kurs", label: "🎓 Digital SAT & Xalqaro Universitetlar" },
-  { value: "IELTS 7.5+ & Akademik Ingliz Tili", type: "kurs", label: "🎓 IELTS 7.5+ & Akademik Ingliz Tili" },
-  { value: "Matematika (Milliy Sertifikat A+ & DTM)", type: "kurs", label: "🎓 Matematika (Milliy Sertifikat A+ & DTM)" },
-  { value: "Robototexnika & Sun'iy Intellekt", type: "kurs", label: "🎓 Robototexnika & Sun'iy Intellekt" },
+  // O'quv markazi — Flagman kurslar
+  { value: "Prezident maktabiga tayyorlov", type: "kurs", label: "Prezident maktabiga tayyorlov" },
+  { value: "Digital SAT", type: "kurs", label: "Digital SAT" },
+  { value: "IELTS 7+", type: "kurs", label: "IELTS 7+" },
+  { value: "Matematika", type: "kurs", label: "Matematika" },
+
+  // O'quv markazi — Fanlar
+  { value: "Fizika", type: "kurs", label: "Fizika" },
+  { value: "Kimyo", type: "kurs", label: "Kimyo" },
+  { value: "Biologiya", type: "kurs", label: "Biologiya" },
+  { value: "Ingliz tili 0 dan", type: "kurs", label: "Ingliz tili 0 dan" },
+  { value: "Ona tili", type: "kurs", label: "Ona tili" },
+  { value: "Huquq", type: "kurs", label: "Huquq" },
+  { value: "Tarix", type: "kurs", label: "Tarix" },
 
   // Umumiy
-  { value: "Boshqa yo'nalish / Maslahat olish", type: "umumiy", label: "📋 Boshqa yo'nalish / Maslahat olish" },
+  { value: "Boshqa yo'nalish / Maslahat olish", type: "umumiy", label: "Boshqa yo'nalish / Maslahat olish" },
 ];
 
 function matchInitialCourse(initial?: string): string {
@@ -43,41 +48,29 @@ function matchInitialCourse(initial?: string): string {
   const direct = LEAD_OPTIONS.find((o) => o.value.toLowerCase() === s);
   if (direct) return direct.value;
 
-  // 2. Maktab sinflari — birinchi navbatda (kurs nomlari bilan chalkashmasligi uchun)
-  if (s.includes("0-sinf") || s.includes("maktabgacha")) {
-    return "0-Sinf & Maktabgacha Tayyorlov";
+  // 2. Maktab
+  if (s.includes("maktabgacha") || s.includes("0-sinf")) {
+    return "Maktabgacha tayyorlov";
   }
-  if (s.includes("1–4") || s.includes("1-4") || s.includes("boshlang'ich")) {
-    return "1–4 Sinf: Boshlang'ich & PMT poydevori";
-  }
-  if (s.includes("5–8") || s.includes("5-8") || s.includes("o'rta")) {
-    return "5–8 Sinf: O'rta Ta'lim & Olimpiadalar";
-  }
-  if (s.includes("9–11") || s.includes("9-11") || s.includes("yuqori")) {
-    return "9–11 Sinf: Yuqori Sinf & SAT/OTM Grant";
+  if (s.includes("maktab") || s.includes("school") || s.includes("sinf")) {
+    return "0–11 Sinf Xususiy Maktabi";
   }
 
-  // 3. Akademik kurslar
-  if (s.includes("robot") || s.includes("intellekt") || s.includes("ai")) {
-    return "Robototexnika & Sun'iy Intellekt";
+  // 3. Akademik kurslar & fanlar
+  if (s.includes("bio")) return "Biologiya";
+  if (s.includes("kimyo")) return "Kimyo";
+  if (s.includes("fizik")) return "Fizika";
+  if (s.includes("huquq")) return "Huquq";
+  if (s.includes("tarix")) return "Tarix";
+  if (s.includes("ona tili") || s.includes("adabiyot")) return "Ona tili";
+  if (s.includes("sat")) return "Digital SAT";
+  if (s.includes("pmt") || s.includes("prezident")) return "Prezident maktabiga tayyorlov";
+  if (s.includes("ielts")) return "IELTS 7+";
+  if (s.includes("ingliz") && (s.includes("0") || s.includes("beginner") || s.includes("noldan"))) {
+    return "Ingliz tili 0 dan";
   }
-  if (s.includes("sat")) {
-    return "Digital SAT & Xalqaro Universitetlar";
-  }
-  if (s.includes("pmt") || s.includes("prezident")) {
-    return "Prezident Maktabiga Tayyorlov (PMT)";
-  }
-  if (s.includes("ielts") || s.includes("ingliz") || s.includes("cefr") || s.includes("cambridge")) {
-    return "IELTS 7.5+ & Akademik Ingliz Tili";
-  }
-  if (s.includes("matematika") || s.includes("dtm") || s.includes("sertifikat")) {
-    return "Matematika (Milliy Sertifikat A+ & DTM)";
-  }
-
-  // 4. Umumiy maktab murojaati
-  if (s.includes("maktab") || s.includes("school") || s.includes("akademiya") || s.includes("sinf")) {
-    return "0–11 Sinf Xususiy Maktabi (To'liq kun)";
-  }
+  if (s.includes("ingliz") || s.includes("cefr")) return "IELTS 7+";
+  if (s.includes("matem")) return "Matematika";
 
   return "Boshqa yo'nalish / Maslahat olish";
 }

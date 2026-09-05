@@ -10,13 +10,19 @@ interface Option {
 }
 
 const OPTIONS: Option[] = [
-  { value: "0–11 Sinf Xususiy Maktabi (To'liq kun)", type: "maktab" },
-  { value: "0-Sinf & Maktabgacha Tayyorlov", type: "maktab" },
-  { value: "Prezident Maktabiga Tayyorlov (PMT)", type: "kurs" },
-  { value: "Digital SAT & Xalqaro Universitetlar", type: "kurs" },
-  { value: "IELTS 7.5+ & Akademik Ingliz Tili", type: "kurs" },
-  { value: "Matematika (Milliy Sertifikat A+ & DTM)", type: "kurs" },
-  { value: "Robototexnika & Sun'iy Intellekt", type: "kurs" },
+  { value: "0–11 Sinf Xususiy Maktabi", type: "maktab" },
+  { value: "Maktabgacha tayyorlov", type: "maktab" },
+  { value: "Prezident maktabiga tayyorlov", type: "kurs" },
+  { value: "Digital SAT", type: "kurs" },
+  { value: "IELTS 7+", type: "kurs" },
+  { value: "Matematika", type: "kurs" },
+  { value: "Fizika", type: "kurs" },
+  { value: "Kimyo", type: "kurs" },
+  { value: "Biologiya", type: "kurs" },
+  { value: "Ingliz tili 0 dan", type: "kurs" },
+  { value: "Ona tili", type: "kurs" },
+  { value: "Huquq", type: "kurs" },
+  { value: "Tarix", type: "kurs" },
   { value: "Boshqa yo'nalish / Maslahat olish", type: "umumiy" },
 ];
 
@@ -173,7 +179,6 @@ export default function LeadBannerSection() {
                       >
                         {OPTIONS.map((o) => (
                           <option key={o.value} value={o.value}>
-                            {o.type === "maktab" ? "🏫 " : o.type === "kurs" ? "🎓 " : "📋 "}
                             {o.value}
                           </option>
                         ))}
