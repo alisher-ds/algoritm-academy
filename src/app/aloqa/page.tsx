@@ -193,7 +193,7 @@ export default function AloqaPage() {
                     <div className="flex items-center gap-3">
                       <Award className="w-5 h-5 text-brand-600 shrink-0" />
                       <span>
-                        <strong>Yo'nalish:</strong> PMT, SAT 1500+, IELTS 7.5+, Milliy Sertifikat A+
+                        <strong>Yo'nalish:</strong> PMT, SAT 1500+, IELTS 7+, Milliy Sertifikat A+
                       </span>
                     </div>
                   </div>

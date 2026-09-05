@@ -208,7 +208,7 @@ export const ECOSYSTEM_DATA = {
   academy: {
     name: "Algoritm Academy",
     tagline: "Repetitorlik & O'quv Markazi",
-    description: "Prezident maktabiga tayyorlov (PMT), SAT 1500+, IELTS 7.5+, Matematika Milliy Sertifikat va DTM grant repetitorlik kurslari.",
+    description: "Prezident maktabiga tayyorlov (PMT), SAT 1500+, IELTS 7+, Matematika Milliy Sertifikat va DTM grant repetitorlik kurslari.",
     address: "Qarshi shahri, Islom Karimov ko'chasi 291V-uy",
     landmark: "Mo'ljal: Zulfina Med klinikasi yonida",
     googleMapsUrl: "https://maps.app.goo.gl/2Grpzgi6X6SeiruA6",
@@ -296,7 +296,7 @@ export const ECOSYSTEM_DATA = {
     },
     {
       id: "ielts-pro",
-      title: "IELTS 7.5+ & CEFR Intensive",
+      title: "IELTS 7+ & CEFR Intensive",
       category: "tillar" as const,
       categoryLabel: "Chet Tillari",
       description: "Speaking, Writing, Reading va Listening ko'nikmalarini jadal rivojlantirish va xalqaro sertifikat olish kursi.",
@@ -315,7 +315,7 @@ export const ECOSYSTEM_DATA = {
         experience: "3+ yil tajriba",
         rating: 5.0,
       },
-      badge: "IELTS 8.5",
+      badge: "Xalqaro sertifikat",
       isPopular: true,
     },
     {

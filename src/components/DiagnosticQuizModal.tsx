@@ -62,7 +62,7 @@ export default function DiagnosticQuizModal({
         };
       } else if (interest === "ielts") {
         res = {
-          title: "IELTS 7.5+ & CEFR Intensive",
+          title: "IELTS 7+ & CEFR Intensive",
           description: "Speaking va Writing bo'yicha kuchli mentorlar bilan xalqaro sertifikat olish dasturi.",
           track: "Algoritm Academy (O'quv Markazi)",
           branch: "Qarshi sh., Islom Karimov 291V",
@@ -182,7 +182,7 @@ export default function DiagnosticQuizModal({
                 {[
                   { id: "pmt", label: "🌟 Prezident Maktabiga Tayyorlov (PMT)" },
                   { id: "sat", label: "🌍 SAT Digital & Xalqaro Grant" },
-                  { id: "ielts", label: "🇬🇧 IELTS 7.5+ & Intensive English" },
+                  { id: "ielts", label: "🇬🇧 IELTS 7+ & Intensive English" },
                   { id: "math", label: "📐 Matematika (Milliy Sertifikat & DTM)" },
                 ].map((item) => (
                   <button
