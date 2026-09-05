@@ -144,7 +144,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
       qualLabel: "DIREKTOR",
       experience: "10+ yil",
       students: "5 000+",
-      image: "",
+      image: "/images/bobur_xaydarov.png",
       videoUrl: "",
       bio: "Algoritm ta'lim ekotizimi asoschisi va direktori. Matematika va SAT Math bo'yicha mutaxassis, rasmiy SAT Math 800/800 (100% maksimal ball) sohibi. Ta'lim sohasida 10 yildan ortiq boshqaruv va pedagogik tajribaga ega.",
       highlights: [
