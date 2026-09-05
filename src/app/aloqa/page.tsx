@@ -83,7 +83,7 @@ export default function AloqaPage() {
                       <Phone className="w-5 h-5 text-brand-600 shrink-0" />
                       <span>
                         <strong>Telefon:</strong>{" "}
-                        <a href={`tel:${ECOSYSTEM_DATA.school.phone.replace(/\D/g, "")}`} className="text-brand-700 font-bold hover:underline font-mono">
+                        <a href={`tel:+${ECOSYSTEM_DATA.school.phone.replace(/\D/g, "")}`} className="text-brand-700 font-bold hover:underline font-mono">
                           {ECOSYSTEM_DATA.school.phone}
                         </a>
                       </span>
@@ -106,7 +106,7 @@ export default function AloqaPage() {
                     <div className="flex items-center gap-3">
                       <Award className="w-5 h-5 text-brand-600 shrink-0" />
                       <span>
-                        <strong>Yo'nalish:</strong> 1-11 sinflar, 3 mahal ovqat, to'garaklar, yotoqxona
+                        <strong>Yo'nalish:</strong> 0–11 sinflar, 3 mahal ovqat, to'garaklar, yotoqxona
                       </span>
                     </div>
                   </div>
@@ -114,7 +114,7 @@ export default function AloqaPage() {
 
                 <div className="pt-5 border-t border-slate-200 flex flex-wrap gap-2.5 items-center justify-between">
                   <a
-                    href={`tel:${ECOSYSTEM_DATA.school.phone.replace(/\D/g, "")}`}
+                    href={`tel:+${ECOSYSTEM_DATA.school.phone.replace(/\D/g, "")}`}
                     className="px-4 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-black text-xs uppercase tracking-wider transition"
                   >
                     Maktabga Qo'ng'iroq
@@ -175,11 +175,11 @@ export default function AloqaPage() {
                       <Phone className="w-5 h-5 text-brand-600 shrink-0" />
                       <span>
                         <strong>Telefon:</strong>{" "}
-                        <a href={`tel:${ECOSYSTEM_DATA.academy.phone.replace(/\D/g, "")}`} className="text-brand-700 font-bold hover:underline font-mono">
+                        <a href={`tel:+${ECOSYSTEM_DATA.academy.phone.replace(/\D/g, "")}`} className="text-brand-700 font-bold hover:underline font-mono">
                           {ECOSYSTEM_DATA.academy.phone}
                         </a>
                         <span className="text-slate-400 font-medium">/</span>{" "}
-                        <a href={`tel:${(ECOSYSTEM_DATA.academy.phoneSecondary ?? "").replace(/\D/g, "")}`} className="text-brand-700 font-bold hover:underline font-mono">
+                        <a href={`tel:+${(ECOSYSTEM_DATA.academy.phoneSecondary ?? "").replace(/\D/g, "")}`} className="text-brand-700 font-bold hover:underline font-mono">
                           {ECOSYSTEM_DATA.academy.phoneSecondary}
                         </a>
                       </span>
@@ -201,7 +201,7 @@ export default function AloqaPage() {
 
                 <div className="pt-5 border-t border-slate-200 flex flex-wrap gap-2.5 items-center justify-between">
                   <a
-                    href={`tel:${ECOSYSTEM_DATA.academy.phone.replace(/\D/g, "")}`}
+                    href={`tel:+${ECOSYSTEM_DATA.academy.phone.replace(/\D/g, "")}`}
                     className="px-4 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-black text-xs uppercase tracking-wider transition"
                   >
                     Markazga Qo'ng'iroq

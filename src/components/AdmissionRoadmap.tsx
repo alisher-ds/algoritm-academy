@@ -35,11 +35,11 @@ export default function AdmissionRoadmap({ onOpenLeadModal }: AdmissionRoadmapPr
               className="h-full flex"
             >
               <div
-                className="p-8 rounded-3xl bg-white border border-slate-200 shadow-xs hover:border-brand-400 hover:shadow-lg transition-all duration-300 relative flex flex-col justify-between text-left w-full"
+                className="p-8 rounded-3xl bg-white border border-slate-200 shadow-sm hover:border-brand-400 hover:shadow-lg transition-all duration-300 relative flex flex-col justify-between text-left w-full"
               >
                 <div>
                   <div className="w-12 h-12 rounded-2xl bg-brand-50 border border-brand-200 text-brand-700 flex items-center justify-center font-black text-xl mb-6">
-                    0{step.step}
+                    {step.step}
                   </div>
                   <h3 className="text-xl font-bold text-slate-950 mb-2.5">
                     {step.title}

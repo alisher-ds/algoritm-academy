@@ -78,7 +78,7 @@ export default function SchoolFeatures() {
               <div>
                 {/* Top header & badges */}
                 <div className="flex items-center justify-between gap-3 mb-6">
-                  <div className="w-13 h-13 rounded-2xl bg-brand-50 border border-brand-200/80 flex items-center justify-center text-brand-600 shadow-xs group-hover:scale-105 transition-transform">
+                  <div className="w-[52px] h-[52px] rounded-2xl bg-brand-50 border border-brand-200/80 flex items-center justify-center text-brand-600 shadow-sm group-hover:scale-105 transition-transform">
                     <Bot className="w-6 h-6" />
                   </div>
                   <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-brand-50 border border-brand-200 text-brand-800 text-xs font-bold uppercase tracking-wider">
@@ -132,7 +132,7 @@ export default function SchoolFeatures() {
 
               <div>
                 <div className="flex items-center justify-between gap-3 mb-6">
-                  <div className="w-13 h-13 rounded-2xl bg-emerald-50 border border-emerald-200/80 flex items-center justify-center text-emerald-600 shadow-xs group-hover:scale-105 transition-transform">
+                  <div className="w-[52px] h-[52px] rounded-2xl bg-emerald-50 border border-emerald-200/80 flex items-center justify-center text-emerald-600 shadow-sm group-hover:scale-105 transition-transform">
                     <Utensils className="w-6 h-6" />
                   </div>
                   <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold uppercase tracking-wider">
@@ -194,7 +194,7 @@ export default function SchoolFeatures() {
 
               <div>
                 <div className="flex items-center justify-between gap-3 mb-6">
-                  <div className="w-13 h-13 rounded-2xl bg-amber-50 border border-amber-200/80 flex items-center justify-center text-amber-600 shadow-xs group-hover:scale-105 transition-transform">
+                  <div className="w-[52px] h-[52px] rounded-2xl bg-amber-50 border border-amber-200/80 flex items-center justify-center text-amber-600 shadow-sm group-hover:scale-105 transition-transform">
                     <Trophy className="w-6 h-6" />
                   </div>
                   <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold uppercase tracking-wider">
@@ -254,7 +254,7 @@ export default function SchoolFeatures() {
 
               <div>
                 <div className="flex items-center justify-between gap-3 mb-6">
-                  <div className="w-13 h-13 rounded-2xl bg-blue-50 border border-blue-200/80 flex items-center justify-center text-blue-600 shadow-xs group-hover:scale-105 transition-transform">
+                  <div className="w-[52px] h-[52px] rounded-2xl bg-blue-50 border border-blue-200/80 flex items-center justify-center text-blue-600 shadow-sm group-hover:scale-105 transition-transform">
                     <Bus className="w-6 h-6" />
                   </div>
                   <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-800 text-xs font-bold uppercase tracking-wider">
@@ -304,7 +304,7 @@ export default function SchoolFeatures() {
 
               <div>
                 <div className="flex items-center justify-between gap-3 mb-6">
-                  <div className="w-13 h-13 rounded-2xl bg-indigo-50 border border-indigo-200/80 flex items-center justify-center text-indigo-600 shadow-xs group-hover:scale-105 transition-transform">
+                  <div className="w-[52px] h-[52px] rounded-2xl bg-indigo-50 border border-indigo-200/80 flex items-center justify-center text-indigo-600 shadow-sm group-hover:scale-105 transition-transform">
                     <Users className="w-6 h-6" />
                   </div>
                   <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-800 text-xs font-bold uppercase tracking-wider">

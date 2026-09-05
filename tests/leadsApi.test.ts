@@ -182,3 +182,81 @@ describe("/api/leads/auth", () => {
     expect(ok.headers.get("set-cookie")).toContain("HttpOnly");
   });
 });
+
+describe("/api/leads — kirish validatsiyasi", () => {
+  beforeEach(async () => {
+    dir = await fs.mkdtemp(path.join(os.tmpdir(), "leadsval-"));
+    process.env.LEADS_FILE = path.join(dir, "leads.json");
+    process.env.ADMIN_PASSWORD = "test-parol-123";
+    delete process.env.TELEGRAM_BOT_TOKEN;
+    delete process.env.UPSTASH_REDIS_REST_URL;
+  });
+
+  afterEach(async () => {
+    await fs.rm(dir, { recursive: true, force: true });
+  });
+
+  it("ko'rinmas belgilardan iborat ismni rad etadi", async () => {
+    const { POST } = await api();
+    const res = await POST(post({ name: "\u200b\u200b\u200b", phone: "901112233", type: "kurs" }));
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toMatch(/Ismni to'liq kiriting/);
+  });
+
+  it("soxta operator kodli telefonni rad etadi", async () => {
+    const { POST } = await api();
+    const res = await POST(post({ name: "Ali Valiyev", phone: "000000000", type: "kurs" }));
+    expect(res.status).toBe(400);
+  });
+
+  it("ro'yxatda yo'q yo'nalishni erkin matn sifatida qabul qilmaydi", async () => {
+    const { POST } = await api();
+    const res = await POST(
+      post({
+        name: "Ali Valiyev",
+        phone: "901112233",
+        type: "kurs",
+        targetInterest: "CLICK https://spam.example FREE MONEY",
+      })
+    );
+    expect(res.status).toBe(201);
+    expect((await res.json()).lead.targetInterest).toBe("Boshqa yo'nalish / Maslahat olish");
+  });
+
+  it("ro'yxatdagi yo'nalishni saqlab qoladi", async () => {
+    const { POST } = await api();
+    const res = await POST(
+      post({ name: "Ali Valiyev", phone: "901112244", type: "kurs", targetInterest: "Digital SAT" })
+    );
+    expect(res.status).toBe(201);
+    expect((await res.json()).lead.targetInterest).toBe("Digital SAT");
+  });
+
+  it("noma'lum manbani 'sayt' ga tushiradi", async () => {
+    const { POST } = await api();
+    const res = await POST(
+      post({ name: "Ali Valiyev", phone: "901112255", type: "kurs", source: "reklama-spam" })
+    );
+    expect(res.status).toBe(201);
+    expect((await res.json()).lead.source).toBe("sayt");
+  });
+
+  it("soxta X-Forwarded-For bilan cheksiz ariza yuborib bo'lmaydi (global shift)", async () => {
+    const { POST } = await api();
+    let blocked = false;
+    // Har so'rovda YANGI soxta IP — ilgari bu per-IP chegarani butunlay aylanib o'tardi.
+    for (let i = 0; i < 70; i++) {
+      const res = await POST(
+        post(
+          { name: `Bot ${i}`, phone: `9011${String(i).padStart(5, "0")}`, type: "kurs" },
+          { "x-forwarded-for": `203.0.113.${i % 250}`, "x-real-ip": `203.0.113.${i % 250}` }
+        )
+      );
+      if (res.status === 429) {
+        blocked = true;
+        break;
+      }
+    }
+    expect(blocked).toBe(true);
+  });
+});

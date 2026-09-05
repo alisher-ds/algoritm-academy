@@ -9,7 +9,7 @@ import {
   sessionCookieOptions,
   verifyPassword,
 } from "@/lib/adminAuth";
-import { clientIp, rateLimit } from "@/lib/rateLimit";
+import { clientIdentity, rateLimit } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 
@@ -26,10 +26,15 @@ export async function POST(req: Request) {
     );
   }
 
-  // Brute-force himoyasi: IP bo'yicha 15 daqiqada 8 ta, global miqyosda 15 daqiqada 60 ta urinish.
-  const ipLimit = await rateLimit(`auth:${clientIp(req)}`, 8, 15 * 60);
-  const globalLimit = await rateLimit("auth:global", 60, 15 * 60);
-  const blocked = !ipLimit.allowed ? ipLimit : !globalLimit.allowed ? globalLimit : null;
+  // Brute-force himoyasi: IP bo'yicha 15 daqiqada 8 ta urinish.
+  //
+  // IP sarlavhasi ishonchsiz bo'lsa (proksi sozlanmagan) uni aylantirib per-IP chegarani
+  // chetlab o'tish mumkin, shuning uchun global shift qo'shamiz. Global chegara faqat
+  // MUVAFFAQIYATSIZ urinishlarni sanaydi (pastda), aks holda begona odam uni to'ldirib
+  // haqiqiy adminni panelga kirita olmay qo'yardi.
+  const { key: ip, trusted } = clientIdentity(req);
+  const ipLimit = await rateLimit(`auth:${ip}`, 8, 15 * 60);
+  const blocked = !ipLimit.allowed ? ipLimit : null;
 
   if (blocked) {
     return NextResponse.json(
@@ -45,6 +50,15 @@ export async function POST(req: Request) {
       : "";
 
   if (!verifyPassword(password)) {
+    // Faqat noto'g'ri urinishlar global hisobga tushadi — to'g'ri parol bilan kirgan
+    // admin hech qachon global chegara tufayli bloklanmaydi.
+    const failCap = trusted ? null : await rateLimit("auth:global:fail", 40, 15 * 60);
+    if (failCap && !failCap.allowed) {
+      return NextResponse.json(
+        { success: false, error: "Juda ko'p urinish. Birozdan so'ng qayta urinib ko'ring." },
+        { status: 429, headers: { "Retry-After": String(failCap.retryAfter) } }
+      );
+    }
     return NextResponse.json({ success: false, error: "Parol noto'g'ri" }, { status: 401 });
   }
 
