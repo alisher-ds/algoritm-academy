@@ -83,7 +83,7 @@ export default function SchoolAbout({ onOpenLeadModal }: SchoolAboutProps) {
 
                 <div className="pt-6 mt-6 border-t border-slate-200/80 flex items-center gap-2 text-xs font-bold text-brand-800">
                   <CheckCircle2 className="w-4 h-4 text-brand-600 shrink-0" />
-                  <span>Kafolatlangan metodika</span>
+                  <span>Sinovdan o'tgan akademik metodika</span>
                 </div>
               </div>
             </ScrollReveal>

@@ -6,7 +6,7 @@ export default function DtmGrantBanner() {
     {
       score: "189.0",
       label: "Maksimal DTM Balli",
-      subtext: "100% Davlat Granti Kafolati",
+      subtext: "Davlat Granti & Talabalik Maqsadi",
       category: "DTM Natijadorlik",
     },
     {

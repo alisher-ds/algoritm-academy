@@ -29,11 +29,11 @@ const JOURNEY_STAGES = [
       "0-sinf maktabgacha tayyorlov (rus va o'zbek guruhlari, Nelya Mamadaliyeva, Irina Artikova) hamda 1–4 boshlang'ich sinflar. Bolada mustaqil fikrlash, tanqidiy tahlil, chuqur matematika va ingliz tili muloqoti shakllantiriladi.",
     milestones: [
       "0-sinfdanoq amaliy Robototexnika, mantiq va aqliy rivojlanish (kvota: 18 ta o'rin)",
-      "4-sinf oxiridagi Prezident maktabi (PMT) imtihonlariga 100% intensiv tayyorgarlik",
-      "Xalqaro Kenguru, SEAMO va KHISO matematika olimpiadalari g'olibligi",
+      "4-sinf oxiridagi Prezident maktabi (PMT) imtihonlariga tizimli intensiv tayyorgarlik",
+      "Xalqaro Kenguru, SEAMO va KHISO matematika olimpiadalari tayyorgarligi",
       "Erkin ingliz tili muloqoti (Speaking) va rus tilida ravon so'zlashuv",
     ],
-    outcome: "0-Sinf Tayyorlovi & PMT/Ixtisos Maktablarga Kafolatlangan Kirish",
+    outcome: "0-Sinf Tayyorlovi & PMT/Ixtisos Maktablariga Maqsadli Poydevor",
     theme: {
       color: "emerald",
       badgeBg: "bg-emerald-50 text-emerald-800 border-emerald-200",
@@ -76,10 +76,10 @@ const JOURNEY_STAGES = [
       "Maktabning o'zida repetitorsiz OTMga 189 ball maksimal tayyorgarlik. Har oylik nazorat testlari, naqd stipendiyalar va 1 yillik bepul GRAND imtiyozlari.",
     milestones: [
       "Matematika va fanlardan Milliy sertifikat (A+) — OTMga 100% imtiyoz",
-      "10-sinfdayoq talabalik maqomini naqd qilish (muddatidan oldin qabul)",
+      "10-sinfdayoq talabalik maqomini qo'lga kiritish (muddatidan oldin qabul imkoniyati)",
       "7–10 sinflar o'rtasidagi GRAND imtihonida 1 yillik bepul o'qish huquqi",
     ],
-    outcome: "10-Sinfdayoq Talabalik Kafolati & Oylik Naqd Stipendiya",
+    outcome: "10-Sinfdayoq Muddatidan Oldin Talabalik & Oylik Naqd Rag'bat",
     theme: {
       color: "purple",
       badgeBg: "bg-purple-50 text-purple-800 border-purple-200",
@@ -94,15 +94,15 @@ const JOURNEY_STAGES = [
     phase: "Global Zafar Bosqichi",
     grade: "11 Sinf",
     age: "17 – 18 yosh",
-    title: "Digital SAT 1500+ & Dunyo Oliygohlariga 100% Grant",
+    title: "Digital SAT 1500+ & Dunyo Oliygohlari Grantlari",
     description:
-      "AQSH, Buyuk Britaniya va Yevropaning eng nufuzli universitetlariga SAT 1500+ bilan to'liq $100,000+ lik grant yutish yoki O'zbekiston OTMlariga davlat byudjeti.",
+      "AQSH, Buyuk Britaniya va Yevropaning nufuzli universitetlariga SAT 1500+ bilan $100,000+ lik grantlar yutish yoki O'zbekiston OTMlariga davlat byudjeti.",
     milestones: [
       "Digital SAT 1400+ va 1500+ natijalari bilan xalqaro universitetlarga grant",
       "IELTS 7.5 – 8.5 akademik darajasi va xalqaro tavsiyanomalar",
-      "WIUT, Inha, Webster, CAU yoki xorijiy oliygohlarga 100% grant kafolati",
+      "WIUT, Inha, Webster, CAU yoki xorijiy oliygohlarga nufuzli to'liq grantlar imkoniyati",
     ],
-    outcome: "Dunyo va O'zbekiston OTMlariga 100% To'liq Grant",
+    outcome: "Dunyo va O'zbekiston OTMlariga To'liq Davlat & Xalqaro Grantlari",
     theme: {
       color: "amber",
       badgeBg: "bg-amber-50 text-amber-900 border-amber-200",
@@ -214,7 +214,7 @@ export default function StudentJourneyTimeline({ onOpenLeadModal }: StudentJourn
                         <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between gap-3 text-xs">
                           <div className="flex items-center gap-2 text-slate-900 font-bold">
                             <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
-                            <span>Kafolatlangan Natija:</span>
+                            <span>Akademik Marra:</span>
                           </div>
                           <span className="font-bold text-brand-800 text-right">
                             {stage.outcome}
