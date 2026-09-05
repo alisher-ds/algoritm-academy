@@ -18,6 +18,7 @@ interface ScrollRevealProps extends React.HTMLAttributes<HTMLDivElement> {
   threshold?: number;
   distance?: number; // px
   className?: string;
+  once?: boolean;
 }
 
 export default function ScrollReveal({
@@ -28,6 +29,7 @@ export default function ScrollReveal({
   threshold = 0.15,
   distance = 32,
   className = "",
+  once = false,
   style,
   ...rest
 }: ScrollRevealProps) {
@@ -44,10 +46,15 @@ export default function ScrollReveal({
   const elementRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (isVisible) return;
-
     const node = elementRef.current;
     if (!node) return;
+
+    if (
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      return;
+    }
 
     if (typeof IntersectionObserver === "undefined") {
       const timer = setTimeout(() => setIsVisible(true), 0);
@@ -59,7 +66,11 @@ export default function ScrollReveal({
         const [entry] = entries;
         if (entry.isIntersecting) {
           setIsVisible(true);
-          observer.unobserve(node);
+          if (once) {
+            observer.unobserve(node);
+          }
+        } else if (!once) {
+          setIsVisible(false);
         }
       },
       {
@@ -73,7 +84,7 @@ export default function ScrollReveal({
     return () => {
       observer.disconnect();
     };
-  }, [threshold, isVisible]);
+  }, [threshold, once]);
 
   const getTransform = () => {
     if (isVisible) return "translate3d(0, 0, 0) scale(1)";
@@ -99,8 +110,8 @@ export default function ScrollReveal({
     opacity: isVisible ? 1 : 0,
     transform: getTransform(),
     transitionProperty: "opacity, transform",
-    transitionDuration: duration + "ms",
-    transitionDelay: delay + "ms",
+    transitionDuration: isVisible ? duration + "ms" : "250ms",
+    transitionDelay: isVisible ? delay + "ms" : "0ms",
     transitionTimingFunction: "cubic-bezier(0.16, 1, 0.3, 1)",
     willChange: isVisible ? "auto" : "opacity, transform",
     ...style,

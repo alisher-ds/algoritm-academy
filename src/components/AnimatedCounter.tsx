@@ -9,6 +9,7 @@ interface AnimatedCounterProps {
   prefix?: string;
   suffix?: string;
   className?: string;
+  once?: boolean;
 }
 
 export default function AnimatedCounter({
@@ -18,6 +19,7 @@ export default function AnimatedCounter({
   prefix = "",
   suffix = "",
   className = "",
+  once = false,
 }: AnimatedCounterProps) {
   const [count, setCount] = useState<number>(() => {
     if (
@@ -31,7 +33,7 @@ export default function AnimatedCounter({
 
   const nodeRef = useRef<HTMLSpanElement>(null);
   const rafRef = useRef<number | null>(null);
-  const hasAnimatedRef = useRef(false);
+  const isAnimatingRef = useRef(false);
 
   useEffect(() => {
     if (
@@ -52,30 +54,47 @@ export default function AnimatedCounter({
     const observer = new IntersectionObserver(
       (entries) => {
         const [entry] = entries;
-        if (entry.isIntersecting && !hasAnimatedRef.current) {
-          hasAnimatedRef.current = true;
-          observer.unobserve(node);
-
-          let startTime: number | null = null;
-
-          const step = (timestamp: number) => {
-            if (!startTime) startTime = timestamp;
-            const elapsed = timestamp - startTime;
-            const progress = Math.min(elapsed / duration, 1);
-
-            // easeOutExpo silliq to'xtash formulasi
-            const easeProgress =
-              progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
-            const current = Math.round(start + (target - start) * easeProgress);
-
-            setCount(current);
-
-            if (progress < 1) {
-              rafRef.current = requestAnimationFrame(step);
+        if (entry.isIntersecting) {
+          if (!isAnimatingRef.current) {
+            isAnimatingRef.current = true;
+            if (once) {
+              observer.unobserve(node);
             }
-          };
 
-          rafRef.current = requestAnimationFrame(step);
+            if (rafRef.current !== null) {
+              cancelAnimationFrame(rafRef.current);
+            }
+
+            let startTime: number | null = null;
+
+            const step = (timestamp: number) => {
+              if (!startTime) startTime = timestamp;
+              const elapsed = timestamp - startTime;
+              const progress = Math.min(elapsed / duration, 1);
+
+              // easeOutExpo silliq to'xtash formulasi
+              const easeProgress =
+                progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+              const current = Math.round(start + (target - start) * easeProgress);
+
+              setCount(current);
+
+              if (progress < 1) {
+                rafRef.current = requestAnimationFrame(step);
+              } else {
+                rafRef.current = null;
+              }
+            };
+
+            rafRef.current = requestAnimationFrame(step);
+          }
+        } else if (!once) {
+          isAnimatingRef.current = false;
+          if (rafRef.current !== null) {
+            cancelAnimationFrame(rafRef.current);
+            rafRef.current = null;
+          }
+          setCount(start);
         }
       },
       { threshold: 0.15 }
@@ -89,7 +108,7 @@ export default function AnimatedCounter({
         cancelAnimationFrame(rafRef.current);
       }
     };
-  }, [target, start, duration]);
+  }, [target, start, duration, once]);
 
   return (
     <span ref={nodeRef} className={className}>
