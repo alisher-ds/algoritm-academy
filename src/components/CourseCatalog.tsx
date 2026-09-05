@@ -15,6 +15,7 @@ import {
 import { ECOSYSTEM_DATA } from "@/data/ecosystemData";
 import SectionHeader from "@/components/SectionHeader";
 import ScrollReveal from "@/components/ScrollReveal";
+import CardSpotlight from "@/components/CardSpotlight";
 
 interface CourseCatalogProps {
   onOpenLeadModal: (courseTitle: string) => void;
@@ -139,104 +140,106 @@ export default function CourseCatalog({ onOpenLeadModal, compact = false }: Cour
               duration={700}
               className="h-full flex"
             >
-              <div className="group rounded-3xl bg-white/[0.02] border border-white/10 p-6 sm:p-8 flex flex-col justify-between hover:border-brand-500/40 hover:bg-white/[0.04] hover:shadow-[0_10px_35px_rgba(0,200,83,0.15)] transition-all duration-300 relative overflow-hidden text-left w-full">
-                <div>
-                  {/* Top badges */}
-                  <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
-                    <span className="px-3 py-1 rounded-full bg-brand-500/10 border border-brand-500/30 text-brand-400 text-xs font-bold uppercase tracking-wider">
-                      {course.categoryLabel}
-                    </span>
-                    {course.badge && (
-                      <span className="px-3 py-1 rounded-full bg-white/10 border border-white/15 text-white text-[11px] font-bold">
-                        {course.badge}
-                      </span>
-                    )}
-                  </div>
-
-                {/* Course Title & Description */}
-                <h3 className="text-xl font-bold text-white mb-2 group-hover:text-brand-400 transition-colors">
-                  {course.title}
-                </h3>
-                <p className="text-xs sm:text-sm text-slate-400 leading-relaxed mb-5">
-                  {course.description}
-                </p>
-
-                {/* Meta details (Davomiyligi va haftalik soati) */}
-                <div className="grid grid-cols-2 gap-3 py-3 border-y border-white/10 mb-4 text-xs text-slate-300">
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-brand-400 shrink-0" />
-                    <span>Davomiyligi: <strong className="text-white">{course.duration}</strong></span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-brand-400 shrink-0" />
-                    <span className="truncate">{course.weeklyHours}</span>
-                  </div>
-                </div>
-
-                {/* Aniq dars jadvali bloki (kunlar, vaqtlar, filial) */}
-                {(course.days || course.time || course.branch || course.alternateTime) && (
-                  <div className="mb-5 p-3 rounded-2xl bg-white/[0.03] border border-white/10 space-y-1.5 text-xs">
-                    {course.days && (
-                      <div className="flex items-center justify-between text-slate-300">
-                        <span className="text-[11px] text-slate-400">Dars kunlari:</span>
-                        <span className="font-semibold text-white">{course.days}</span>
-                      </div>
-                    )}
-                    {course.time && (
-                      <div className="flex items-center justify-between text-slate-300">
-                        <span className="text-[11px] text-slate-400">Dars vaqti:</span>
-                        <span className="font-semibold text-emerald-400 font-mono">{course.time}</span>
-                      </div>
-                    )}
-                    {course.alternateTime && (
-                      <div className="pt-1 border-t border-white/5 text-[11px] text-amber-300/90 leading-snug">
-                        <span className="text-slate-400">Qo'shimcha:</span> {course.alternateTime}
-                      </div>
-                    )}
-                    {course.branch && (
-                      <div className="flex items-center justify-between text-slate-300 pt-0.5">
-                        <span className="text-[11px] text-slate-400 flex items-center gap-1">
-                          <MapPin className="w-3 h-3 text-brand-400" /> Filial:
-                        </span>
-                        <span className="font-bold text-brand-400">{course.branch}</span>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Features list */}
-                <div className="space-y-2 mb-6">
-                  {course.features.map((feat, idx) => (
-                    <div key={idx} className="flex items-start gap-2 text-xs text-slate-300">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-brand-400 shrink-0 mt-0.5" />
-                      <span>{feat}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Bottom mentor & Action */}
-              <div className="pt-4 border-t border-white/10">
-                <div className="flex items-center justify-between mb-4">
+              <CardSpotlight dark radius={350} className="w-full h-full">
+                <div className="p-6 sm:p-8 flex flex-col justify-between h-full text-left">
                   <div>
-                    <span className="text-[10px] text-slate-500 font-semibold uppercase block">Murabbiy</span>
-                    <h4 className="text-xs font-bold text-white">{course.mentor.name}</h4>
-                    <span className="text-[10px] text-slate-400 block">{course.mentor.role}</span>
-                  </div>
-                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-400 border border-brand-500/20 shrink-0">
-                    ★ {course.mentor.rating}
-                  </span>
-                </div>
+                    {/* Top badges */}
+                    <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
+                      <span className="px-3 py-1 rounded-full bg-brand-500/10 border border-brand-500/30 text-brand-400 text-xs font-bold uppercase tracking-wider">
+                        {course.categoryLabel}
+                      </span>
+                      {course.badge && (
+                        <span className="px-3 py-1 rounded-full bg-white/10 border border-white/15 text-white text-[11px] font-bold">
+                          {course.badge}
+                        </span>
+                      )}
+                    </div>
 
-                <button
-                  onClick={() => onOpenLeadModal(course.title)}
-                  className="w-full py-3.5 rounded-2xl bg-white/[0.05] hover:bg-brand-400 text-white hover:text-slate-950 text-xs font-bold uppercase tracking-wider transition-all duration-200 border border-white/10 hover:border-transparent flex items-center justify-center gap-2 shadow-sm cursor-pointer"
-                >
-                  <span>Birinchi darsga yozilish (Bepul)</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
+                    {/* Course Title & Description */}
+                    <h3 className="text-xl font-bold text-white mb-2 group-hover:text-brand-400 transition-colors">
+                      {course.title}
+                    </h3>
+                    <p className="text-xs sm:text-sm text-slate-400 leading-relaxed mb-5">
+                      {course.description}
+                    </p>
+
+                    {/* Meta details (Davomiyligi va haftalik soati) */}
+                    <div className="grid grid-cols-2 gap-3 py-3 border-y border-white/10 mb-4 text-xs text-slate-300">
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-brand-400 shrink-0" />
+                        <span>Davomiyligi: <strong className="text-white">{course.duration}</strong></span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4 text-brand-400 shrink-0" />
+                        <span className="truncate">{course.weeklyHours}</span>
+                      </div>
+                    </div>
+
+                    {/* Aniq dars jadvali bloki (kunlar, vaqtlar, filial) */}
+                    {(course.days || course.time || course.branch || course.alternateTime) && (
+                      <div className="mb-5 p-3 rounded-2xl bg-white/[0.03] border border-white/10 space-y-1.5 text-xs">
+                        {course.days && (
+                          <div className="flex items-center justify-between text-slate-300">
+                            <span className="text-[11px] text-slate-400">Dars kunlari:</span>
+                            <span className="font-semibold text-white">{course.days}</span>
+                          </div>
+                        )}
+                        {course.time && (
+                          <div className="flex items-center justify-between text-slate-300">
+                            <span className="text-[11px] text-slate-400">Dars vaqti:</span>
+                            <span className="font-semibold text-emerald-400 font-mono">{course.time}</span>
+                          </div>
+                        )}
+                        {course.alternateTime && (
+                          <div className="pt-1 border-t border-white/5 text-[11px] text-amber-300/90 leading-snug">
+                            <span className="text-slate-400">Qo'shimcha:</span> {course.alternateTime}
+                          </div>
+                        )}
+                        {course.branch && (
+                          <div className="flex items-center justify-between text-slate-300 pt-0.5">
+                            <span className="text-[11px] text-slate-400 flex items-center gap-1">
+                              <MapPin className="w-3 h-3 text-brand-400" /> Filial:
+                            </span>
+                            <span className="font-bold text-brand-400">{course.branch}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Features list */}
+                    <div className="space-y-2 mb-6">
+                      {course.features.map((feat, idx) => (
+                        <div key={idx} className="flex items-start gap-2 text-xs text-slate-300">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-brand-400 shrink-0 mt-0.5" />
+                          <span>{feat}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Bottom mentor & Action */}
+                  <div className="pt-4 border-t border-white/10">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <span className="text-[10px] text-slate-500 font-semibold uppercase block">Murabbiy</span>
+                        <h4 className="text-xs font-bold text-white">{course.mentor.name}</h4>
+                        <span className="text-[10px] text-slate-400 block">{course.mentor.role}</span>
+                      </div>
+                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-400 border border-brand-500/20 shrink-0">
+                        ★ {course.mentor.rating}
+                      </span>
+                    </div>
+
+                    <button
+                      onClick={() => onOpenLeadModal(course.title)}
+                      className="w-full py-3.5 rounded-2xl bg-white/[0.05] hover:bg-brand-400 text-white hover:text-slate-950 text-xs font-bold uppercase tracking-wider transition-all duration-200 border border-white/10 hover:border-transparent flex items-center justify-center gap-2 shadow-sm cursor-pointer"
+                    >
+                      <span>Birinchi darsga yozilish (Bepul)</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </CardSpotlight>
           </ScrollReveal>
         ))}
       </div>
