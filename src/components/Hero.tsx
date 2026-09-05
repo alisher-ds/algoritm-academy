@@ -54,7 +54,7 @@ export default function Hero({ onOpenLeadModal, onOpenVideoModal, onOpenQuizModa
             </h1>
 
             <p className="mt-5 max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg">
-              PMT, Digital SAT 1500+, IELTS 7.5+ va Matematika milliy sertifikat (A+)
+              PMT, Digital SAT 1500+, IELTS 7+ va Matematika milliy sertifikat (A+)
               yo&apos;nalishlarida — har bir o&apos;quvchi uchun shaxsiy o&apos;quv reja va haftalik
               bepul mock imtihonlar.
             </p>
