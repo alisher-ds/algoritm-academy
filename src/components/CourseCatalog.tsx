@@ -86,7 +86,7 @@ export default function CourseCatalog({ onOpenLeadModal, compact = false }: Cour
 
         {/* Categories Bar (Faqat katalog sahifasida) */}
         {!compact && (
-          <div className="flex items-center gap-2 overflow-x-auto pb-4 mb-10 no-scrollbar">
+          <div className="flex items-center gap-2 overflow-x-auto pb-4 mb-10 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {categories.map((cat) => (
               <button
                 key={cat.id}

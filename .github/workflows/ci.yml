@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: ["**"]
+    branches: [main]
   pull_request:
 
 concurrency:
@@ -17,8 +17,16 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
+
+      - name: Next build keshi
+        uses: actions/cache@v4
+        with:
+          path: .next/cache
+          key: ${{ runner.os }}-next-${{ hashFiles('package-lock.json') }}-${{ hashFiles('src/**') }}
+          restore-keys: |
+            ${{ runner.os }}-next-${{ hashFiles('package-lock.json') }}-
 
       - name: Bog'liqliklarni o'rnatish
         run: npm ci
@@ -34,6 +42,15 @@ jobs:
 
       - name: Production build
         run: npm run build
+        env:
+          ADMIN_PASSWORD: ci-test-password
+          NEXT_PUBLIC_SITE_URL: https://example.com
+
+      - name: Playwright brauzerini o'rnatish
+        run: npx playwright install --with-deps chromium
+
+      - name: E2E testlar
+        run: npm run test:e2e
         env:
           ADMIN_PASSWORD: ci-test-password
           NEXT_PUBLIC_SITE_URL: https://example.com

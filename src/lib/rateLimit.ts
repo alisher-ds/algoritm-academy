@@ -74,26 +74,57 @@ export async function rateLimit(
 
 const IP_RE = /^[\da-fA-F.:]{3,45}$/;
 
-/** So'rov manbasi (IP) ni xavfsiz proxy sarlavhalaridan aniqlash. */
-export function clientIp(req: Request): string {
+/**
+ * Proksi sarlavhalari (`x-forwarded-for` va h.k.) mijoz tomonidan yoziladi — ular
+ * platforma tomonidan qayta yozilmasa, ularga ishonish rate-limit'ni ma'nosiz qiladi
+ * (istalgan bot sarlavhani aylantirib cheksiz so'rov yuboradi).
+ *
+ * Shuning uchun sarlavhaga faqat quyidagi hollarda ishonamiz:
+ *  1. `TRUSTED_IP_HEADER` aniq ko'rsatilgan (nginx/Cloudflare orqasida — o'zingiz sozlaysiz), yoki
+ *  2. Platforma o'zi majburan yozadigan sarlavha aniqlandi (Vercel: `x-vercel-forwarded-for`).
+ *
+ * Aks holda `trusted: false` qaytadi va chaqiruvchi qo'shimcha global chegara qo'yishi kerak.
+ */
+export interface ClientIdentity {
+  /** Rate-limit kaliti sifatida ishlatiladigan qiymat. */
+  key: string;
+  /** Qiymat ishonchli manbadanmi (ya'ni mijoz uni o'zgartira olmaydimi)? */
+  trusted: boolean;
+}
+
+function headerIp(req: Request, name: string): string | null {
+  const raw = req.headers.get(name)?.split(",")[0]?.trim();
+  return raw && IP_RE.test(raw) ? raw : null;
+}
+
+export function clientIdentity(req: Request): ClientIdentity {
+  // 1. Aniq ko'rsatilgan ishonchli sarlavha (deploy egasi o'zi tasdiqlaydi).
   const trustedHeader = process.env.TRUSTED_IP_HEADER?.trim().toLowerCase();
   if (trustedHeader) {
-    const raw = req.headers.get(trustedHeader)?.split(",")[0]?.trim();
-    if (raw && IP_RE.test(raw)) return raw;
+    const ip = headerIp(req, trustedHeader);
+    if (ip) return { key: ip, trusted: true };
+    // Sarlavha kutilgan, lekin kelmadi — proksi noto'g'ri sozlangan. Ishonmaymiz.
+    return { key: "unknown", trusted: false };
   }
 
-  // Cloudflare -> Vercel -> X-Real-IP -> X-Forwarded-For
-  const candidates = [
-    req.headers.get("cf-connecting-ip"),
-    req.headers.get("x-vercel-forwarded-for")?.split(",")[0],
-    req.headers.get("x-real-ip"),
-    req.headers.get("x-forwarded-for")?.split(",")[0],
-  ];
-
-  for (const c of candidates) {
-    const v = c?.trim();
-    if (v && IP_RE.test(v)) return v;
+  // 2. Vercel `x-vercel-forwarded-for` ni har so'rovda o'zi qayta yozadi — soxtalashtirib bo'lmaydi.
+  if (process.env.VERCEL) {
+    const ip = headerIp(req, "x-vercel-forwarded-for");
+    if (ip) return { key: ip, trusted: true };
   }
 
-  return "local";
+  // 3. Boshqa hollarda sarlavhalar mijoz nazoratida. Ularni faqat "yumshoq" ajratish
+  //    uchun ishlatamiz (halol foydalanuvchilar bir-birini bloklamasligi uchun),
+  //    lekin ishonchli deb belgilamaymiz — chaqiruvchi global chegara qo'shadi.
+  const soft =
+    headerIp(req, "cf-connecting-ip") ||
+    headerIp(req, "x-real-ip") ||
+    headerIp(req, "x-forwarded-for");
+
+  return { key: soft ?? "local", trusted: false };
+}
+
+/** Eski/qulay shakl — faqat kalitni qaytaradi. Ishonchlilik kerak bo'lsa `clientIdentity()`. */
+export function clientIp(req: Request): string {
+  return clientIdentity(req).key;
 }

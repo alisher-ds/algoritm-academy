@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { ArrowRight, CheckCircle2, ShieldCheck, Loader2, Info } from "lucide-react";
 import { submitLead, LEAD_OPTIONS } from "@/lib/leads";
+import { normalizeUzPhone } from "@/lib/phone";
 import ScrollReveal from "@/components/ScrollReveal";
 
 const OPTIONS = LEAD_OPTIONS;
@@ -18,12 +19,14 @@ export default function LeadBannerSection() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const digits = phone.replace(/\D/g, "");
+
     if (!name.trim()) {
       setError("Iltimos, ismingizni kiriting.");
       return;
     }
-    if (digits.length < 9) {
+    // Server bilan bitta manba: "+998 " prefiksi digits ichida bo'lgani uchun
+    // oddiy uzunlik tekshiruvi 3 raqamga adashardi va chala raqam serverga ketardi.
+    if (!normalizeUzPhone(phone)) {
       setError("Iltimos, to'liq telefon raqamingizni kiriting (masalan: 90 123 45 67).");
       return;
     }
@@ -136,7 +139,7 @@ export default function LeadBannerSection() {
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         placeholder="Masalan: Sardorbek Alimov"
-                        className="w-full px-4 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 text-sm font-medium focus:outline-none focus:border-brand-600 focus:bg-white transition shadow-xs"
+                        className="w-full px-4 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 text-sm font-medium focus:outline-none focus:border-brand-600 focus:bg-white transition shadow-sm"
                       />
                     </div>
 
@@ -153,7 +156,7 @@ export default function LeadBannerSection() {
                           setPhone(digits ? `+998 ${digits.replace(/^998/, "")}` : "");
                         }}
                         placeholder="+998 (90) 123-45-67"
-                        className="w-full px-4 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 text-sm font-mono focus:outline-none focus:border-brand-600 focus:bg-white transition shadow-xs"
+                        className="w-full px-4 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 text-sm font-mono focus:outline-none focus:border-brand-600 focus:bg-white transition shadow-sm"
                       />
                     </div>
 
@@ -164,7 +167,7 @@ export default function LeadBannerSection() {
                       <select
                         value={direction}
                         onChange={(e) => setDirection(e.target.value)}
-                        className="w-full px-4 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 text-sm font-medium focus:outline-none focus:border-brand-600 focus:bg-white transition shadow-xs"
+                        className="w-full px-4 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 text-sm font-medium focus:outline-none focus:border-brand-600 focus:bg-white transition shadow-sm"
                       >
                         {OPTIONS.map((o) => (
                           <option key={o.value} value={o.value}>

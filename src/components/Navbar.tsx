@@ -150,27 +150,34 @@ export default function Navbar({ onOpenLeadModal }: NavbarProps) {
           {/* Right cluster */}
           <div className="flex items-center gap-2.5">
             <a
-              href={`tel:${primaryPhone.replace(/\D/g, "")}`}
+              href={`tel:+${primaryPhone.replace(/\D/g, "")}`}
               className="hidden items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold text-slate-300 transition-colors hover:text-white xl:flex"
             >
               <Phone className="h-3.5 w-3.5 text-brand-400" />
               <span className="font-mono tracking-tight">{primaryPhone}</span>
             </a>
 
-            <button
-              onClick={() => openLead("Navbar ariza")}
-              className="hidden rounded-full bg-brand-500 hover:bg-brand-400 px-5 py-2 text-xs font-bold uppercase tracking-wider text-white shadow-glow transition-all active:scale-[0.98] sm:block"
-            >
-              Ariza topshirish
-            </button>
+            {/* CTA faqat forma ochish imkoni bo'lgan sahifalarda ko'rsatiladi.
+                Ilgari /admin da tugmalar ko'rinardi, lekin bosilganda hech nima
+                bo'lmasdi (onOpenLeadModal berilmagan). */}
+            {onOpenLeadModal && (
+              <>
+                <button
+                  onClick={() => openLead("Navbar ariza")}
+                  className="hidden rounded-full bg-brand-500 hover:bg-brand-400 px-5 py-2 text-xs font-bold uppercase tracking-wider text-white shadow-glow transition-all active:scale-[0.98] sm:block"
+                >
+                  Ariza topshirish
+                </button>
 
-            {/* Mobile: CTA + burger */}
-            <button
-              onClick={() => openLead("Mobil header ariza")}
-              className="rounded-full bg-brand-500 px-4 py-1.5 text-[11px] font-bold uppercase tracking-wider text-white transition hover:bg-brand-400 sm:hidden"
-            >
-              Ariza
-            </button>
+                {/* Mobile CTA */}
+                <button
+                  onClick={() => openLead("Mobil header ariza")}
+                  className="rounded-full bg-brand-500 px-4 py-1.5 text-[11px] font-bold uppercase tracking-wider text-white transition hover:bg-brand-400 sm:hidden"
+                >
+                  Ariza
+                </button>
+              </>
+            )}
             <button
               onClick={() => setMobileMenuOpen((v) => !v)}
               aria-expanded={mobileMenuOpen}
@@ -232,19 +239,21 @@ export default function Navbar({ onOpenLeadModal }: NavbarProps) {
             </div>
             <div className="mt-3 flex flex-col gap-2 border-t border-white/10 pt-3">
               <a
-                href={`tel:${primaryPhone.replace(/\D/g, "")}`}
+                href={`tel:+${primaryPhone.replace(/\D/g, "")}`}
                 className="flex items-center justify-center gap-2 rounded-xl bg-white/10 px-4 py-3 text-sm font-semibold text-white"
               >
                 <Phone className="h-4 w-4 text-brand-400" />
                 <span className="font-mono">{primaryPhone}</span>
                 <span className="text-xs text-slate-400">{phoneLabel}</span>
               </a>
-              <button
-                onClick={() => openLead("Mobil qabul arizasi")}
-                className="w-full rounded-xl bg-brand-500 px-4 py-3 text-xs font-bold uppercase tracking-wider text-white transition hover:bg-brand-400"
-              >
-                Qabulga ariza qoldirish — 1-dars bepul
-              </button>
+              {onOpenLeadModal && (
+                <button
+                  onClick={() => openLead("Mobil qabul arizasi")}
+                  className="w-full rounded-xl bg-brand-500 px-4 py-3 text-xs font-bold uppercase tracking-wider text-white transition hover:bg-brand-400"
+                >
+                  Qabulga ariza qoldirish — 1-dars bepul
+                </button>
+              )}
             </div>
           </nav>
         )}

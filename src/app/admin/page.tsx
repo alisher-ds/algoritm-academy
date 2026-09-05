@@ -20,7 +20,6 @@ import {
   STATUS_OPTIONS,
   getLocalLeads,
   LEADS_LOCAL_KEY,
-  submitLead,
   type Lead,
   type LeadStatus,
   type LeadType,
@@ -66,29 +65,54 @@ export default function AdminPage() {
         (s) => s.phone === l.phone && s.targetInterest === l.targetInterest && s.name === l.name
       );
       if (exists) continue;
-      const res = await submitLead({
-        name: l.name,
-        phone: l.phone,
-        type: l.type,
-        targetInterest: l.targetInterest,
-        preferredTime: l.preferredTime,
-        notes: l.notes ? `${l.notes} (offline saqlangan edi)` : "Offline (lokal) saqlangan edi",
-        source: "Admin — offline migratsiya",
-      });
-      if (res.ok) {
-        migrated++;
-      } else {
-        remaining.push(l);
+      // `submitLead()` ishlatilmaydi: u xatolikda arizani localStorage'ga QAYTA yozadi
+      // va migratsiya paytida dublikat yaratadi. Bu yerda xom fetch yetarli.
+      let ok = false;
+      try {
+        const res = await fetch("/api/leads", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Idempotency-Key": `migrate_${l.id}`,
+          },
+          body: JSON.stringify({
+            name: l.name,
+            phone: l.phone,
+            type: l.type,
+            targetInterest: l.targetInterest,
+            preferredTime: l.preferredTime,
+            notes: l.notes ? `${l.notes} (offline saqlangan edi)` : "Offline (lokal) saqlangan edi",
+            source: "Admin — offline migratsiya",
+          }),
+        });
+        ok = res.ok;
+        if (res.status === 429) {
+          // Rate-limit — qolganlarini keyingi kirishda ko'chiramiz.
+          remaining.push(l, ...local.slice(local.indexOf(l) + 1));
+          break;
+        }
+      } catch {
+        ok = false;
       }
+      if (ok) migrated++;
+      else remaining.push(l);
+    }
+
+    // `remaining` HAR DOIM yoziladi — ilgari faqat `migrated > 0` bo'lganda yozilardi
+    // va muvaffaqiyatsiz migratsiyadan keyin dublikatlar qurilmada qolib ketardi.
+    if (remaining.length > 0) {
+      localStorage.setItem(LEADS_LOCAL_KEY, JSON.stringify(remaining));
+    } else {
+      localStorage.removeItem(LEADS_LOCAL_KEY);
     }
     if (migrated > 0) {
-      setNotice(`${migrated} ta qurilmada (offline) saqlangan ariza serverga ko'chirildi.`);
-      if (remaining.length > 0) {
-        localStorage.setItem(LEADS_LOCAL_KEY, JSON.stringify(remaining));
-      } else {
-        localStorage.removeItem(LEADS_LOCAL_KEY);
-      }
+      setNotice(
+        `${migrated} ta qurilmada (offline) saqlangan ariza serverga ko'chirildi.` +
+          (remaining.length ? ` ${remaining.length} tasi keyinroq ko'chiriladi.` : "")
+      );
       fetchLeads();
+    } else if (remaining.length > 0) {
+      setNotice(`${remaining.length} ta offline arizani ko'chirib bo'lmadi — keyinroq qayta urinamiz.`);
     }
   }, [leads, fetchLeads]);
 
@@ -119,6 +143,12 @@ export default function AdminPage() {
         if (freshLeads) {
           setAuthState("tayyor");
           migrateLocalLeads(freshLeads);
+        } else {
+          // Parol to'g'ri edi, lekin ro'yxatni olib bo'lmadi. Buni aytmasak
+          // foydalanuvchi "parolim ishlamayapti" deb o'ylab qoladi.
+          setLoginError(
+            "Kirish muvaffaqiyatli, ammo arizalarni yuklab bo'lmadi. Sahifani yangilab qayta urinib ko'ring."
+          );
         }
       } else {
         const data = await res.json().catch(() => null);
@@ -148,6 +178,11 @@ export default function AdminPage() {
       });
       if (!res.ok) {
         setLeads(prev);
+        if (res.status === 401) {
+          setAuthState("login");
+          setLoginError("Sessiya muddati tugadi — qaytadan kiring.");
+          return;
+        }
         const data = await res.json().catch(() => null);
         setNotice(data?.error || "Status yangilanmadi");
       }
@@ -165,6 +200,11 @@ export default function AdminPage() {
       const res = await fetch(`/api/leads?id=${encodeURIComponent(id)}`, { method: "DELETE" });
       if (!res.ok) {
         setLeads(prev);
+        if (res.status === 401) {
+          setAuthState("login");
+          setLoginError("Sessiya muddati tugadi — qaytadan kiring.");
+          return;
+        }
         setNotice("Ariza o'chirilmadi");
       }
     } catch {
@@ -218,8 +258,12 @@ export default function AdminPage() {
     const link = document.createElement("a");
     link.href = url;
     link.download = `algoritm_arizalar_${new Date().toISOString().slice(0, 10)}.csv`;
+    // Firefox link DOM'da bo'lishini talab qiladi; URL'ni darhol bekor qilish esa
+    // ba'zi brauzerlarda yuklab olish boshlanmasdan uni uzib qo'yadi.
+    document.body.appendChild(link);
     link.click();
-    URL.revokeObjectURL(url);
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
   const typeLabel = (t: LeadType) =>
@@ -406,7 +450,7 @@ export default function AdminPage() {
                       </td>
                       <td className="py-4 px-6 font-mono text-slate-300">
                         <a
-                          href={`tel:${lead.phone.replace(/\D/g, "")}`}
+                          href={`tel:+${lead.phone.replace(/\D/g, "")}`}
                           className="hover:text-brand-500 transition flex items-center gap-1.5"
                         >
                           <Phone className="w-3.5 h-3.5 text-brand-500" /> {lead.phone}

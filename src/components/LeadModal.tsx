@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { X, CheckCircle2, Phone, User, Send, Loader2, Info, AlertCircle } from "lucide-react";
 import { submitLead, LEAD_OPTIONS, type LeadOption, type LeadType } from "@/lib/leads";
+import { normalizeUzPhone } from "@/lib/phone";
 
 export { LEAD_OPTIONS };
 export type { LeadOption };
@@ -105,12 +106,14 @@ export default function LeadModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const digits = phone.replace(/\D/g, "");
+
     if (!name.trim()) {
       setErrorMessage("Iltimos, ismingizni kiriting.");
       return;
     }
-    if (digits.length < 9) {
+    // Server bilan bitta manba: "+998 " prefiksi digits ichida bo'lgani uchun
+    // oddiy uzunlik tekshiruvi 3 raqamga adashardi va chala raqam serverga ketardi.
+    if (!normalizeUzPhone(phone)) {
       setErrorMessage("Iltimos, to'liq telefon raqamingizni kiriting (masalan: 90 123 45 67).");
       return;
     }
@@ -224,12 +227,13 @@ export default function LeadModal({
               />
 
               <div>
-                <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider block mb-1.5">
+                <label htmlFor="lead-name" className="text-[11px] font-bold text-slate-300 uppercase tracking-wider block mb-1.5">
                   Ism va Familiyangiz
                 </label>
                 <div className="relative">
                   <User className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
                   <input
+                    id="lead-name"
                     type="text"
                     required
                     minLength={2}
@@ -242,12 +246,13 @@ export default function LeadModal({
               </div>
 
               <div>
-                <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider block mb-1.5">
+                <label htmlFor="lead-phone" className="text-[11px] font-bold text-slate-300 uppercase tracking-wider block mb-1.5">
                   Telefon Raqamingiz
                 </label>
                 <div className="relative">
                   <Phone className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
                   <input
+                    id="lead-phone"
                     type="tel"
                     required
                     placeholder="+998 90 123 45 67"
@@ -262,10 +267,11 @@ export default function LeadModal({
               </div>
 
               <div>
-                <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider block mb-1.5">
+                <label htmlFor="lead-course" className="text-[11px] font-bold text-slate-300 uppercase tracking-wider block mb-1.5">
                   Qaysi yo'nalishga yozilmoqchisiz?
                 </label>
                 <select
+                  id="lead-course"
                   value={courseValue}
                   onChange={(e) => setCourseValue(e.target.value)}
                   className="w-full px-4 py-3 rounded-2xl bg-slate-900 border border-white/15 text-white text-xs focus:outline-none focus:border-brand-500 cursor-pointer"

@@ -109,7 +109,6 @@ function leadsFilePath(): string {
 }
 
 async function filePersist(leads: Lead[]): Promise<void> {
-  fileCache = leads;
   const file = leadsFilePath();
   writeChain = writeChain
     .catch(() => undefined)
@@ -119,6 +118,9 @@ async function filePersist(leads: Lead[]): Promise<void> {
       const tmp = `${file}.${process.pid}.tmp`;
       await fs.writeFile(tmp, JSON.stringify(leads, null, 2), "utf8");
       await fs.rename(tmp, file);
+      // Kesh faqat disk muvaffaqiyatli yangilangandan KEYIN yangilanadi — aks holda
+      // yozuv xato bo'lsa xotiradagi holat diskdan farq qilib qolardi.
+      fileCache = leads;
     });
   await writeChain;
 }
@@ -157,6 +159,35 @@ async function writeAll(leads: Lead[]): Promise<void> {
   else await filePersist(leads);
 }
 
+/**
+ * Redis rejimida o'qish→o'zgartirish→yozish siklini CAS bilan bajaradi.
+ *
+ * Oddiy SET parallel so'rovlarda ma'lumot yo'qotadi: admin statusni yangilayotganda
+ * kelgan yangi ariza eski nusxa ustidan yozilib o'chib ketardi. Shuning uchun har
+ * urinishda joriy holat qayta o'qiladi va faqat u o'zgarmagan bo'lsa yoziladi.
+ *
+ * Fayl rejimida `enqueueWrite` navbati allaqachon ketma-ketlikni kafolatlaydi.
+ */
+async function mutate<T>(
+  apply: (leads: Lead[]) => { next: Lead[]; result: T } | { next: null; result: T }
+): Promise<T> {
+  if (storageBackend() !== "redis") {
+    const leads = await readAll();
+    const { next, result } = apply(leads);
+    if (next) await writeAll(next);
+    return result;
+  }
+
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const { raw, leads } = await redisReadWithRaw();
+    const { next, result } = apply(leads);
+    if (!next) return result; // o'zgartirish kerak emas (masalan, topilmadi)
+    if (await redisWriteCAS(raw, next)) return result;
+    await new Promise((r) => setTimeout(r, 20 + Math.random() * 40));
+  }
+  throw new Error("Redis ma'lumotlar bazasi band. Birozdan so'ng qayta urinib ko'ring.");
+}
+
 export async function listLeads(): Promise<Lead[]> {
   const leads = await readAll();
   return [...leads].sort(
@@ -193,7 +224,62 @@ export type Receipt = {
 };
 
 const RECEIPT_TTL_MS = 24 * 60 * 60 * 1000; // 24 soat
+
+// Fayl (bir jarayonli) rejim uchun xotiradagi kvitansiyalar.
 const receiptStore = new Map<string, Receipt>();
+
+/**
+ * Idempotency kvitansiyasini o'qish.
+ *
+ * Redis rejimida u Redis'da saqlanadi: serverless'da har so'rov boshqa instansiyaga
+ * tushishi mumkin, sovuq start esa xotirani tozalaydi — shu sabab xotiradagi Map
+ * u yerda ishlamaydi va dublikat arizalar paydo bo'lardi.
+ */
+async function readReceipt(kHash: string): Promise<Receipt | null> {
+  if (storageBackend() !== "redis") {
+    return receiptStore.get(kHash) ?? null;
+  }
+  try {
+    const raw = await redisCommand<string | null>(["GET", `${REDIS_KEY}:rcpt:${kHash}`]);
+    return raw ? (JSON.parse(raw) as Receipt) : null;
+  } catch (err) {
+    // Kvitansiyani o'qib bo'lmasa ariza baribir qabul qilinishi kerak —
+    // idempotentlik qulaylik, arizani yo'qotish esa yo'qotish.
+    console.error("[leadStore] Kvitansiyani o'qib bo'lmadi:", err);
+    return null;
+  }
+}
+
+async function writeReceipt(kHash: string, receipt: Receipt): Promise<void> {
+  if (storageBackend() !== "redis") {
+    receiptStore.set(kHash, receipt);
+    // Xotira cheksiz o'smasligi uchun eskirganlarini tozalaymiz.
+    if (receiptStore.size > 1000) {
+      const now = Date.now();
+      for (const [k, v] of receiptStore.entries()) {
+        if (v.expiresAt <= now) receiptStore.delete(k);
+      }
+      // Hammasi hali amalda bo'lsa ham chegarani ushlab turamiz (eng eskisidan boshlab).
+      if (receiptStore.size > 1000) {
+        const sorted = [...receiptStore.entries()].sort((a, b) => a[1].expiresAt - b[1].expiresAt);
+        for (const [k] of sorted.slice(0, receiptStore.size - 1000)) receiptStore.delete(k);
+      }
+    }
+    return;
+  }
+  try {
+    // TTL Redis tomonidan boshqariladi — qo'lda tozalash kerak emas.
+    await redisCommand([
+      "SET",
+      `${REDIS_KEY}:rcpt:${kHash}`,
+      JSON.stringify(receipt),
+      "EX",
+      String(Math.ceil(RECEIPT_TTL_MS / 1000)),
+    ]);
+  } catch (err) {
+    console.error("[leadStore] Kvitansiyani saqlab bo'lmadi:", err);
+  }
+}
 
 export function payloadIdentity(payload: LeadPayload): string {
   return JSON.stringify({
@@ -223,7 +309,7 @@ export async function createLead(
     if (idempotencyKey) {
       const kHash = hash(idempotencyKey);
       const pHash = hash(payloadIdentity(payload));
-      const receipt = receiptStore.get(kHash);
+      const receipt = (await readReceipt(kHash)) ?? undefined;
       if (receipt && receipt.expiresAt > now) {
         if (receipt.payloadHash !== pHash) {
           const err = new Error("Bu yuborish kaliti boshqa ariza uchun ishlatilgan. Formani yangilang.");
@@ -279,19 +365,12 @@ export async function createLead(
     if (idempotencyKey) {
       const kHash = hash(idempotencyKey);
       const pHash = hash(payloadIdentity(payload));
-      receiptStore.set(kHash, {
+      await writeReceipt(kHash, {
         payloadHash: pHash,
         leadId: lead.id,
         createdAt: lead.createdAt,
         expiresAt: now + RECEIPT_TTL_MS,
       });
-
-      // Kvitansiyalar soni ko'payib ketsa, eskirganlarini tozalash
-      if (receiptStore.size > 1000) {
-        for (const [k, v] of receiptStore.entries()) {
-          if (v.expiresAt <= now) receiptStore.delete(k);
-        }
-      }
     }
 
     return { lead, created: true };
@@ -307,31 +386,31 @@ export async function updateLead(
   id: string,
   patch: { status?: LeadStatus; adminNotes?: string }
 ): Promise<Lead | null> {
-  return enqueueWrite(async () => {
-    const leads = await readAll();
-    const idx = leads.findIndex((l) => l.id === id);
-    if (idx === -1) return null;
-    const current = leads[idx];
-    const updated: Lead = {
-      ...current,
-      status: patch.status ?? current.status,
-      adminNotes: patch.adminNotes !== undefined ? patch.adminNotes : current.adminNotes,
-    };
-    const next = [...leads];
-    next[idx] = updated;
-    await writeAll(next);
-    return updated;
-  });
+  return enqueueWrite(() =>
+    mutate<Lead | null>((leads) => {
+      const idx = leads.findIndex((l) => l.id === id);
+      if (idx === -1) return { next: null, result: null };
+      const current = leads[idx];
+      const updated: Lead = {
+        ...current,
+        status: patch.status ?? current.status,
+        adminNotes: patch.adminNotes !== undefined ? patch.adminNotes : current.adminNotes,
+      };
+      const next = [...leads];
+      next[idx] = updated;
+      return { next, result: updated };
+    })
+  );
 }
 
 export async function deleteLead(id: string): Promise<boolean> {
-  return enqueueWrite(async () => {
-    const leads = await readAll();
-    const next = leads.filter((l) => l.id !== id);
-    if (next.length === leads.length) return false;
-    await writeAll(next);
-    return true;
-  });
+  return enqueueWrite(() =>
+    mutate<boolean>((leads) => {
+      const next = leads.filter((l) => l.id !== id);
+      if (next.length === leads.length) return { next: null, result: false };
+      return { next, result: true };
+    })
+  );
 }
 
 /** Testlar uchun: fayl kesh'ini tozalash. */
