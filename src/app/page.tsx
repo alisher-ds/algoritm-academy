@@ -7,7 +7,6 @@ import SchoolHero from "@/components/SchoolHero";
 import SchoolAbout from "@/components/SchoolAbout";
 import SchoolPrograms from "@/components/SchoolPrograms";
 import SchoolFeatures from "@/components/SchoolFeatures";
-import DailyScheduleSection from "@/components/DailyScheduleSection";
 import SchoolResults from "@/components/SchoolResults";
 import CourseCatalog from "@/components/CourseCatalog";
 import TeacherGrid from "@/components/TeacherGrid";
@@ -43,10 +42,7 @@ export default function HomePage() {
         {/* 3. Maktab Sharoitlari (3 mahal ovqat, yotoqxona, xavfsiz transport, 15+ to'garak) */}
         <SchoolFeatures />
 
-        {/* 4. Kun Tartibi (08:00 - 17:00 bir kunlik muvozanatli rejim) */}
-        <DailyScheduleSection />
-
-        {/* 5. Akademik Natijalar (Ekotizim Faxri: 6 ta rasmiy blok — 600+ OTM, 100+ SAT, 300+ PMT) */}
+        {/* 4. Akademik Natijalar (Ekotizim Faxri: 6 ta rasmiy blok — 600+ OTM, 100+ SAT, 300+ PMT) */}
         <SchoolResults />
 
         {/* 6. Biz Kimmiz? & Akademiya Missiyasi (Ta'lim falsafasi) */}
