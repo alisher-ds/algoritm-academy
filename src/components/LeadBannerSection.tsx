@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { ArrowRight, CheckCircle2, ShieldCheck, Loader2, Info } from "lucide-react";
 import { submitLead, LEAD_OPTIONS } from "@/lib/leads";
+import ScrollReveal from "@/components/ScrollReveal";
 
 const OPTIONS = LEAD_OPTIONS;
 
@@ -64,7 +65,8 @@ export default function LeadBannerSection() {
   return (
     <section className="bg-slate-50 py-20 sm:py-28 text-slate-900 border-b border-slate-200/80" id="ariza">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="rounded-3xl bg-slate-950 text-white p-8 sm:p-14 lg:p-16 relative overflow-hidden shadow-2xl">
+        <ScrollReveal variant="fade-up" duration={750}>
+          <div className="rounded-3xl bg-slate-950 text-white p-8 sm:p-14 lg:p-16 relative overflow-hidden shadow-2xl">
           {/* Ambient Glow */}
           <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-brand-500/15 rounded-full blur-3xl pointer-events-none"></div>
 
@@ -201,7 +203,8 @@ export default function LeadBannerSection() {
             </div>
           </div>
         </div>
-      </div>
-    </section>
+      </ScrollReveal>
+    </div>
+  </section>
   );
 }

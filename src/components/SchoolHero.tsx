@@ -152,22 +152,22 @@ export default function SchoolHero({ onOpenLeadModal }: SchoolHeroProps) {
                 <div className="mx-auto w-full max-w-7xl px-4 sm:px-8 lg:px-12">
                   <div className={`max-w-xl text-left ${isCurrent ? "pointer-events-auto" : "pointer-events-none"}`}>
                     {/* Brend yashil rangidagi ixcham kicker */}
-                    <p className="font-bold text-brand-400 text-[11px] sm:text-xs tracking-[0.2em] uppercase drop-shadow-md">
+                    <p className={`font-bold text-brand-400 text-[11px] sm:text-xs tracking-[0.2em] uppercase drop-shadow-md ${isCurrent ? "animate-hero-kicker" : ""}`}>
                       {s.kicker}
                     </p>
 
                     {/* Ixchamlashtirilgan, o'ta katta bo'lmagan H1 (mobilda 2 qatordan oshmaydi) */}
-                    <h1 className="mt-1.5 font-display text-2xl sm:text-3xl lg:text-4xl font-extrabold uppercase leading-tight tracking-tight text-white drop-shadow-md">
+                    <h1 className={`mt-1.5 font-display text-2xl sm:text-3xl lg:text-4xl font-extrabold uppercase leading-tight tracking-tight text-white drop-shadow-md ${isCurrent ? "animate-hero-title" : ""}`}>
                       {s.title}
                     </h1>
 
                     {/* Qisqa va lo'nda bitta jumla */}
-                    <p className="mt-2 text-xs sm:text-sm text-slate-200/90 font-medium max-w-md leading-relaxed drop-shadow-sm">
+                    <p className={`mt-2 text-xs sm:text-sm text-slate-200/90 font-medium max-w-md leading-relaxed drop-shadow-sm ${isCurrent ? "animate-hero-desc" : ""}`}>
                       {s.desc}
                     </p>
 
                     {/* O'zimizning brend yashil rangidagi qulay tugma */}
-                    <div className="mt-4 sm:mt-5 flex items-center gap-3">
+                    <div className={`mt-4 sm:mt-5 flex items-center gap-3 ${isCurrent ? "animate-hero-btn" : ""}`}>
                       <button
                         onClick={() => onOpenLeadModal(s.title)}
                         tabIndex={isCurrent ? 0 : -1}

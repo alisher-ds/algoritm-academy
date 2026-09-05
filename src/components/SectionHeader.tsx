@@ -1,4 +1,5 @@
 import type { ComponentType, ReactNode } from "react";
+import ScrollReveal from "@/components/ScrollReveal";
 
 interface SectionHeaderProps {
   /** Kichik kapsula yorliq (eyebrow), masalan: "Shaffof qabul 2026" */
@@ -17,11 +18,14 @@ interface SectionHeaderProps {
   align?: "left" | "center";
   /** Qo'shimcha klasslar (masalan: "mb-16") */
   className?: string;
+  /** Scroll-reveal animatsiyasini yoqish/o'chirish (default: true) */
+  animate?: boolean;
 }
 
 /**
  * Sayt bo'ylab yagona bo'lim sarlavhasi:
  * eyebrow pill + Manrope sarlavha + tavsif.
+ * Apple uslubidagi silliq scroll-reveal bilan ochiladi.
  */
 export default function SectionHeader({
   eyebrow,
@@ -32,14 +36,15 @@ export default function SectionHeader({
   wide = false,
   align = "left",
   className = "",
+  animate = true,
 }: SectionHeaderProps) {
   const centered = align === "center";
-  return (
-    <div
-      className={`${wide ? "max-w-3xl" : "max-w-2xl"} ${
-        centered ? "mx-auto text-center" : "text-left"
-      } ${className}`}
-    >
+  const containerClasses = `${wide ? "max-w-3xl" : "max-w-2xl"} ${
+    centered ? "mx-auto text-center" : "text-left"
+  } ${className}`;
+
+  const content = (
+    <>
       {eyebrow && (
         <span
           className={`mb-4 inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-wider ${
@@ -68,6 +73,16 @@ export default function SectionHeader({
           {description}
         </p>
       )}
-    </div>
+    </>
+  );
+
+  if (!animate) {
+    return <div className={containerClasses}>{content}</div>;
+  }
+
+  return (
+    <ScrollReveal variant="fade-up" duration={700} className={containerClasses}>
+      {content}
+    </ScrollReveal>
   );
 }

@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { CheckCircle2, Clock, Utensils, ArrowRight, School, ChevronDown } from "lucide-react";
 import { ECOSYSTEM_DATA } from "@/data/ecosystemData";
 import SectionHeader from "@/components/SectionHeader";
+import ScrollReveal from "@/components/ScrollReveal";
 
 interface SchoolProgramsProps {
   onOpenLeadModal: (programTitle: string) => void;
@@ -40,9 +41,15 @@ export default function SchoolPrograms({ onOpenLeadModal }: SchoolProgramsProps)
             const isExpanded = Boolean(expandedMap[prog.id]);
 
             return (
-              <div
+              <ScrollReveal
                 key={prog.id}
-                className={`rounded-3xl bg-white border p-6 sm:p-7 flex flex-col justify-between transition-all duration-300 relative group text-left ${
+                variant="fade-up"
+                delay={idx * 100}
+                duration={700}
+                className="h-full flex"
+              >
+                <div
+                  className={`rounded-3xl bg-white border p-6 sm:p-7 flex flex-col justify-between transition-all duration-300 relative group text-left w-full ${
                   idx === 1
                     ? "border-brand-500 ring-2 ring-brand-500/20 shadow-xl"
                     : "border-slate-200 hover:border-brand-400 hover:shadow-lg"
@@ -135,8 +142,9 @@ export default function SchoolPrograms({ onOpenLeadModal }: SchoolProgramsProps)
                 </div>
 
               </div>
-            );
-          })}
+            </ScrollReveal>
+          );
+        })}
         </div>
 
       </div>

@@ -61,16 +61,42 @@ h4 {
   animation-play-state: paused;
 }
 
-/* Scroll-reveal — IntersectionObserver'siz, 'animate-fade-up'ga bog'liq bo'lmagan yordamchi */
+/* Scroll-reveal va Apple uslubidagi silliq harakatlar */
 .reveal {
   opacity: 0;
-  transform: translateY(18px);
-  transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1), transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  transform: translateY(24px);
+  transition: opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1), transform 0.75s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
 }
 
 .reveal.reveal-visible {
   opacity: 1;
   transform: translateY(0);
+}
+
+/* Hero section birinchi marta ochilgandagi silliq kaskadli kirish */
+@keyframes hero-enter {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 22px, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.animate-hero-kicker {
+  animation: hero-enter 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
+}
+.animate-hero-title {
+  animation: hero-enter 0.85s cubic-bezier(0.16, 1, 0.3, 1) 0.22s both;
+}
+.animate-hero-desc {
+  animation: hero-enter 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.34s both;
+}
+.animate-hero-btn {
+  animation: hero-enter 0.95s cubic-bezier(0.16, 1, 0.3, 1) 0.46s both;
 }
 
 /* Img elementlarida tasodifiy skeleton rang oldini olish */
