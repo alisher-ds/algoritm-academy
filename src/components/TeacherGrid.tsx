@@ -131,7 +131,7 @@ function TeacherAvatar({
 }
 
 export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherGridProps) {
-  // 9 nafar rasmiy va haqiqiy Algoritm pedagogik jamoasi
+  // Rasmiy va haqiqiy Algoritm pedagogik jamoasi
   const teamMembers = [
     {
       id: "tm-bobur",
@@ -242,28 +242,6 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
         "O'qituvchilar uchun attestatsiya tayyorlov kursi rahbari"
       ],
       isRealVideo: true
-    },
-    {
-      id: "tm-shohjahon",
-      name: "Shohjahon Shoyqulov",
-      role: "Ona Tili va Adabiyot Bosh Ustozi",
-      subject: "Ona Tili & Adabiyot (Milliy Sertifikat)",
-      scoreBadge: "MILLIY A+",
-      scoreLabel: "SERTIFIKAT",
-      qualBadge: "OLIY TOIFA",
-      qualLabel: "MALAKA",
-      experience: "12 yil",
-      students: "4 000+",
-      image: "",
-      videoUrl: "",
-      bio: "Ona tili va adabiyot fanidan 12 yillik kuchli tajribaga ega oliy toifali pedagog. Milliy sertifikatning eng yuqori A+ darajasi sohibi. Abituriyentlar va maktab o'quvchilariga grammatika, matn tahlili va test yechish texnikasini chuqur o'rgatadi.",
-      highlights: [
-        "12 yillik professional pedagogik tajriba",
-        "Milliy sertifikat A+ darajasi sohibi",
-        "Yuzlab shogirdlari filologiya va yuridik OTMlariga kirgan",
-        "Mualliflik metodikasi va chuqur adabiy tahlil"
-      ],
-      isRealVideo: false
     },
     {
       id: "tm-jasur",
