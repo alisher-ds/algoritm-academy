@@ -67,47 +67,40 @@ function TeacherAvatar({
       Icon: Globe,
       label: "Ingliz Tili",
     };
-  } else if (sub.includes("python") || sub.includes("it") || sub.includes("sun'iy")) {
+  } else if (sub.includes("sat")) {
     theme = {
-      gradient: "from-slate-900 via-night-card to-cyan-950",
-      ring: "border-cyan-400/50 text-cyan-300",
-      Icon: Code2,
-      label: "IT & Sun'iy Intellekt",
+      gradient: "from-slate-900 via-night-card to-violet-950",
+      ring: "border-violet-400/50 text-violet-300",
+      Icon: Sparkles,
+      label: "Digital SAT",
     };
-  } else if (sub.includes("robot") || sub.includes("lego") || sub.includes("muhandis")) {
-    theme = {
-      gradient: "from-slate-900 via-night-card to-sky-950",
-      ring: "border-sky-400/50 text-sky-300",
-      Icon: Bot,
-      label: "Robototexnika",
-    };
-  } else if (sub.includes("fizika") || sub.includes("stem")) {
-    theme = {
-      gradient: "from-slate-900 via-night-card to-indigo-950",
-      ring: "border-indigo-400/50 text-indigo-300",
-      Icon: Atom,
-      label: "Fizika & STEM",
-    };
-  } else if (sub.includes("boshlang'ich") || sub.includes("metodika")) {
+  } else if (sub.includes("tarix") || sub.includes("huquq")) {
     theme = {
       gradient: "from-slate-900 via-night-card to-amber-950",
       ring: "border-amber-400/50 text-amber-300",
-      Icon: BookOpen,
-      label: "Boshlang'ich Ta'lim",
+      Icon: Award,
+      label: "Huquq & Tarix",
     };
-  } else if (sub.includes("mental") || sub.includes("hisob") || sub.includes("shaxmat")) {
+  } else if (sub.includes("ona tili") || sub.includes("adabiyot")) {
     theme = {
-      gradient: "from-slate-900 via-night-card to-purple-950",
-      ring: "border-purple-400/50 text-purple-300",
-      Icon: Brain,
-      label: "Tezkor Hisob",
+      gradient: "from-slate-900 via-night-card to-indigo-950",
+      ring: "border-indigo-400/50 text-indigo-300",
+      Icon: BookOpen,
+      label: "Ona Tili & Adabiyot",
     };
-  } else if (sub.includes("pmt") || sub.includes("mantiq")) {
+  } else if (sub.includes("rus") || sub.includes("boshlang'ich")) {
+    theme = {
+      gradient: "from-slate-900 via-night-card to-rose-950",
+      ring: "border-rose-400/50 text-rose-300",
+      Icon: BookOpen,
+      label: "Boshlang'ich Rus Sinf",
+    };
+  } else if (sub.includes("pmt") || sub.includes("prezident") || sub.includes("tanqidiy") || sub.includes("mantiq")) {
     theme = {
       gradient: "from-slate-900 via-night-card to-emerald-950",
       ring: "border-brand-400/50 text-brand-300",
-      Icon: Sparkles,
-      label: "PMT Mantiq",
+      Icon: GraduationCap,
+      label: "Prezident Maktabi",
     };
   }
 
@@ -142,214 +135,206 @@ function TeacherAvatar({
 }
 
 export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherGridProps) {
-  // 10 Team members with Aziz Xolmurodov featured with his real photo and video
+  // 9 nafar rasmiy va haqiqiy Algoritm pedagogik jamoasi
   const teamMembers = [
+    {
+      id: "tm-bobur",
+      name: "Bobur Xaydarov",
+      role: "Asoschi va Direktor · SAT Math Eksperti",
+      subject: "Matematika & SAT Math",
+      scoreBadge: "800/800",
+      scoreLabel: "SAT MATH",
+      qualBadge: "ASOSCHI",
+      qualLabel: "DIREKTOR",
+      experience: "10+ yil",
+      students: "5 000+",
+      image: "",
+      videoUrl: "",
+      bio: "Algoritm ta'lim ekotizimi asoschisi va direktori. Matematika va SAT Math bo'yicha mutaxassis, rasmiy SAT Math 800/800 (100% maksimal ball) sohibi. Ta'lim sohasida 10 yildan ortiq boshqaruv va pedagogik tajribaga ega.",
+      highlights: [
+        "SAT Math 800/800 (100% mutlaq natija)",
+        "Algoritm Maktabi & Akademiyasi asoschisi",
+        "10+ yil ta'lim sohasidagi yetakchilik",
+        "Xalqaro olimpiadalar va grantlar koordinatori"
+      ],
+      isRealVideo: false
+    },
+    {
+      id: "tm-adham",
+      name: "Adham Sohibov",
+      role: "Prezident Maktabi & Mantiq Murabbiyi",
+      subject: "Prezident Maktabi & Matematika",
+      scoreBadge: "100+ PM",
+      scoreLabel: "QABUL QILINGAN",
+      qualBadge: "PMT EXPERT",
+      qualLabel: "MALAKA",
+      experience: "4+ yil",
+      students: "2 500+",
+      image: "",
+      videoUrl: "",
+      bio: "Prezident maktabi, Al-Xorazmiy va ixtisoslashtirilgan maktablarga tayyorlov bo'yicha yetakchi murabbiy. Matematika va tanqidiy fikrlash bo'yicha 100 dan ortiq shogirdlari Prezident va Al-Xorazmiy maktablariga qabul qilingan.",
+      highlights: [
+        "100+ o'quvchisi PM, Al-Xorazmiy va ixtisos maktablarga kirgan",
+        "Matematika va tanqidiy fikrlash (Critical Thinking) metodisti",
+        "Al-Xorazmiy va Al-Beruniy maktablariga tayyorlov",
+        "4+ yil (2022-fevraldan) professional pedagogik faoliyat"
+      ],
+      isRealVideo: false
+    },
+    {
+      id: "tm-oxunjon",
+      name: "Oxunjon Ozodov",
+      role: "Digital SAT (English & Math) Mentori",
+      subject: "Digital SAT (English & Math)",
+      scoreBadge: "SAT 1550",
+      scoreLabel: "OFFICIAL SCORE",
+      qualBadge: "MATH 800",
+      qualLabel: "NYUSH ALUMNI",
+      experience: "4+ yil",
+      students: "1 200+",
+      image: "",
+      videoUrl: "",
+      bio: "Digital SAT (English va Math) bo'yicha O'zbekistondagi eng yuqori natijador mentorlardan biri. SAT 1550 va Math 800/800 mutlaq ball sohibi. IELTS 7.5 (Reading 9.0). Nufuzli New York University Shanghai (NYUSH) talabasi.",
+      highlights: [
+        "SAT 1550 rasmiy xalqaro ball sohibi",
+        "SAT Math 800/800 (100% mutlaq natija)",
+        "IELTS 7.5 (Reading 9.0 maksimal ball)",
+        "NYUSH va xalqaro oliygohlarga 100% grantlar koordinatori"
+      ],
+      isRealVideo: false
+    },
+    {
+      id: "tm-muhammadali",
+      name: "Muhammadali O'rinov",
+      role: "Huquq & Tarix Kafedrasi Mudiri",
+      subject: "Huquq va Tarix (Milliy Sertifikat)",
+      scoreBadge: "500+ SERT",
+      scoreLabel: "SHOGIRDLAR",
+      qualBadge: "300+ TALABA",
+      qualLabel: "OTM GRANT",
+      experience: "3+ yil",
+      students: "1 800+",
+      image: "",
+      videoUrl: "",
+      bio: "Huquq va Tarix fanlaridan Milliy sertifikat va DTM imtihonlariga tayyorlovchi yetakchi pedagog. Shogirdlari 500 dan ortiq tarix sertifikatlarini qo'lga kiritgan, 300+ nafari oliygoh talabasi, 10 dan ortiq harbiylar va huquqshunoslar (IIA/HMQA/DXX) kursanti.",
+      highlights: [
+        "Shogirdlari 500+ tarix milliy sertifikati sohibi",
+        "300+ shogirdi nufuzli davlat oliygohlariga qabul qilingan",
+        "10+ IIA, HMQA va DXX akademiyalari kursantlari",
+        "Xronologik va mantiqiy test tahlili metodikasi"
+      ],
+      isRealVideo: false
+    },
     {
       id: "tm-aziz",
       name: "Aziz Xolmurodov",
-      role: "Maktab Matematika Ustozi",
+      role: "Matematika Kafedrasi Mudiri",
       subject: "Matematika & Milliy Sertifikat",
-      scoreBadge: "A+",
-      scoreLabel: "MILLIY SERTIFIKAT",
-      qualBadge: "A+ DARAJA",
-      qualLabel: "MALAKA",
-      experience: "10 yil",
+      scoreBadge: "MILLIY A+",
+      scoreLabel: "SERTIFIKAT",
+      qualBadge: "200+ A/A+",
+      qualLabel: "SHOGIRDLAR",
+      experience: "3+ yil",
       students: "3 500+",
       image: "/images/aziz_xolmurodov.png",
       videoUrl: "/videos/aziz_teacher_intro.mp4",
-      bio: "Algoritm maktabining matematika ustozi — Milliy sertifikatning eng yuqori A+ darajasi sohibi. O'quvchilarni milliy sertifikat, DTM va xalqaro olimpiada imtihonlariga yuqori natija bilan tayyorlaydi.",
+      bio: "Algoritm ta'lim tizimining yetakchi matematika ustozi — Milliy sertifikatning eng yuqori A+ darajasi sohibi. O'quvchilar va o'qituvchilar uchun attestatsiya, milliy sertifikat va DTM ga 100% natija bilan tayyorlaydi. 200+ shogirdi sertifikat sohibi, 300+ nafari oliygohga kirgan.",
       highlights: [
-        "Milliy sertifikat (A+) oliy darajasi",
-        "10 yillik professional pedagogik tajriba",
-        "3 500+ muvaffaqiyatli o'quvchilar",
-        "DTM, SAT Math va olimpiada tayyorlovi"
+        "Milliy sertifikat (A+) oliy darajasi sohibi",
+        "200+ sertifikat sohibi shogirdlar",
+        "300+ nufuzli OTM talabalari",
+        "O'qituvchilar uchun attestatsiya tayyorlov kursi rahbari"
       ],
       isRealVideo: true
     },
     {
-      id: "tm1",
-      name: "Shohruh Jalolov",
-      role: "Matematika & Olimpiada Mudiri",
-      subject: "Fundamental Matematika",
+      id: "tm-shohjahon",
+      name: "Shohjahon Shoyqulov",
+      role: "Ona Tili va Adabiyot Bosh Ustozi",
+      subject: "Ona Tili & Adabiyot (Milliy Sertifikat)",
       scoreBadge: "MILLIY A+",
       scoreLabel: "SERTIFIKAT",
       qualBadge: "OLIY TOIFA",
       qualLabel: "MALAKA",
-      experience: "10 yil",
-      students: "3 500+",
-      image: "",
-      videoUrl: "",
-      bio: "Matematika fanidan Milliy sertifikat (A+) va xalqaro olimpiadalarga tayyorlovchi yetakchi pedagog.",
-      highlights: [
-        "Milliy sertifikat (A+) maksimal ball natijalari",
-        "Prezident va ixtisoslashtirilgan maktablar g'oliblari",
-        "Mantiqiy va noan'anaviy masalalar tahlili"
-      ],
-      isRealVideo: false
-    },
-    {
-      id: "tm2",
-      name: "Dilrabo Axmedova",
-      role: "Boshlang'ich Ta'lim Metodisti",
-      subject: "1-4 Sinf Metodikasi",
-      scoreBadge: "CAMBRIDGE",
-      scoreLabel: "DARAJA",
-      qualBadge: "1-TOIFA",
-      qualLabel: "MALAKA",
       experience: "12 yil",
-      students: "4 200+",
+      students: "4 000+",
       image: "",
       videoUrl: "",
-      bio: "Boshlang'ich sinf o'quvchilarida husnixat, tezkor hisoblash va mantiqiy tafakkurni shakllantirish bo'yicha mutaxassis.",
+      bio: "Ona tili va adabiyot fanidan 12 yillik kuchli tajribaga ega oliy toifali pedagog. Milliy sertifikatning eng yuqori A+ darajasi sohibi. Abituriyentlar va maktab o'quvchilariga grammatika, matn tahlili va test yechish texnikasini chuqur o'rgatadi.",
       highlights: [
-        "1-4 sinf bolalar psixologiyasi mutaxassisi",
-        "Mental arifmetika va doiraviy interfaol darslar",
-        "12 yillik kuchli tajriba"
+        "12 yillik professional pedagogik tajriba",
+        "Milliy sertifikat A+ darajasi sohibi",
+        "Yuzlab shogirdlari filologiya va yuridik OTMlariga kirgan",
+        "Mualliflik metodikasi va chuqur adabiy tahlil"
       ],
       isRealVideo: false
     },
     {
-      id: "tm4",
-      name: "Farrux Aliyev",
-      role: "SAT & Digital Math Eksperti",
-      subject: "SAT Digital & AQSH Grantlari",
-      scoreBadge: "SAT 1480+",
-      scoreLabel: "SAT SCORE",
-      qualBadge: "GRANT EXPERT",
-      qualLabel: "QUALIFICATION",
-      experience: "6 yil",
+      id: "tm-jasur",
+      name: "Jasur Jovliyev",
+      role: "Ingliz Tili & CEFR Murabbiyi",
+      subject: "Ingliz Tili · CEFR · General English",
+      scoreBadge: "IELTS 8.0",
+      scoreLabel: "IELTS BAND",
+      qualBadge: "CEFR C1",
+      qualLabel: "MALAKA",
+      experience: "3+ yil",
       students: "1 500+",
       image: "",
       videoUrl: "",
-      bio: "AQSH va Yevropaning nufuzli oliygohlariga 100% to'liq grant yutish bo'yicha mutaxassis.",
+      bio: "Ingliz tili fani bo'yicha rasmiy IELTS 8.0 xalqaro sertifikat sohibi. O'quvchilarda so'zlashuv (Speaking), grammatika va CEFR xalqaro imtihonlariga tayyorgarlik bo'yicha jadal interfaol darslarni olib boradi.",
       highlights: [
-        "SAT 1480+ Digital rasmiy ball sohibi",
-        "AQSH va xalqaro universitetlar koordinatori",
-        "$1.2M+ grantlar koordinatori"
+        "IELTS 8.0 rasmiy xalqaro sertifikat sohibi",
+        "General English & Speaking bo'yicha metodist",
+        "CEFR B2/C1 imtihonlariga intensiv tayyorlov",
+        "Interfaol muloqot va nutq rivojlantirish tizimi"
       ],
       isRealVideo: false
     },
     {
-      id: "tm5",
-      name: "Jasur Rahimjonov",
-      role: "PMT Mantiq Kafedrasi Mudiri",
-      subject: "Prezident Maktabi Tayyorlov",
-      scoreBadge: "TOP 1",
-      scoreLabel: "PMT QABUL",
-      qualBadge: "PMT EXPERT",
-      qualLabel: "MALAKA",
-      experience: "8 yil",
-      students: "2 900+",
+      id: "tm-shohista",
+      name: "Shohista Jalilovna",
+      role: "Boshlang'ich Rus Sinf Metodist Ustozi",
+      subject: "Boshlang'ich Ta'lim (Rus tilida)",
+      scoreBadge: "RUS TILI",
+      scoreLabel: "METODIST",
+      qualBadge: "MALAKALI USTOZ",
+      qualLabel: "KATTA TAJRIBA",
+      experience: "Ko'p yillik",
+      students: "3 000+",
       image: "",
       videoUrl: "",
-      bio: "Mantiqiy va tanqidiy fikrlash bo'yicha Prezident va Al-Xorazmiy maktablariga tayyorlovchi yetakchi ekspert.",
+      bio: "Algoritm maktabining boshlang'ich rus sinflari ustozi. Rus tilida boshlang'ich ta'lim bo'yicha ko'p yillik amaliy tajribaga ega malakali pedagoglardan biri. O'quvchilarda dastlabki sinfdanoq to'g'ri talaffuz, savodxonlik va hisoblashni shakllantiradi.",
       highlights: [
-        "PMT 100% qabul ko'rsatkichi",
-        "150 daqiqalik sinov simulyatsiyasi",
-        "Tanqidiy fikrlash metodisti"
+        "Maktabning eng malakali boshlang'ich rus sinf ustozlaridan biri",
+        "Ko'p yillik amaliy va metodik pedagogik tajriba",
+        "1-4 sinf rus tili savodxonligi va mantiqiy tafakkur",
+        "Bolalar psixologiyasi va individual ta'lim yondashuvi"
       ],
       isRealVideo: false
     },
     {
-      id: "tm6",
-      name: "Aziza Nurmatova",
-      role: "Ingliz Tili & Speaking Murabbiyi",
-      subject: "Cambridge Speaking & CEFR",
-      scoreBadge: "IELTS 8.5",
-      scoreLabel: "IELTS BAND",
-      qualBadge: "TESOL",
-      qualLabel: "QUALIFICATION",
-      experience: "5 yil",
-      students: "1 800+",
-      image: "",
-      videoUrl: "",
-      bio: "Erta yoshdan ingliz tilida ravon gapirish va xalqaro muloqot ko'nikmalarini rivojlantiruvchi ustoz.",
-      highlights: [
-        "IELTS 8.5 va TESOL xalqaro malaka",
-        "Jonli muloqot va interfaol metodika"
-      ],
-      isRealVideo: false
-    },
-    {
-      id: "tm7",
-      name: "Behzod Qosimov",
-      role: "IT & Sun'iy Intellekt Kafedrasi",
-      subject: "Python, C++ & Robototexnika",
-      scoreBadge: "SENIOR DEV",
-      scoreLabel: "DARAJA",
-      qualBadge: "AI & ML",
-      qualLabel: "YO'NALISH",
-      experience: "6 yil",
-      students: "2 100+",
-      image: "",
-      videoUrl: "",
-      bio: "Maktab o'quvchilariga zamonaviy dasturlash, sun'iy intellekt va amaliy texnologiyalarni o'rgatuvchi muhandis.",
-      highlights: [
-        "Python, C++, Java va robototexnika",
-        "Sun'iy intellekt laboratoriyasi rahbari"
-      ],
-      isRealVideo: false
-    },
-    {
-      id: "tm8",
-      name: "Nilufar Yusupova",
-      role: "Mental Arifmetika Mutaxassisi",
-      subject: "Tezkor Hisob & Shaxmat",
-      scoreBadge: "XALQARO",
-      scoreLabel: "HAKAM",
-      qualBadge: "OLIY TOIFA",
+      id: "tm-gavhar",
+      name: "Jumayeva Gavhar",
+      role: "Ingliz Tili Ustozi",
+      subject: "Ingliz Tili & Cambridge Standartlari",
+      scoreBadge: "MALAKALI",
+      scoreLabel: "USTOZ",
+      qualBadge: "CAMBRIDGE",
       qualLabel: "MALAKA",
       experience: "9 yil",
-      students: "3 200+",
+      students: "2 800+",
       image: "",
       videoUrl: "",
-      bio: "Mental arifmetika bo'yicha xalqaro olimpiadalar g'oliblarini tayyorlagan oliy toifali mutaxassis.",
+      bio: "9 yillik professional pedagogik stajga ega malakali ingliz tili ustozi. O'quvchilarni Cambridge standartlari asosida ingliz tili grammatikasi, so'z boyligi va erkin so'zlashuvga o'rgatuvchi tajribali murabbiy.",
       highlights: [
-        "Xalqaro olimpiadalar hakamlik tajribasi",
-        "Tezkor hisoblash va diqqatni jamlash metodikasi"
+        "9 yillik uzluksiz pedagogik staj",
+        "Maktab va akademiya malakali ingliz tili ustozi",
+        "Cambridge boshlang'ich va o'rta bosqich metodikasi",
+        "Muntazam malaka oshirish sertifikatlari sohibasi"
       ],
       isRealVideo: false
-    },
-    {
-      id: "tm9",
-      name: "Odilbek Shavkiyev",
-      role: "Fizika & STEM Fanlari Ustozi",
-      subject: "Fundamental Fizika & STEM",
-      scoreBadge: "MILLIY A+",
-      scoreLabel: "SERTIFIKAT",
-      qualBadge: "OLIY TOIFA",
-      qualLabel: "MALAKA",
-      experience: "14 yil",
-      students: "5 000+",
-      image: "",
-      videoUrl: "",
-      bio: "Laboratoriya tajribalari va fizika fanini amaliyot bilan bog'lab o'rgatuvchi tajribali pedagog.",
-      highlights: [
-        "14 yillik oliy toifali pedagogik faoliyat",
-        "Amaliy laboratoriya va STEM darslari"
-      ],
-      isRealVideo: false
-    },
-    {
-      id: "tm10",
-      name: "Sarvar Ergashev",
-      role: "Robototexnika & Muhandislik",
-      subject: "Lego Mindstorms & Arduino",
-      scoreBadge: "WRO WINNER",
-      scoreLabel: "YUTUQ",
-      qualBadge: "STEM EXPERT",
-      qualLabel: "MALAKA",
-      experience: "5 yil",
-      students: "1 400+",
-      image: "",
-      videoUrl: "",
-      bio: "Xalqaro robototexnika musobaqalari chempioni, bolalarda konstruktorlik tafakkurini rivojlantiruvchi ustoz.",
-      highlights: [
-        "WRO robototexnika sovrindori",
-        "Lego Mindstorms va muhandislik amaliyoti"
-      ],
-      isRealVideo: false
-    },
+    }
   ];
 
 
