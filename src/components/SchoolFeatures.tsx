@@ -52,6 +52,7 @@ export default function SchoolFeatures() {
       id="sharoitlar"
     >
       <div id="afzalliklar"></div>
+      <div id="kun-tartibi"></div>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <SectionHeader
