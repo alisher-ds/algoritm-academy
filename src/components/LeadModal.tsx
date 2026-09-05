@@ -2,43 +2,16 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { X, CheckCircle2, Phone, User, Send, Loader2, Info, AlertCircle } from "lucide-react";
-import { submitLead, type LeadType } from "@/lib/leads";
+import { submitLead, LEAD_OPTIONS, type LeadOption, type LeadType } from "@/lib/leads";
+
+export { LEAD_OPTIONS };
+export type { LeadOption };
 
 interface LeadModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialCourse?: string;
 }
-
-export interface LeadOption {
-  value: string;
-  type: LeadType;
-  label: string;
-}
-
-export const LEAD_OPTIONS: LeadOption[] = [
-  // Maktab
-  { value: "0–11 Sinf Xususiy Maktabi", type: "maktab", label: "0–11 Sinf Xususiy Maktabi" },
-  { value: "Maktabgacha tayyorlov", type: "maktab", label: "Maktabgacha tayyorlov" },
-
-  // O'quv markazi — Flagman kurslar
-  { value: "Prezident maktabiga tayyorlov", type: "kurs", label: "Prezident maktabiga tayyorlov" },
-  { value: "Digital SAT", type: "kurs", label: "Digital SAT" },
-  { value: "IELTS 7+", type: "kurs", label: "IELTS 7+" },
-  { value: "Matematika", type: "kurs", label: "Matematika" },
-
-  // O'quv markazi — Fanlar
-  { value: "Fizika", type: "kurs", label: "Fizika" },
-  { value: "Kimyo", type: "kurs", label: "Kimyo" },
-  { value: "Biologiya", type: "kurs", label: "Biologiya" },
-  { value: "Ingliz tili 0 dan", type: "kurs", label: "Ingliz tili 0 dan" },
-  { value: "Ona tili", type: "kurs", label: "Ona tili" },
-  { value: "Huquq", type: "kurs", label: "Huquq" },
-  { value: "Tarix", type: "kurs", label: "Tarix" },
-
-  // Umumiy
-  { value: "Boshqa yo'nalish / Maslahat olish", type: "umumiy", label: "Boshqa yo'nalish / Maslahat olish" },
-];
 
 function matchInitialCourse(initial?: string): string {
   if (!initial) return LEAD_OPTIONS[0].value;
@@ -133,7 +106,14 @@ export default function LeadModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const digits = phone.replace(/\D/g, "");
-    if (!name.trim() || digits.length < 9) return;
+    if (!name.trim()) {
+      setErrorMessage("Iltimos, ismingizni kiriting.");
+      return;
+    }
+    if (digits.length < 9) {
+      setErrorMessage("Iltimos, to'liq telefon raqamingizni kiriting (masalan: 90 123 45 67).");
+      return;
+    }
 
     setLoading(true);
     setErrorMessage(null);

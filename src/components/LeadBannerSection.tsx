@@ -2,29 +2,9 @@
 
 import React, { useState } from "react";
 import { ArrowRight, CheckCircle2, ShieldCheck, Loader2, Info } from "lucide-react";
-import { submitLead, type LeadType } from "@/lib/leads";
+import { submitLead, LEAD_OPTIONS } from "@/lib/leads";
 
-interface Option {
-  value: string;
-  type: LeadType;
-}
-
-const OPTIONS: Option[] = [
-  { value: "0–11 Sinf Xususiy Maktabi", type: "maktab" },
-  { value: "Maktabgacha tayyorlov", type: "maktab" },
-  { value: "Prezident maktabiga tayyorlov", type: "kurs" },
-  { value: "Digital SAT", type: "kurs" },
-  { value: "IELTS 7+", type: "kurs" },
-  { value: "Matematika", type: "kurs" },
-  { value: "Fizika", type: "kurs" },
-  { value: "Kimyo", type: "kurs" },
-  { value: "Biologiya", type: "kurs" },
-  { value: "Ingliz tili 0 dan", type: "kurs" },
-  { value: "Ona tili", type: "kurs" },
-  { value: "Huquq", type: "kurs" },
-  { value: "Tarix", type: "kurs" },
-  { value: "Boshqa yo'nalish / Maslahat olish", type: "umumiy" },
-];
+const OPTIONS = LEAD_OPTIONS;
 
 export default function LeadBannerSection() {
   const [name, setName] = useState("");
@@ -38,7 +18,14 @@ export default function LeadBannerSection() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const digits = phone.replace(/\D/g, "");
-    if (!name.trim() || digits.length < 9) return;
+    if (!name.trim()) {
+      setError("Iltimos, ismingizni kiriting.");
+      return;
+    }
+    if (digits.length < 9) {
+      setError("Iltimos, to'liq telefon raqamingizni kiriting (masalan: 90 123 45 67).");
+      return;
+    }
 
     setLoading(true);
     setError(null);
