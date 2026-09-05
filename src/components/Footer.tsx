@@ -89,7 +89,7 @@ export default function Footer() {
                   rel="noopener noreferrer"
                   className="hover:text-brand-400 transition-colors inline-flex items-center gap-1 text-slate-200 font-medium"
                 >
-                  <span>1. Maktab manzili (Mustaqillik shoh ko'chasi)</span>
+                  <span>1. Maktab manzili</span>
                   <ExternalLink className="h-3 w-3 text-brand-400 shrink-0" />
                 </a>
               </div>
@@ -103,7 +103,7 @@ export default function Footer() {
                   rel="noopener noreferrer"
                   className="hover:text-brand-400 transition-colors inline-flex items-center gap-1 text-slate-200 font-medium"
                 >
-                  <span>2. O'quv markaz manzili (Islom Karimov ko'chasi 291V)</span>
+                  <span>2. O'quv markaz manzili</span>
                   <ExternalLink className="h-3 w-3 text-brand-400 shrink-0" />
                 </a>
               </div>
