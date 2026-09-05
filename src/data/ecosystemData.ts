@@ -716,63 +716,38 @@ export const ECOSYSTEM_DATA = {
   faqs: [
     {
       category: "maktab" as const,
-      question: "Algoritm School xususiy maktabiga qabul qanday bo'ladi?",
-      answer: "Qabul 1-11 sinf o'quvchilari uchun 1 kunlik 100% bepul sinov darsi, ochiq eshiklar kuni hamda matematika va ingliz tili bo'yicha bilim monitoringi asosida amalga oshiriladi. Yuqori sinflar (7-10) uchun alohida GRAND imtihoni mavjud.",
+      question: "Maktabda telefon va smartfonlardan foydalanish tartibi qanday?",
+      answer: "Dars boshlanishidan oldin barcha o'quvchilarning smartfonlari maxsus xavfsiz qutilarda saqlashga olinadi. Dars va tanaffus paytida bolalar faqat jonli muloqot, sport, kitobxonlik va to'garaklar bilan band bo'ladi. Soat 17:00 da darslar tugagach, ota-onasi bilan bog'lanish uchun qaytarib beriladi.",
+    },
+    {
+      category: "umumiy" as const,
+      question: "Maktabingizda o'qisa, qo'shimcha repetitorga borishga hojat qoladimi?",
+      answer: "Mutlaqo yo'q. Algoritm Maktabi va Akademiyasining asosiy ustunligi — kuchli o'quv markazi (Prezident maktabiga tayyorlov, SAT, IELTS, Milliy sertifikat A+, DTM) bilan bitta ekotizimdaligidir. Fanlarni chuqurlashtirilgan o'rganish, imtihonlarga intensiv tayyorgarlik va barcha uy vazifalari soat 17:00 gacha maktabning o'zida kuchli ustozlar nazoratida to'liq yakunlanadi.",
     },
     {
       category: "maktab" as const,
-      question: "Sinf va 0-sinf uchun nechta o'rin bor?",
-      answer: "Har bir sinf uchun qat'iy 15 nafar o'quvchi kvotasi belgilangan (1-«A» o'zbek, rus va boshqa sinflar). 0-sinf (maktabgacha tayyorlov) uchun esa atigi 18 ta o'rin mavjud — qabul cheklangan.",
+      question: "Maktabni bitirganda beriladigan attestat davlatnikidan farq qiladimi va eMaktab tizimiga ulanganmi?",
+      answer: "Maktab davlat litsenziyasiga ega bo'lib, bitiruvchilarga O'zbekiston Respublikasi Xalq ta'limi vazirligi tasdiqlagan rasmiy davlat namunisidagi attestat (shahodatnoma) beriladi. Maktab to'liq eMaktab (avvalgi Kundalik.com) davlat platformasiga integratsiya qilingan, barcha baholar rasmiy bazada yuritiladi.",
     },
     {
       category: "maktab" as const,
-      question: "Maktabda dars vaqti va ovqatlanish qanday tashkil etilgan?",
-      answer: "Darslar 08:00 dan 17:00 gacha to'liq kunlik rejimda bo'lib, o'quvchilarga kuniga 3 mahal halol issiq taom, darsdan so'ng 15 dan ortiq bepul to'garaklar (robototexnika, shaxmat, karate, raqs, mental arifmetika) hamda uy vazifalarini bajarish xizmati taqdim etiladi.",
+      question: "3 mahal ovqatlanish, tibbiyot va xavfsizlik qanday ta'minlangan?",
+      answer: "Taomlar maktabning shaxsiy oshxonasida sanitariya me'yorlari asosida faqat halol, toza va tabiiy mahsulotlardan yangi pishiriladi (parhez va allergik talablar inobatga olinadi). Maktab binosi 24/7 videokuzatuv va qo'riqlash xizmatida. Shuningdek, kun bo'yi malakali shifokor va maktab psixologi faoliyat ko'rsatadi.",
     },
     {
       category: "maktab" as const,
-      question: "Maktab avtobusi (transport) va yotoqxona bormi?",
-      answer: "Ha, Qarshi shahrining barcha yo'nalishlari bo'yicha maxsus avtobus qatnovi va viloyat tumanlaridan keluvchilar uchun qulay yotoqxona (pansionat) xizmati mavjud. Kun davomida doimiy shifokor nazorati ham ta'minlanadi.",
+      question: "O'quv yili o'rtasida boshqa maktabdan Algoritmga ko'chirish (perevod) mumkinmi?",
+      answer: "Ha, sinflarda bo'sh kvota o'rinlari mavjud bo'lsa, o'quv yili davomida ham o'tish mumkin. Jarayon juda oson: o'quvchi 1 kunlik bepul sinov darsida qatnashadi va bilim darajasi aniqlanadi, so'ngra hujjatlar elektron tizim orqali tez va qog'ozbozliksiz rasmiylashtiriladi.",
     },
     {
-      category: "maktab" as const,
-      question: "Xalqaro olimpiadalarga tayyorgarlik qanday yo'lga qo'yilgan?",
-      answer: "Algoritm maktabi xalqaro olimpiadalar markazi hisoblanadi: KHISO (8-17-bosqichlar maktab binosida o'tkaziladi), IMEC, JSEO, TasIMO, EINSTEIN va boshqa nufuzli olimpiadalarda o'quvchilar muntazam qatnashadi. Matematika va ingliz tili chuqurlashtirilgan holda o'qitiladi.",
-    },
-    {
-      category: "maktab" as const,
-      question: "GRAND imtihoni nima?",
-      answer: "7-8-9-10-sinf o'quvchilari o'zlari tanlagan 2 ta fan bo'yicha imtihon topshirib, 1 yil davomida bepul yoki katta chegirma asosida o'qish grantini qo'lga kiritishi mumkin. Imtihonlar muntazam o'tkaziladi.",
-    },
-    {
-      category: "maktab" as const,
-      question: "Maktabda rus sinflari bormi?",
-      answer: "Ha, to'liq rus tilida ta'lim beruvchi alohida rus sinflari faoliyat yuritadi (1-rus, 2-rus va boshqalar). Rus guruhlarida malakali mutaxassislar dars beradi, shuningdek 0-sinf uchun rus va o'zbek tayyorlov guruhlari mavjud.",
+      category: "umumiy" as const,
+      question: "Oylik to'lovdan tashqari kutilmagan yashirin xarajatlar bormi va qanday chegirmalar mavjud?",
+      answer: "Hech qanday yashirin to'lov yo'q — 3 mahal issiq ovqat, 15+ to'garaklar, darsdan keyingi uy vazifalari va barcha qo'shimcha darslar oylik to'lov ichiga kiradi. Bir oiladan 2 yoki undan ortiq farzand o'qisa oilaviy chegirma beriladi. Shuningdek, yuqori sinflar uchun GRAND imtihoni orqali 100% bepul o'qish grantlari mavjud.",
     },
     {
       category: "markaz" as const,
-      question: "Algoritm Academy o'quv markazida qanday repetitorlik kurslari bor?",
-      answer: "O'quv markazimizda Prezident maktabiga tayyorlov (PMT), Digital SAT 1500+ va xalqaro grantlar, IELTS 7.5+, Matematika Milliy Sertifikat (A+) hamda DTM grant kurslari faoliyat yuritadi. Har bir kursga 1-dars bepul.",
-    },
-    {
-      category: "umumiy" as const,
-      question: "Sinov darsi va konsultatsiya bepulmi?",
-      answer: "Ha. Barcha yo'nalishlar uchun 1 kunlik (maktab) yoki 1-dars (kurslar) 100% bepul sinov imkoniyati mavjud. Shuningdek, metodist bilan bepul diagnostika suhbati o'tkaziladi — ariza qoldirish kifoya.",
-    },
-    {
-      category: "umumiy" as const,
-      question: "Arizani qanday topshirish mumkin?",
-      answer: "Saytdagi istalgan formani to'ldirish orqali (ism va telefon) yoki to'g'ridan-to'g'ri qo'ng'iroq qilish orqali: maktab uchun +998 (99) 141-05-05, o'quv markazi uchun +998 (90) 895-05-05 / +998 (88) 895-05-05. Mutaxassislarimiz 15 daqiqa ichida bog'lanadi.",
-    },
-    {
-      category: "umumiy" as const,
-      question: "O'qish to'lovida chegirma yoki grant imkoniyatlari bormi?",
-      answer: "Ha. Ochiq eshiklar kunlarida yillik maxsus chegirmalar taqdim etiladi, yuqori sinflar uchun GRAND imtihoni (1 yil bepul o'qish) va har oylik monitoringda 1-o'rin uchun naqd stipendiya mavjud.",
-    },
-    {
-      category: "umumiy" as const,
-      question: "Qanday natijalarga erishgan o'quvchilar bor?",
-      answer: "Haqiqiy natijalar bazasidan namunalar: SAT 1430 + IELTS 6.5, SAT 1260 + IELTS 7.0, 2026-yil yakunida 189.0 maksimal ball sohiblari, Al-Xorazmiy maktablariga 44 nafar qabul va respublika olimpiadasida 60 000 000 so'm bosh mukofot.",
+      question: "O'quv markazi (kurslar)da 1-dars rostdan ham bepulmi va o'zlashtirish qanday nazorat qilinadi?",
+      answer: "Ha, istalgan kursimizda (PMT, SAT, IELTS, Matematika) birinchi sinov darsi 100% bepul. O'quvchi ustoz va muhitni o'zi ko'rib baholaydi. Har bir o'quvchining davomati, haftalik test natijalari va o'zlashtirishi monitoring qilinib, shaxsiy kurator orqali ota-onaga muntazam hisobot berib boriladi.",
     },
   ],
   gallery: [

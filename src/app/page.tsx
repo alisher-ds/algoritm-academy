@@ -64,8 +64,8 @@ export default function HomePage() {
         {/* 9. 4 Bosqichli Shaffof Qabul Yo'l Xaritasi */}
         <AdmissionRoadmap onOpenLeadModal={handleOpenLeadModal} />
 
-        {/* 11. Savol-Javoblar (FAQ) */}
-        <FAQAccordion categoryFilter="umumiy" />
+        {/* 10. Savol-Javoblar (FAQ) */}
+        <FAQAccordion categoryFilter="hammasi" />
 
         {/* 12. Universal Ariza Topshirish Bloki */}
         <LeadBannerSection />
