@@ -127,51 +127,75 @@ export async function listLeads(): Promise<Lead[]> {
   );
 }
 
+let writeQueue: Promise<unknown> = Promise.resolve();
+
+function enqueueWrite<T>(task: () => Promise<T>): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    writeQueue = writeQueue
+      .catch(() => undefined)
+      .then(async () => {
+        try {
+          const result = await task();
+          resolve(result);
+        } catch (err) {
+          reject(err);
+        }
+      });
+  });
+}
+
 function newId(): string {
   return `lead-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
 export async function addLead(payload: LeadPayload): Promise<Lead> {
-  const leads = await readAll();
-  const lead: Lead = {
-    ...payload,
-    id: newId(),
-    createdAt: new Date().toISOString(),
-    status: "yangi",
-  };
-  const next = [lead, ...leads];
-  await writeAll(next);
-  return lead;
+  return enqueueWrite(async () => {
+    const leads = await readAll();
+    const lead: Lead = {
+      ...payload,
+      id: newId(),
+      createdAt: new Date().toISOString(),
+      status: "yangi",
+    };
+    const next = [lead, ...leads];
+    await writeAll(next);
+    return lead;
+  });
 }
 
 export async function updateLead(
   id: string,
   patch: { status?: LeadStatus; adminNotes?: string }
 ): Promise<Lead | null> {
-  const leads = await readAll();
-  const idx = leads.findIndex((l) => l.id === id);
-  if (idx === -1) return null;
-  const current = leads[idx];
-  const updated: Lead = {
-    ...current,
-    status: patch.status ?? current.status,
-    adminNotes: patch.adminNotes !== undefined ? patch.adminNotes : current.adminNotes,
-  };
-  const next = [...leads];
-  next[idx] = updated;
-  await writeAll(next);
-  return updated;
+  return enqueueWrite(async () => {
+    const leads = await readAll();
+    const idx = leads.findIndex((l) => l.id === id);
+    if (idx === -1) return null;
+    const current = leads[idx];
+    const updated: Lead = {
+      ...current,
+      status: patch.status ?? current.status,
+      adminNotes: patch.adminNotes !== undefined ? patch.adminNotes : current.adminNotes,
+    };
+    const next = [...leads];
+    next[idx] = updated;
+    await writeAll(next);
+    return updated;
+  });
 }
 
 export async function deleteLead(id: string): Promise<boolean> {
-  const leads = await readAll();
-  const next = leads.filter((l) => l.id !== id);
-  if (next.length === leads.length) return false;
-  await writeAll(next);
-  return true;
+  return enqueueWrite(async () => {
+    const leads = await readAll();
+    const next = leads.filter((l) => l.id !== id);
+    if (next.length === leads.length) return false;
+    await writeAll(next);
+    return true;
+  });
 }
 
 /** Testlar uchun: fayl kesh'ini tozalash. */
 export function __resetFileCache() {
   fileCache = null;
+  writeQueue = Promise.resolve();
 }

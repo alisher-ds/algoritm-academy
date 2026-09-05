@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
-import { X, CheckCircle2, Phone, User, Send, Sparkles, Loader2, Info } from "lucide-react";
+import { X, CheckCircle2, Phone, User, Send, Sparkles, Loader2, Info, AlertCircle } from "lucide-react";
 import { submitLead, type LeadType } from "@/lib/leads";
 
 interface LeadModalProps {
@@ -39,6 +39,25 @@ function matchInitialCourse(initial?: string): string {
   if (!initial) return LEAD_OPTIONS[0].value;
   const s = initial.toLowerCase().trim();
 
+  // 1. To'g'ridan-to'g'ri moslik (agar to'liq tanlov matni uzatilgan bo'lsa)
+  const direct = LEAD_OPTIONS.find((o) => o.value.toLowerCase() === s);
+  if (direct) return direct.value;
+
+  // 2. Maktab sinflari — birinchi navbatda (kurs nomlari bilan chalkashmasligi uchun)
+  if (s.includes("0-sinf") || s.includes("maktabgacha")) {
+    return "0-Sinf & Maktabgacha Tayyorlov";
+  }
+  if (s.includes("1–4") || s.includes("1-4") || s.includes("boshlang'ich")) {
+    return "1–4 Sinf: Boshlang'ich & PMT poydevori";
+  }
+  if (s.includes("5–8") || s.includes("5-8") || s.includes("o'rta")) {
+    return "5–8 Sinf: O'rta Ta'lim & Olimpiadalar";
+  }
+  if (s.includes("9–11") || s.includes("9-11") || s.includes("yuqori")) {
+    return "9–11 Sinf: Yuqori Sinf & SAT/OTM Grant";
+  }
+
+  // 3. Akademik kurslar
   if (s.includes("robot") || s.includes("intellekt") || s.includes("ai")) {
     return "Robototexnika & Sun'iy Intellekt";
   }
@@ -54,24 +73,11 @@ function matchInitialCourse(initial?: string): string {
   if (s.includes("matematika") || s.includes("dtm") || s.includes("sertifikat")) {
     return "Matematika (Milliy Sertifikat A+ & DTM)";
   }
-  if (s.includes("0-sinf") || s.includes("maktabgacha")) {
-    return "0-Sinf & Maktabgacha Tayyorlov";
-  }
-  if (s.includes("1–4") || s.includes("1-4") || s.includes("boshlang'ich")) {
-    return "1–4 Sinf: Boshlang'ich & PMT poydevori";
-  }
-  if (s.includes("5–8") || s.includes("5-8") || s.includes("o'rta")) {
-    return "5–8 Sinf: O'rta Ta'lim & Olimpiadalar";
-  }
-  if (s.includes("9–11") || s.includes("9-11") || s.includes("yuqori")) {
-    return "9–11 Sinf: Yuqori Sinf & SAT/OTM Grant";
-  }
+
+  // 4. Umumiy maktab murojaati
   if (s.includes("maktab") || s.includes("school") || s.includes("akademiya") || s.includes("sinf")) {
     return "0–11 Sinf Xususiy Maktabi (To'liq kun)";
   }
-
-  const direct = LEAD_OPTIONS.find((o) => o.value.toLowerCase() === s);
-  if (direct) return direct.value;
 
   return "Boshqa yo'nalish / Maslahat olish";
 }
@@ -87,6 +93,7 @@ export default function LeadModal({
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [submitNote, setSubmitNote] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [honeypot, setHoneypot] = useState("");
 
   // React tavsiya etgan prop o'zgarishini render vaqtida sozlash (zero-cascade renders):
@@ -99,6 +106,7 @@ export default function LeadModal({
     if (isOpen) {
       setCourseValue(matchInitialCourse(initialCourse));
       setSubmitNote(null);
+      setErrorMessage(null);
       setSubmitted(false);
     }
   }
@@ -106,6 +114,7 @@ export default function LeadModal({
   const handleClose = useCallback(() => {
     setSubmitted(false);
     setSubmitNote(null);
+    setErrorMessage(null);
     setName("");
     setPhone("+998");
     setHoneypot("");
@@ -134,6 +143,7 @@ export default function LeadModal({
     if (!name.trim() || digits.length < 9) return;
 
     setLoading(true);
+    setErrorMessage(null);
 
     const chosen = LEAD_OPTIONS.find((o) => o.value === courseValue) ?? {
       value: courseValue,
@@ -152,14 +162,19 @@ export default function LeadModal({
 
     const res = await submitLead(payload);
     setLoading(false);
-    setSubmitted(true);
-    setSubmitNote(
-      res.ok
-        ? null
-        : res.storedLocally
-          ? "Serverga ulanish imkoni bo'lmadi — arizangiz shu qurilmada saqlandi. Qo'ng'iroq qilib tasdiqlashingiz mumkin."
-          : res.error || "Xatolik yuz berdi"
-    );
+
+    if (res.ok || res.storedLocally) {
+      setSubmitted(true);
+      setSubmitNote(
+        res.ok
+          ? null
+          : "Serverga ulanish imkoni bo'lmadi — arizangiz shu qurilmada saqlandi. Qo'ng'iroq qilib tasdiqlashingiz mumkin."
+      );
+    } else {
+      setErrorMessage(
+        res.error || "Arizani yuborishda xatolik yuz berdi. Iltimos, qayta urinib ko'ring yoki to'g'ridan-to'g'ri bog'laning."
+      );
+    }
   };
 
   return (
@@ -213,6 +228,12 @@ export default function LeadModal({
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4 text-left">
+              {errorMessage && (
+                <div className="p-3.5 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-rose-200 text-xs flex items-center gap-2.5">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+                  <span>{errorMessage}</span>
+                </div>
+              )}
               <input
                 type="text"
                 name="website"

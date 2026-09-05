@@ -59,6 +59,7 @@ export default function AdminPage() {
     const local = getLocalLeads();
     if (local.length === 0) return;
     let migrated = 0;
+    const remaining: typeof local = [];
     for (const l of local) {
       const exists = leads.some(
         (s) => s.phone === l.phone && s.targetInterest === l.targetInterest && s.name === l.name
@@ -73,11 +74,19 @@ export default function AdminPage() {
         notes: l.notes ? `${l.notes} (offline saqlangan edi)` : "Offline (lokal) saqlangan edi",
         source: "Admin — offline migratsiya",
       });
-      if (res.ok) migrated++;
+      if (res.ok) {
+        migrated++;
+      } else {
+        remaining.push(l);
+      }
     }
     if (migrated > 0) {
       setNotice(`${migrated} ta qurilmada (offline) saqlangan ariza serverga ko'chirildi.`);
-      localStorage.removeItem(LEADS_LOCAL_KEY);
+      if (remaining.length > 0) {
+        localStorage.setItem(LEADS_LOCAL_KEY, JSON.stringify(remaining));
+      } else {
+        localStorage.removeItem(LEADS_LOCAL_KEY);
+      }
       fetchLeads();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -165,10 +174,16 @@ export default function AdminPage() {
   };
 
   const filteredLeads = leads.filter((l) => {
+    const q = search.trim().toLowerCase();
+    const searchDigits = search.replace(/\D/g, "");
+    const matchPhone =
+      searchDigits.length > 0 && l.phone.replace(/\D/g, "").includes(searchDigits);
     const matchSearch =
-      l.name.toLowerCase().includes(search.toLowerCase()) ||
-      l.phone.replace(/\D/g, "").includes(search.replace(/\D/g, "")) ||
-      l.targetInterest.toLowerCase().includes(search.toLowerCase());
+      !q ||
+      l.name.toLowerCase().includes(q) ||
+      matchPhone ||
+      l.targetInterest.toLowerCase().includes(q) ||
+      (l.notes ? l.notes.toLowerCase().includes(q) : false);
     const matchStatus = statusFilter === "hammasi" || l.status === statusFilter;
     const matchType = typeFilter === "hammasi" || l.type === typeFilter;
     return matchSearch && matchStatus && matchType;
