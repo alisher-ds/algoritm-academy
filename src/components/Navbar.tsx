@@ -12,7 +12,7 @@ interface NavbarProps {
 
 const NAV_LINKS = [
   { href: "/#dasturlar", label: "Maktab 0–11", icon: School },
-  { href: "/#kurslar", label: "Kurslar", icon: GraduationCap },
+  { href: "/kurslar", label: "Kurslar", icon: GraduationCap },
   { href: "/#natijalar", label: "Natijalar" },
   { href: "/#sharoitlar", label: "Sharoitlar" },
   { href: "/#ustozlar", label: "Ustozlar" },
@@ -104,7 +104,9 @@ export default function Navbar({ onOpenLeadModal }: NavbarProps) {
           {/* Desktop nav */}
           <nav className="hidden items-center gap-1 lg:flex" aria-label="Asosiy navigatsiya">
             {NAV_LINKS.map((link) => {
-              const isActive = isHome && activeSection === link.href.replace("/#", "");
+              const isActive =
+                (isHome && link.href.startsWith("/#") && activeSection === link.href.replace("/#", "")) ||
+                pathname === link.href;
               return (
                 <Link
                   key={link.href}

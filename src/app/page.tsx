@@ -52,8 +52,8 @@ export default function HomePage() {
         {/* 6. Biz Kimmiz? & Akademiya Missiyasi (Ta'lim falsafasi) */}
         <SchoolAbout onOpenLeadModal={handleOpenLeadModal} />
 
-        {/* 7. 2-QANOT: Algoritm Kurslari (PMT, Digital SAT, IELTS, Matematika A+, DTM) */}
-        <CourseCatalog onOpenLeadModal={handleOpenLeadModal} />
+        {/* 7. 2-QANOT: Algoritm Kurslari (Flagship & Yangi Guruhlar Anonsi) */}
+        <CourseCatalog onOpenLeadModal={handleOpenLeadModal} compact />
 
         {/* 8. Pedagogik Tarkib & Mentorlar Kengashi (Ustozlar jonli oqimi) */}
         <TeacherGrid
