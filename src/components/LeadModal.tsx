@@ -171,8 +171,17 @@ export default function LeadModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
-      <div className="relative w-full max-w-lg rounded-3xl bg-night border border-white/20 p-6 sm:p-8 shadow-2xl text-white max-h-[92vh] overflow-y-auto">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in"
+      onClick={handleClose}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="lead-modal-title"
+        className="relative w-full max-w-lg rounded-3xl bg-night border border-white/20 p-6 sm:p-8 shadow-2xl text-white max-h-[92vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
         <button
           onClick={handleClose}
           className="absolute top-6 right-6 p-2 rounded-full bg-white/10 hover:bg-white/20 text-slate-400 hover:text-white transition cursor-pointer"
@@ -208,7 +217,7 @@ export default function LeadModal({
         ) : (
           <div>
             <div className="text-left mb-6">
-              <h3 className="font-display text-2xl font-extrabold text-white">
+              <h3 id="lead-modal-title" className="font-display text-2xl font-extrabold text-white">
                 Qabulga Yozilish
               </h3>
               <p className="text-xs text-slate-400 mt-1">

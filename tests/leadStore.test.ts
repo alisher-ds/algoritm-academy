@@ -99,4 +99,27 @@ describe("leadStore (fayl backend)", () => {
     delete process.env.UPSTASH_REDIS_REST_URL;
     delete process.env.UPSTASH_REDIS_REST_TOKEN;
   });
+
+  it("createLead bir xil Idempotency-Key bilan dublikat yaratmaydi", async () => {
+    const s = await store();
+    const payload = { name: "Karim", phone: "+998901112233", type: "kurs" as const, targetInterest: "IELTS" };
+    const r1 = await s.createLead(payload, "key-abc-123");
+    expect(r1.created).toBe(true);
+    expect(r1.lead.name).toBe("Karim");
+
+    const r2 = await s.createLead(payload, "key-abc-123");
+    expect(r2.created).toBe(false);
+    expect(r2.lead.id).toBe(r1.lead.id);
+
+    const all = await s.listLeads();
+    expect(all).toHaveLength(1);
+  });
+
+  it("createLead boshqa ma'lumot bilan bir xil kalit berilsa 409 xato beradi", async () => {
+    const s = await store();
+    await s.createLead({ name: "Karim", phone: "+998901112233", type: "kurs", targetInterest: "IELTS" }, "key-conflict");
+    await expect(
+      s.createLead({ name: "Salim", phone: "+998909998877", type: "kurs", targetInterest: "SAT" }, "key-conflict")
+    ).rejects.toThrow("Bu yuborish kaliti boshqa ariza uchun ishlatilgan");
+  });
 });

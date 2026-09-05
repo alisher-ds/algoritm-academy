@@ -7,6 +7,7 @@
 //
 // Ikkalasi ham bir xil interfeys ortida: listLeads / addLead / updateLead / deleteLead.
 
+import { createHash } from "crypto";
 import { promises as fs } from "fs";
 import path from "path";
 import type { Lead, LeadPayload, LeadStatus } from "./leads";
@@ -148,9 +149,69 @@ function newId(): string {
   return `lead-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
-export async function addLead(payload: LeadPayload): Promise<Lead> {
+export type Receipt = {
+  payloadHash: string;
+  leadId: string;
+  createdAt: string;
+  expiresAt: number;
+};
+
+const RECEIPT_TTL_MS = 24 * 60 * 60 * 1000; // 24 soat
+const receiptStore = new Map<string, Receipt>();
+
+export function payloadIdentity(payload: LeadPayload): string {
+  return JSON.stringify({
+    name: payload.name.trim(),
+    phone: payload.phone.trim(),
+    type: payload.type,
+    targetInterest: payload.targetInterest.trim(),
+    preferredTime: payload.preferredTime?.trim() ?? "",
+    notes: payload.notes?.trim() ?? "",
+    source: payload.source?.trim() ?? "sayt",
+  });
+}
+
+function hash(value: string): string {
+  return createHash("sha256").update(value).digest("hex");
+}
+
+export async function createLead(
+  payload: LeadPayload,
+  idempotencyKey?: string
+): Promise<{ lead: Lead; created: boolean }> {
   return enqueueWrite(async () => {
     const leads = await readAll();
+    const now = Date.now();
+
+    // 1. Agar Idempotency-Key berilgan bo'lsa, mavjud kvitansiyani tekshiramiz
+    if (idempotencyKey) {
+      const kHash = hash(idempotencyKey);
+      const pHash = hash(payloadIdentity(payload));
+      const receipt = receiptStore.get(kHash);
+      if (receipt && receipt.expiresAt > now) {
+        if (receipt.payloadHash !== pHash) {
+          const err = new Error("Bu yuborish kaliti boshqa ariza uchun ishlatilgan. Formani yangilang.");
+          (err as unknown as { status: number }).status = 409;
+          throw err;
+        }
+        const existing = leads.find((l) => l.id === receipt.leadId);
+        if (existing) {
+          return { lead: existing, created: false };
+        }
+      }
+    }
+
+    // 2. Takroriy arizalardan himoya: so'nggi 60 soniya ichida bir xil telefon va yo'nalish
+    const recentDuplicate = leads.find((l) => {
+      if (l.phone !== payload.phone || l.targetInterest !== payload.targetInterest) return false;
+      const age = now - new Date(l.createdAt).getTime();
+      return age >= 0 && age < 60_000;
+    });
+    if (recentDuplicate) {
+      return { lead: recentDuplicate, created: false };
+    }
+
+    // 3. Yangi ariza yaratish
     const lead: Lead = {
       ...payload,
       id: newId(),
@@ -159,8 +220,33 @@ export async function addLead(payload: LeadPayload): Promise<Lead> {
     };
     const next = [lead, ...leads];
     await writeAll(next);
-    return lead;
+
+    // Kvitansiyani saqlash
+    if (idempotencyKey) {
+      const kHash = hash(idempotencyKey);
+      const pHash = hash(payloadIdentity(payload));
+      receiptStore.set(kHash, {
+        payloadHash: pHash,
+        leadId: lead.id,
+        createdAt: lead.createdAt,
+        expiresAt: now + RECEIPT_TTL_MS,
+      });
+
+      // Kvitansiyalar soni ko'payib ketsa, eskirganlarini tozalash
+      if (receiptStore.size > 1000) {
+        for (const [k, v] of receiptStore.entries()) {
+          if (v.expiresAt <= now) receiptStore.delete(k);
+        }
+      }
+    }
+
+    return { lead, created: true };
   });
+}
+
+export async function addLead(payload: LeadPayload, idempotencyKey?: string): Promise<Lead> {
+  const result = await createLead(payload, idempotencyKey);
+  return result.lead;
 }
 
 export async function updateLead(
@@ -198,4 +284,5 @@ export async function deleteLead(id: string): Promise<boolean> {
 export function __resetFileCache() {
   fileCache = null;
   writeQueue = Promise.resolve();
+  receiptStore.clear();
 }
