@@ -4,7 +4,9 @@ import "@fontsource-variable/manrope/wght.css";
 import "./globals.css";
 
 // Production'da aniq domen o'rnating: .env.local -> NEXT_PUBLIC_SITE_URL=https://...
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://algoritm.uz");
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),

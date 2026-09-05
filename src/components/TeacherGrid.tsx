@@ -342,10 +342,16 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
     }, delay);
   }, []);
 
-  // 1. Silliq va uzluksiz avtomatik yurish (requestAnimationFrame)
+  // 1. Silliq va uzluksiz avtomatik yurish (requestAnimationFrame + IntersectionObserver)
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
+
+    // Harakatni kamaytirish sozlamasi tekshiruvi (a11y)
+    const prefersReducedMotion =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (prefersReducedMotion) return;
 
     // Boshlang'ich holatni o'rtadagi to'plamga surib qo'yish (ikkala tomonga cheksiz yurishi uchun)
     const initScroll = () => {
@@ -356,10 +362,15 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
     };
     initScroll();
 
-    let rafId: number;
+    let rafId: number | null = null;
     let lastTime = performance.now();
+    let isVisible = true;
 
     const tick = (now: number) => {
+      if (!isVisible) {
+        rafId = null;
+        return;
+      }
       const dt = now - lastTime;
       lastTime = now;
 
@@ -380,9 +391,27 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
       rafId = requestAnimationFrame(tick);
     };
 
-    rafId = requestAnimationFrame(tick);
+    // Ekrandan chiqib ketganda CPU/batareyani tejash uchun IntersectionObserver
+    let observer: IntersectionObserver | null = null;
+    if (typeof IntersectionObserver !== "undefined") {
+      observer = new IntersectionObserver(
+        ([entry]) => {
+          isVisible = entry.isIntersecting;
+          if (isVisible && rafId === null) {
+            lastTime = performance.now();
+            rafId = requestAnimationFrame(tick);
+          }
+        },
+        { threshold: 0.05 }
+      );
+      observer.observe(el);
+    } else {
+      rafId = requestAnimationFrame(tick);
+    }
+
     return () => {
-      cancelAnimationFrame(rafId);
+      if (rafId !== null) cancelAnimationFrame(rafId);
+      if (observer) observer.disconnect();
       if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
     };
   }, [isPaused]);

@@ -26,12 +26,15 @@ export async function POST(req: Request) {
     );
   }
 
-  // Brute-force himoyasi: 15 daqiqada 8 ta urinish.
-  const limit = await rateLimit(`auth:${clientIp(req)}`, 8, 15 * 60);
-  if (!limit.allowed) {
+  // Brute-force himoyasi: IP bo'yicha 15 daqiqada 8 ta, global miqyosda 15 daqiqada 60 ta urinish.
+  const ipLimit = await rateLimit(`auth:${clientIp(req)}`, 8, 15 * 60);
+  const globalLimit = await rateLimit("auth:global", 60, 15 * 60);
+  const blocked = !ipLimit.allowed ? ipLimit : !globalLimit.allowed ? globalLimit : null;
+
+  if (blocked) {
     return NextResponse.json(
       { success: false, error: "Juda ko'p urinish. Birozdan so'ng qayta urinib ko'ring." },
-      { status: 429, headers: { "Retry-After": String(limit.retryAfter) } }
+      { status: 429, headers: { "Retry-After": String(blocked.retryAfter) } }
     );
   }
 

@@ -58,15 +58,41 @@ async function redisCommand<T>(command: (string | number)[]): Promise<T> {
   return data.result;
 }
 
-async function redisRead(): Promise<Lead[]> {
+// Redis Compare-and-Set (CAS) Lua scripti — parallel serverless lambda so'rovlarida arizalarni yo'qotmaslik uchun.
+const COMPARE_AND_SET_SCRIPT = `
+local current = redis.call('GET', KEYS[1])
+if (ARGV[1] == '0' and not current) or (ARGV[1] == '1' and current == ARGV[2]) then
+  redis.call('SET', KEYS[1], ARGV[3])
+  return 1
+end
+return 0`;
+
+async function redisReadWithRaw(): Promise<{ raw: string | null; leads: Lead[] }> {
   const raw = await redisCommand<string | null>(["GET", REDIS_KEY]);
-  if (!raw) return [];
+  if (!raw) return { raw: null, leads: [] };
   try {
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? (parsed as Lead[]) : [];
+    return { raw, leads: Array.isArray(parsed) ? (parsed as Lead[]) : [] };
   } catch {
-    return [];
+    return { raw: null, leads: [] };
   }
+}
+
+async function redisRead(): Promise<Lead[]> {
+  return (await redisReadWithRaw()).leads;
+}
+
+async function redisWriteCAS(raw: string | null, leads: Lead[]): Promise<boolean> {
+  const res = await redisCommand<number>([
+    "EVAL",
+    COMPARE_AND_SET_SCRIPT,
+    1,
+    REDIS_KEY,
+    raw === null ? "0" : "1",
+    raw ?? "",
+    JSON.stringify(leads),
+  ]);
+  return res === 1;
 }
 
 async function redisWrite(leads: Lead[]): Promise<void> {
@@ -99,14 +125,24 @@ async function filePersist(leads: Lead[]): Promise<void> {
 
 async function fileRead(): Promise<Lead[]> {
   if (fileCache) return fileCache;
+  const file = leadsFilePath();
   try {
-    const raw = await fs.readFile(leadsFilePath(), "utf8");
+    const raw = await fs.readFile(file, "utf8");
     const parsed = JSON.parse(raw);
     fileCache = Array.isArray(parsed) ? (parsed as Lead[]) : [];
-  } catch {
-    fileCache = [];
+    return fileCache;
+  } catch (err: unknown) {
+    const code = (err as { code?: string })?.code;
+    // Faqat fayl hali mavjud bo'lmasa bo'sh ro'yxat qaytaramiz (yangi tizim)
+    if (code === "ENOENT") {
+      fileCache = [];
+      return fileCache;
+    }
+    // Disk, ruxsat (EACCES) yoki fayl tizimi xatosi bo'lsa, xatoni yutib bazani bo'sh deb hisoblash
+    // arizalarning yo'qolib ketishiga olib keladi. Shuning uchun xatolik fosh etiladi.
+    console.error(`[leadStore] Arizalar faylini o'qishda xatolik yuz berdi (${code}):`, err);
+    throw new Error(`Arizalar faylini o'qib bo'lmadi: ${code || "xato"}`);
   }
-  return fileCache;
 }
 
 // ─────────────────────────────── Umumiy interfeys ───────────────────────────────
@@ -218,8 +254,26 @@ export async function createLead(
       createdAt: new Date().toISOString(),
       status: "yangi",
     };
-    const next = [lead, ...leads];
-    await writeAll(next);
+
+    if (storageBackend() === "redis") {
+      let saved = false;
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const { raw, leads: currentLeads } = await redisReadWithRaw();
+        const next = [lead, ...currentLeads];
+        const ok = await redisWriteCAS(raw, next);
+        if (ok) {
+          saved = true;
+          break;
+        }
+        await new Promise((r) => setTimeout(r, 20 + Math.random() * 40));
+      }
+      if (!saved) {
+        throw new Error("Redis ma'lumotlar bazasi band. Birozdan so'ng qayta urinib ko'ring.");
+      }
+    } else {
+      const next = [lead, ...leads];
+      await writeAll(next);
+    }
 
     // Kvitansiyani saqlash
     if (idempotencyKey) {

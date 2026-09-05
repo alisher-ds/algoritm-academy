@@ -52,6 +52,36 @@ export const STATUS_OPTIONS: { value: LeadStatus; label: string }[] = [
   { value: "bekor_qilindi", label: "Bekor qilindi" },
 ];
 
+export interface LeadOption {
+  value: string;
+  type: LeadType;
+  label: string;
+}
+
+export const LEAD_OPTIONS: LeadOption[] = [
+  // Maktab
+  { value: "0–11 Sinf Xususiy Maktabi", type: "maktab", label: "0–11 Sinf Xususiy Maktabi" },
+  { value: "Maktabgacha tayyorlov", type: "maktab", label: "Maktabgacha tayyorlov" },
+
+  // O'quv markazi — Flagman kurslar
+  { value: "Prezident maktabiga tayyorlov", type: "kurs", label: "Prezident maktabiga tayyorlov" },
+  { value: "Digital SAT", type: "kurs", label: "Digital SAT" },
+  { value: "IELTS 7+", type: "kurs", label: "IELTS 7+" },
+  { value: "Matematika", type: "kurs", label: "Matematika" },
+
+  // O'quv markazi — Fanlar
+  { value: "Fizika", type: "kurs", label: "Fizika" },
+  { value: "Kimyo", type: "kurs", label: "Kimyo" },
+  { value: "Biologiya", type: "kurs", label: "Biologiya" },
+  { value: "Ingliz tili 0 dan", type: "kurs", label: "Ingliz tili 0 dan" },
+  { value: "Ona tili", type: "kurs", label: "Ona tili" },
+  { value: "Huquq", type: "kurs", label: "Huquq" },
+  { value: "Tarix", type: "kurs", label: "Tarix" },
+
+  // Umumiy
+  { value: "Boshqa yo'nalish / Maslahat olish", type: "umumiy", label: "Boshqa yo'nalish / Maslahat olish" },
+];
+
 function generateIdempotencyKey(): string {
   return `req_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 }

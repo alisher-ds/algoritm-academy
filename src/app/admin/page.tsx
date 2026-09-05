@@ -39,29 +39,30 @@ export default function AdminPage() {
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const fetchLeads = useCallback(async (): Promise<boolean> => {
+  const fetchLeads = useCallback(async (): Promise<Lead[] | null> => {
     try {
       const res = await fetch("/api/leads", { cache: "no-store" });
-      if (res.status === 401) return false;
+      if (res.status === 401) return null;
       const data = await res.json();
-      if (data?.success) {
+      if (data?.success && Array.isArray(data.leads)) {
         setLeads(data.leads);
-        return true;
+        return data.leads;
       }
-      return false;
+      return null;
     } catch {
-      return false;
+      return null;
     }
   }, []);
 
   // Local (offline) to'plangan arizalarni serverga ko'chirish
-  const migrateLocalLeads = useCallback(async () => {
+  const migrateLocalLeads = useCallback(async (currentLeads?: Lead[]) => {
     const local = getLocalLeads();
     if (local.length === 0) return;
+    const baseList = currentLeads ?? leads;
     let migrated = 0;
     const remaining: typeof local = [];
     for (const l of local) {
-      const exists = leads.some(
+      const exists = baseList.some(
         (s) => s.phone === l.phone && s.targetInterest === l.targetInterest && s.name === l.name
       );
       if (exists) continue;
@@ -89,13 +90,12 @@ export default function AdminPage() {
       }
       fetchLeads();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [leads]);
+  }, [leads, fetchLeads]);
 
   useEffect(() => {
     (async () => {
-      const ok = await fetchLeads();
-      if (ok) {
+      const freshLeads = await fetchLeads();
+      if (freshLeads) {
         setAuthState("tayyor");
       } else {
         setAuthState("login");
@@ -115,10 +115,10 @@ export default function AdminPage() {
       });
       if (res.ok) {
         setPassword("");
-        const ok = await fetchLeads();
-        if (ok) {
+        const freshLeads = await fetchLeads();
+        if (freshLeads) {
           setAuthState("tayyor");
-          migrateLocalLeads();
+          migrateLocalLeads(freshLeads);
         }
       } else {
         const data = await res.json().catch(() => null);

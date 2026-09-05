@@ -6,9 +6,12 @@ const TYPE_LABELS: Record<LeadPayload["type"], string> = {
   umumiy: "📋 Umumiy Konsultatsiya",
 };
 
-/** Telegram Markdown uchun xavfsiz matn (_, *, `, [ belgilaridan tozalaydi). */
-function md(value: string): string {
-  return value.replace(/[_*`[\]()~>#+\-=|{}.!]/g, "\\$&");
+/** Telegram HTML formati uchun xavfsiz matn (&, <, > belgilarini almashtiradi). */
+function htmlEscape(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }
 
 export async function sendLeadNotification(
@@ -18,18 +21,18 @@ export async function sendLeadNotification(
   const chatId = process.env.TELEGRAM_CHAT_ID;
 
   const message = [
-    "🔔 *YANGI ARIZA | ALGORITM EKOSISTEMASI*",
+    "🔔 <b>YANGI ARIZA | ALGORITM EKOSISTEMASI</b>",
     "━━━━━━━━━━━━━━━━━━━━",
-    `👤 *F.I.Sh:* ${md(payload.name)}`,
-    `📞 *Telefon:* ${md(payload.phone)}`,
-    `🎯 *Yo'nalish:* ${TYPE_LABELS[payload.type] || md(payload.type)}`,
-    `📚 *Qiziqish / Sinf / Fan:* ${md(payload.targetInterest || "Ko'rsatilmagan")}`,
-    `⏰ *Qulay vaqt:* ${md(payload.preferredTime || "Ixtiyoriy")}`,
-    `💬 *Izoh:* ${md(payload.notes || "Yo'q")}`,
-    `📱 *Manba:* ${md(payload.source || "Sayt")}`,
-    `📅 *Sana:* ${new Date().toLocaleString("uz-UZ", { timeZone: "Asia/Tashkent" })}`,
+    `👤 <b>F.I.Sh:</b> ${htmlEscape(payload.name)}`,
+    `📞 <b>Telefon:</b> ${htmlEscape(payload.phone)}`,
+    `🎯 <b>Yo'nalish:</b> ${htmlEscape(TYPE_LABELS[payload.type] || payload.type)}`,
+    `📚 <b>Qiziqish / Sinf / Fan:</b> ${htmlEscape(payload.targetInterest || "Ko'rsatilmagan")}`,
+    `⏰ <b>Qulay vaqt:</b> ${htmlEscape(payload.preferredTime || "Ixtiyoriy")}`,
+    `💬 <b>Izoh:</b> ${htmlEscape(payload.notes || "Yo'q")}`,
+    `📱 <b>Manba:</b> ${htmlEscape(payload.source || "Sayt")}`,
+    `📅 <b>Sana:</b> ${new Date().toLocaleString("uz-UZ", { timeZone: "Asia/Tashkent" })}`,
     "━━━━━━━━━━━━━━━━━━━━",
-    "ℹ️ _Sayt orqali yuborildi_",
+    "ℹ️ <i>Sayt orqali yuborildi</i>",
   ].join("\n");
 
   // Telegram env o'rnatilgan bo'lsa — to'g'ridan-to'g'ri yuboramiz
@@ -41,8 +44,9 @@ export async function sendLeadNotification(
         body: JSON.stringify({
           chat_id: chatId,
           text: message,
-          parse_mode: "Markdown",
+          parse_mode: "HTML",
         }),
+        signal: AbortSignal.timeout(4000),
       });
 
       if (!response.ok) {

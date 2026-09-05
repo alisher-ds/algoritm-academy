@@ -28,9 +28,16 @@ async function redisPipeline(commands: (string | number)[][]): Promise<{ result:
 
 function memoryLimit(key: string, limit: number, windowMs: number): Result {
   const now = Date.now();
-  // Vaqti o'tgan yozuvlarni tozalash (xotira o'smasligi uchun)
-  if (memory.size > 5000) {
-    for (const [k, v] of memory) if (v.resetAt <= now) memory.delete(k);
+  // Vaqti o'tgan yozuvlarni tozalash (xotira cheksiz o'smasligi uchun)
+  if (memory.size > 2000) {
+    for (const [k, v] of memory) {
+      if (v.resetAt <= now) memory.delete(k);
+    }
+    // Agar faol flood hujumi bo'lsa, eng eski yozuvlarni FIFO tarzida chiqarib tashlash
+    if (memory.size > 2500) {
+      const keysToDelete = Array.from(memory.keys()).slice(0, 1000);
+      for (const k of keysToDelete) memory.delete(k);
+    }
   }
   const entry = memory.get(key);
   if (!entry || entry.resetAt <= now) {
@@ -65,16 +72,28 @@ export async function rateLimit(
   }
 }
 
-/** So'rov manbasi (IP) ni proxy sarlavhalaridan aniqlash. */
+const IP_RE = /^[\da-fA-F.:]{3,45}$/;
+
+/** So'rov manbasi (IP) ni xavfsiz proxy sarlavhalaridan aniqlash. */
 export function clientIp(req: Request): string {
+  const trustedHeader = process.env.TRUSTED_IP_HEADER?.trim().toLowerCase();
+  if (trustedHeader) {
+    const raw = req.headers.get(trustedHeader)?.split(",")[0]?.trim();
+    if (raw && IP_RE.test(raw)) return raw;
+  }
+
+  // Cloudflare -> Vercel -> X-Real-IP -> X-Forwarded-For
   const candidates = [
-    req.headers.get("x-real-ip"),
     req.headers.get("cf-connecting-ip"),
+    req.headers.get("x-vercel-forwarded-for")?.split(",")[0],
+    req.headers.get("x-real-ip"),
     req.headers.get("x-forwarded-for")?.split(",")[0],
   ];
+
   for (const c of candidates) {
     const v = c?.trim();
-    if (v) return v;
+    if (v && IP_RE.test(v)) return v;
   }
+
   return "local";
 }
