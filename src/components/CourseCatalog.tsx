@@ -66,7 +66,7 @@ export default function CourseCatalog({ onOpenLeadModal, compact = false }: Cour
             eyebrow="O'quv markazi kurslari"
             eyebrowIcon={GraduationCap}
             title="Akademik tayyorlov va grant kurslari"
-            description="Prezident maktabiga tayyorlov (PMT), Digital SAT 1500+, IELTS 7.5+, Matematika milliy sertifikat (A+), Tibbiyot va DTM grant dasturlari. Har bir kurs uchun 1-dars mutlaqo bepul."
+            description="Prezident maktabiga tayyorlov (PMT), Digital SAT 1500+, IELTS 7+, Matematika milliy sertifikat (A+), Tibbiyot va DTM grant dasturlari. Har bir kurs uchun 1-dars mutlaqo bepul."
           />
 
           {!compact && (
