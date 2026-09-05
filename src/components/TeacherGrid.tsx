@@ -320,8 +320,8 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
       qualLabel: "MALAKA",
       experience: "9 yil",
       students: "2 800+",
-      image: "",
-      videoUrl: "",
+      image: "/images/jumayeva_gavhar.png",
+      videoUrl: "/videos/gavhar_teacher_intro.mp4",
       bio: "9 yillik professional pedagogik stajga ega malakali ingliz tili ustozi. O'quvchilarni Cambridge standartlari asosida ingliz tili grammatikasi, so'z boyligi va erkin so'zlashuvga o'rgatuvchi tajribali murabbiy.",
       highlights: [
         "9 yillik uzluksiz pedagogik staj",
@@ -329,7 +329,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
         "Cambridge boshlang'ich va o'rta bosqich metodikasi",
         "Muntazam malaka oshirish sertifikatlari sohibasi"
       ],
-      isRealVideo: false
+      isRealVideo: true
     }
   ];
 
