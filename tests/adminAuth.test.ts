@@ -49,6 +49,18 @@ describe("adminAuth", () => {
     expect(a2.verifySessionToken(token)).toBe(false);
   });
 
+  it("ADMIN_PASSWORD o'zgarganda ADMIN_SESSION_SECRET o'rnatilgan bo'lsa ham sessiya bekor bo'ladi", async () => {
+    process.env.ADMIN_PASSWORD = "eski-parol";
+    process.env.ADMIN_SESSION_SECRET = "doimiy-secret";
+    const a1 = await freshAuth();
+    const token = a1.createSessionToken()!;
+    expect(a1.verifySessionToken(token)).toBe(true);
+
+    process.env.ADMIN_PASSWORD = "yangi-parol";
+    const a2 = await freshAuth();
+    expect(a2.verifySessionToken(token)).toBe(false);
+  });
+
   it("cookie'ni to'g'ri o'qiydi", async () => {
     const a = await freshAuth();
     expect(a.readCookie("a=1; algoritm_admin=abc; b=2", "algoritm_admin")).toBe("abc");

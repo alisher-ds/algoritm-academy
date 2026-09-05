@@ -13,11 +13,7 @@ import {
   ChevronRight,
   Calculator,
   Globe,
-  Code2,
-  Bot,
-  Atom,
   BookOpen,
-  Brain,
   Sparkles
 } from "lucide-react";
 import { ECOSYSTEM_DATA } from "@/data/ecosystemData";

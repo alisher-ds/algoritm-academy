@@ -32,7 +32,7 @@ function sessionSecret(): string | null {
   // Parol sozlanmagan bo'lsa (prod'da ADMIN_PASSWORD yo'q) — sessiya umuman berilmaydi.
   if (!pwd) return null;
   const explicit = process.env.ADMIN_SESSION_SECRET?.trim();
-  if (explicit) return explicit;
+  if (explicit) return `explicit:${explicit}:pwd:${pwd}`;
   // Kalit ko'rsatilmasa — paroldan hosil qilinadi (parol o'zgarsa sessiyalar bekor bo'ladi).
   return `derived:${pwd}`;
 }

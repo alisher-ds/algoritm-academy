@@ -70,6 +70,27 @@ describe("leadStore (fayl backend)", () => {
     expect(list[0].name).toBe("Ikkinchi");
   });
 
+  it("parallel 10 ta ariza bir vaqtda kelsa barchasi saqlanadi (race condition yo'q)", async () => {
+    const s = await store();
+    const tasks = Array.from({ length: 10 }, (_, i) =>
+      s.addLead({
+        name: `User ${i}`,
+        phone: `+9989011122${i.toString().padStart(2, "0")}`,
+        type: "kurs",
+        targetInterest: `Kurs ${i}`,
+      })
+    );
+    const added = await Promise.all(tasks);
+    expect(added).toHaveLength(10);
+
+    const all = await s.listLeads();
+    expect(all).toHaveLength(10);
+    const names = all.map((l) => l.name);
+    for (let i = 0; i < 10; i++) {
+      expect(names).toContain(`User ${i}`);
+    }
+  });
+
   it("Upstash env bo'lsa redis backend tanlanadi", async () => {
     process.env.UPSTASH_REDIS_REST_URL = "https://x.upstash.io";
     process.env.UPSTASH_REDIS_REST_TOKEN = "t";

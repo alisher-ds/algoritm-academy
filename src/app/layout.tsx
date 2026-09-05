@@ -33,7 +33,6 @@ export const metadata: Metadata = {
   authors: [{ name: "Algoritm Academy" }],
   creator: "Algoritm Academy",
   publisher: "Algoritm Academy",
-  alternates: { canonical: "/" },
   openGraph: {
     title: "Algoritm Academy — Xususiy Maktab va Akademik Tayyorlov Ekotizimi",
     description:
