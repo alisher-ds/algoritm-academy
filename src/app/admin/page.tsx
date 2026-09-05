@@ -197,8 +197,8 @@ export default function AdminPage() {
   };
 
   const exportCSV = () => {
-    const headers = "ID,Ism,Telefon,Turi,Yo'nalish,Sana,Status,Izoh\n";
-    const rows = leads
+    const headers = "ID,Ism,Telefon,Turi,Yo'nalish,Sana,Status,Izoh,Admin_Qaydi\n";
+    const rows = filteredLeads
       .map((l) =>
         [
           csvCell(l.id),
@@ -209,6 +209,7 @@ export default function AdminPage() {
           csvCell(l.createdAt),
           csvCell(STATUS_LABELS[l.status] ?? l.status),
           csvCell(l.notes),
+          csvCell(l.adminNotes),
         ].join(",")
       )
       .join("\n");
@@ -310,7 +311,7 @@ export default function AdminPage() {
               onClick={exportCSV}
               className="px-5 py-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-bold border border-white/15 transition flex items-center gap-2 self-start md:self-auto"
             >
-              <Download className="w-4 h-4 text-brand-500" /> Excel / CSV Eksport
+              <Download className="w-4 h-4 text-brand-500" /> Excel / CSV Eksport ({filteredLeads.length})
             </button>
             <button
               onClick={handleLogout}

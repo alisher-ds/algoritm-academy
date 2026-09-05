@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { sendLeadNotification } from "@/lib/telegram";
-import { addLead, deleteLead, listLeads, updateLead } from "@/lib/leadStore";
+import { createLead, deleteLead, listLeads, updateLead } from "@/lib/leadStore";
+import { normalizeUzPhone } from "@/lib/phone";
 import { isAuthed, isSameOrigin } from "@/lib/adminAuth";
 import { clientIp, rateLimit } from "@/lib/rateLimit";
 import type { LeadType, LeadStatus } from "@/lib/leads";
@@ -21,7 +22,6 @@ function unauthorized() {
 
 const VALID_TYPES: LeadType[] = ["maktab", "kurs", "umumiy"];
 const VALID_STATUSES: LeadStatus[] = ["yangi", "boglangan", "qabul_qilindi", "bekor_qilindi"];
-const PHONE_RE = /^\+?[0-9 ()-]{7,20}$/;
 const MAX_BODY_BYTES = 8 * 1024;
 
 /** Nazorat belgilarini olib tashlash (log/CSV injection va chalkash kiritishlarga qarshi). */
@@ -37,7 +37,7 @@ function normalizeLeadBody(body: Record<string, unknown>) {
   const str = (v: unknown, max: number) => (typeof v === "string" ? clean(v, max) : "");
 
   const name = str(body.name, 120);
-  const phone = str(body.phone, 30);
+  const rawPhone = str(body.phone, 30);
   const rawType = typeof body.type === "string" ? body.type : "umumiy";
   const type: LeadType = VALID_TYPES.includes(rawType as LeadType)
     ? (rawType as LeadType)
@@ -49,11 +49,13 @@ function normalizeLeadBody(body: Record<string, unknown>) {
 
   const errors: string[] = [];
   if (name.length < 2) errors.push("Ism kamida 2 ta belgidan iborat bo'lishi kerak");
-  if (!PHONE_RE.test(phone)) errors.push("Telefon raqam noto'g'ri formatda");
-  const digits = phone.replace(/\D/g, "");
-  if (digits.length < 7) errors.push("Telefon raqamda kamida 7 ta raqam bo'lishi kerak");
 
-  return { payload: { name, phone, type, targetInterest, preferredTime, notes, source }, errors };
+  const phone = normalizeUzPhone(rawPhone);
+  if (!phone) {
+    errors.push("Telefonni 9 xonali raqam yoki +998 va 9 ta raqam ko'rinishida kiriting");
+  }
+
+  return { payload: { name, phone: phone ?? rawPhone, type, targetInterest, preferredTime, notes, source }, errors };
 }
 
 /** So'rov tanasini hajm cheklovi bilan o'qish. */
@@ -108,24 +110,41 @@ export async function POST(req: Request) {
     const { payload, errors } = normalizeLeadBody(body);
     if (errors.length) return json({ success: false, error: errors.join("; ") }, 400);
 
-    const lead = await addLead(payload);
+    const idempotencyKey =
+      req.headers.get("idempotency-key")?.trim() ||
+      req.headers.get("x-idempotency-key")?.trim() ||
+      undefined;
 
-    // Telegram bildirishnoma arizani saqlashni bloklamasligi kerak.
-    const tg = await sendLeadNotification(lead).catch((err) => {
-      console.error("Telegram notification failed:", err);
-      return { success: false as const };
-    });
+    const result = await createLead(payload, idempotencyKey);
+    const lead = result.lead;
+
+    // Faqat yangi yaratilgan ariza bo'lsa Telegram bildirishnoma yuboramiz (qayta/idempotent arizalarni takrorlamaslik uchun).
+    let telegramNotified = false;
+    if (result.created) {
+      const tg = await sendLeadNotification(lead).catch((err) => {
+        console.error("Telegram notification failed:", err);
+        return { success: false as const };
+      });
+      telegramNotified = !!tg.success;
+    }
 
     return json(
       {
         success: true,
-        message: "Arizangiz muvaffaqiyatli qabul qilindi!",
+        message: result.created
+          ? "Arizangiz muvaffaqiyatli qabul qilindi!"
+          : "Arizangiz allaqachon qabul qilingan",
         lead,
-        telegramNotified: tg.success,
+        created: result.created,
+        telegramNotified,
       },
-      201
+      result.created ? 201 : 200
     );
-  } catch (error) {
+  } catch (error: unknown) {
+    const err = error as { status?: number; message?: string };
+    if (err?.status === 409) {
+      return json({ success: false, error: err.message || "Bu yuborish kaliti boshqa ariza uchun ishlatilgan" }, 409);
+    }
     console.error("Lead API Error:", error);
     return json({ success: false, error: "Serverda xatolik yuz berdi" }, 500);
   }

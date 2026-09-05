@@ -117,6 +117,44 @@ describe("/api/leads", () => {
     }
     expect(last).toBe(429);
   });
+
+  it("Idempotency-Key bilan qayta yuborilgan ariza takroran qo'shilmaydi (replay 200)", async () => {
+    const { POST } = await api();
+    const key = "test-idem-key-12345";
+    const res1 = await POST(
+      post({ name: "Vali Aliyev", phone: "+998901234567", targetInterest: "SAT" }, { "idempotency-key": key })
+    );
+    expect(res1.status).toBe(201);
+    const d1 = await res1.json();
+    expect(d1.success).toBe(true);
+    expect(d1.created).toBe(true);
+
+    const res2 = await POST(
+      post({ name: "Vali Aliyev", phone: "+998901234567", targetInterest: "SAT" }, { "idempotency-key": key })
+    );
+    expect(res2.status).toBe(200);
+    const d2 = await res2.json();
+    expect(d2.success).toBe(true);
+    expect(d2.created).toBe(false);
+    expect(d2.lead.id).toBe(d1.lead.id);
+  });
+
+  it("bir xil Idempotency-Key boshqa ariza uchun ishlatilsa 409 Conflict qaytaradi", async () => {
+    const { POST } = await api();
+    const key = "test-idem-conflict";
+    const res1 = await POST(
+      post({ name: "Birinchi Foydalanuvchi", phone: "+998901234567" }, { "idempotency-key": key })
+    );
+    expect(res1.status).toBe(201);
+
+    const res2 = await POST(
+      post({ name: "Ikkinchi Boshqa Ism", phone: "+998907654321" }, { "idempotency-key": key })
+    );
+    expect(res2.status).toBe(409);
+    const d2 = await res2.json();
+    expect(d2.success).toBe(false);
+    expect(d2.error).toContain("Bu yuborish kaliti boshqa ariza uchun ishlatilgan");
+  });
 });
 
 describe("/api/leads/auth", () => {

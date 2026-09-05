@@ -91,8 +91,17 @@ export default function DiagnosticQuizModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in">
-      <div className="relative w-full max-w-lg bg-night border border-white/15 rounded-3xl p-6 sm:p-8 text-white shadow-2xl overflow-hidden">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in"
+      onClick={onClose}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="quiz-modal-title"
+        className="relative w-full max-w-lg bg-night border border-white/15 rounded-3xl p-6 sm:p-8 text-white shadow-2xl overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Close Button */}
         <button
           onClick={onClose}
@@ -160,7 +169,7 @@ export default function DiagnosticQuizModal({
               <span className="text-[11px] font-bold text-brand-500 uppercase tracking-wider block mb-1">
                 Kurs Tanlash Testi · {step}/3-bosqich
               </span>
-              <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+              <h3 id="quiz-modal-title" className="text-xl sm:text-2xl font-black text-white tracking-tight">
                 {step === 1 && "Qaysi yo'nalishga qiziqyapsiz?"}
                 {step === 2 && "Yoshingiz yoki sinfingiz?"}
                 {step === 3 && "Asosiy maqsadingiz nima?"}
