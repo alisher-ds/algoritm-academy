@@ -188,8 +188,8 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
       qualLabel: "NYUSH ALUMNI",
       experience: "4+ yil",
       students: "1 200+",
-      image: "",
-      videoUrl: "",
+      image: "/images/oxunjon_ozodov.png",
+      videoUrl: "/videos/oxunjon_teacher_intro.mp4",
       bio: "Digital SAT (English va Math) bo'yicha O'zbekistondagi eng yuqori natijador mentorlardan biri. SAT 1550 va Math 800/800 mutlaq ball sohibi. IELTS 7.5 (Reading 9.0). Nufuzli New York University Shanghai (NYUSH) talabasi.",
       highlights: [
         "SAT 1550 rasmiy xalqaro ball sohibi",
@@ -197,7 +197,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
         "IELTS 7.5 (Reading 9.0 maksimal ball)",
         "NYUSH va xalqaro oliygohlarga 100% grantlar koordinatori"
       ],
-      isRealVideo: false
+      isRealVideo: true
     },
     {
       id: "tm-muhammadali",
