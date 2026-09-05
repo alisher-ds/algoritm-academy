@@ -276,8 +276,8 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
       qualLabel: "MALAKA",
       experience: "3+ yil",
       students: "1 500+",
-      image: "",
-      videoUrl: "",
+      image: "/images/jasur_jovliyev.png",
+      videoUrl: "/videos/jasur_teacher_intro.mp4",
       bio: "Ingliz tili fani bo'yicha rasmiy IELTS 8.0 xalqaro sertifikat sohibi. O'quvchilarda so'zlashuv (Speaking), grammatika va CEFR xalqaro imtihonlariga tayyorgarlik bo'yicha jadal interfaol darslarni olib boradi.",
       highlights: [
         "IELTS 8.0 rasmiy xalqaro sertifikat sohibi",
@@ -285,7 +285,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
         "CEFR B2/C1 imtihonlariga intensiv tayyorlov",
         "Interfaol muloqot va nutq rivojlantirish tizimi"
       ],
-      isRealVideo: false
+      isRealVideo: true
     },
     {
       id: "tm-shohista",
@@ -735,7 +735,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
               
               {/* Real video bo'lsa — native player, aks holda profil rasmi */}
               {selectedMember.isRealVideo && selectedMember.videoUrl ? (
-                <div className="relative aspect-video w-full rounded-2xl overflow-hidden bg-black border border-white/15 shadow-2xl group">
+                <div className="relative w-full h-80 sm:h-[440px] rounded-2xl overflow-hidden bg-black border border-white/15 shadow-2xl flex items-center justify-center group">
                   <video
                     ref={videoRef}
                     src={selectedMember.videoUrl}
