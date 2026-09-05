@@ -210,7 +210,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
       qualLabel: "OTM GRANT",
       experience: "3+ yil",
       students: "1 800+",
-      image: "",
+      image: "/images/muhammadali_urinov.png",
       videoUrl: "",
       bio: "Huquq va Tarix fanlaridan Milliy sertifikat va DTM imtihonlariga tayyorlovchi yetakchi pedagog. Shogirdlari 500 dan ortiq tarix sertifikatlarini qo'lga kiritgan, 300+ nafari oliygoh talabasi, 10 dan ortiq harbiylar va huquqshunoslar (IIA/HMQA/DXX) kursanti.",
       highlights: [
