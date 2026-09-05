@@ -28,3 +28,22 @@ describe('phone utility', () => {
     expect(formatUzPhone("invalid")).toBe("invalid");
   });
 });
+describe("normalizeUzPhone — operator kodi tekshiruvi", () => {
+  it("mavjud bo'lmagan kodli raqamlarni rad etadi", () => {
+    expect(normalizeUzPhone("000000000")).toBeNull();
+    expect(normalizeUzPhone("+998000000000")).toBeNull();
+    expect(normalizeUzPhone("123456789")).toBeNull();
+    expect(normalizeUzPhone("+998123456789")).toBeNull();
+  });
+
+  it("haqiqiy O'zbekiston kodlarini qabul qiladi", () => {
+    for (const code of ["90", "91", "93", "94", "95", "97", "98", "99", "88", "33", "71"]) {
+      expect(normalizeUzPhone(`${code}1234567`)).toBe(`+998${code}1234567`);
+    }
+  });
+
+  it("99 bilan boshlanuvchi mahalliy raqamni buzmaydi", () => {
+    // "+998 " prefiksi bilan yozilgan 99-8xx raqami
+    expect(normalizeUzPhone("+998998123456")).toBe("+998998123456");
+  });
+});

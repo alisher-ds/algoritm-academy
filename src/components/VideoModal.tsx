@@ -146,7 +146,7 @@ export default function VideoModal({
               className="absolute inset-0 flex items-center justify-center bg-black/40 transition"
               aria-label="Play"
             >
-              <div className="w-16 h-16 rounded-full bg-brand-500 text-slate-950 flex items-center justify-center shadow-2xl animate-in zoom-in-90 duration-150">
+              <div className="w-16 h-16 rounded-full bg-brand-500 text-slate-950 flex items-center justify-center shadow-2xl">
                 <Play className="w-7 h-7 fill-slate-950 ml-1" />
               </div>
             </button>

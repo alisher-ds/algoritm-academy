@@ -59,7 +59,7 @@ export default function Footer() {
               </span>
               <div className="flex flex-col gap-1">
                 <Link
-                  href="/maktab"
+                  href="/"
                   className="inline-flex items-center gap-2 text-xs font-bold text-white hover:text-brand-400 transition-colors"
                 >
                   <School className="h-3.5 w-3.5 text-brand-400 shrink-0" />
@@ -114,14 +114,14 @@ export default function Footer() {
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-0.5 pt-0.5 text-xs">
                   <span className="inline-flex items-center gap-1">
                     <Phone className="h-3 w-3 text-brand-400 shrink-0" />
-                    <a href={`tel:${ECOSYSTEM_DATA.school.phone.replace(/\D/g, "")}`} className="font-mono text-slate-200 hover:text-brand-400">
+                    <a href={`tel:+${ECOSYSTEM_DATA.school.phone.replace(/\D/g, "")}`} className="font-mono text-slate-200 hover:text-brand-400">
                       {ECOSYSTEM_DATA.school.phone}
                     </a>
                     <span className="text-[10px] text-slate-400">— maktab</span>
                   </span>
                   <span className="inline-flex items-center gap-1">
                     <Phone className="h-3 w-3 text-brand-400 shrink-0" />
-                    <a href={`tel:${ECOSYSTEM_DATA.contact.phoneMain.replace(/\D/g, "")}`} className="font-mono text-slate-200 hover:text-brand-400">
+                    <a href={`tel:+${ECOSYSTEM_DATA.contact.phoneMain.replace(/\D/g, "")}`} className="font-mono text-slate-200 hover:text-brand-400">
                       {ECOSYSTEM_DATA.contact.phoneMain}
                     </a>
                     <span className="text-[10px] text-slate-400">— markaz</span>
@@ -133,7 +133,7 @@ export default function Footer() {
 
           {/* Eng pastki qator: Faqat bitta copyright yozuvi */}
           <div className="mt-3 pt-2.5 border-t border-white/5 text-center text-[11px] text-slate-500">
-            <p>© 2026 Algoritm Academy. Barcha huquqlar himoyalangan.</p>
+            <p>© {new Date().getFullYear()} Algoritm Academy. Barcha huquqlar himoyalangan.</p>
           </div>
         </ScrollReveal>
       </div>

@@ -78,7 +78,7 @@ export const ECOSYSTEM_DATA = {
   },
   school: {
     name: "Algoritm School",
-    tagline: "1-11 Sinf Chuqurlashtirilgan Xususiy Maktabi",
+    tagline: "0–11 Sinf Chuqurlashtirilgan Xususiy Maktabi",
     description: "Qarshi shahridagi matematika, ingliz tili va IT chuqurlashtirilgan, 3 mahal parhezli issiq ovqat, to'garaklar va to'liq kunlik ta'lim dasturiga ega zamonaviy xususiy maktab.",
     address: "Qarshi shahri, Mustaqillik shoh ko'chasi (Geolog MFY)",
     landmark: "Mo'ljal: Yangi Shifoxona qarshisida",
@@ -208,7 +208,7 @@ export const ECOSYSTEM_DATA = {
   academy: {
     name: "Algoritm Academy",
     tagline: "Repetitorlik & O'quv Markazi",
-    description: "Prezident maktabiga tayyorlov (PMT), SAT 1400+, IELTS 8.0, Matematika Milliy Sertifikat va DTM grant repetitorlik kurslari.",
+    description: "Prezident maktabiga tayyorlov (PMT), SAT 1500+, IELTS 7.5+, Matematika Milliy Sertifikat va DTM grant repetitorlik kurslari.",
     address: "Qarshi shahri, Islom Karimov ko'chasi 291V-uy",
     landmark: "Mo'ljal: Zulfina Med klinikasi yonida",
     googleMapsUrl: "https://maps.app.goo.gl/2Grpzgi6X6SeiruA6",
@@ -257,7 +257,7 @@ export const ECOSYSTEM_DATA = {
       level: "Intermediate - Advanced",
       targetAudience: "8-11 sinf o'quvchilari va talabalar",
       features: [
-        "SAT 1400+ ball kafolatlangan o'quv rejasi",
+        "SAT 1500+ ball kafolatlangan o'quv rejasi",
         "Digital SAT rasmiy platforma simulyatsiyasi",
         "Xalqaro universitetlarga grant hujjatlarini topshirish",
       ],
@@ -267,7 +267,7 @@ export const ECOSYSTEM_DATA = {
         experience: "4+ yil tajriba",
         rating: 5.0,
       },
-      badge: "SAT 1400+",
+      badge: "SAT 1500+",
       isPopular: true,
     },
     {

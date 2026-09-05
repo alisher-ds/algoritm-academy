@@ -62,10 +62,10 @@ export async function sendLeadNotification(
   }
 
   // Env o'rnatilmagan bo'lsa — ma'lumot .data/leads.json da saqlanadi (mock log)
-  console.log(
-    "[Telegram] Bildirishnoma yuborilmadi — TELEGRAM_BOT_TOKEN va TELEGRAM_CHAT_ID o'rnating.\nAriza serverda saqlandi:",
-    payload.name,
-    payload.phone
+  // Diqqat: ism/telefon logga yozilmaydi — hosting loglari uzoq saqlanadi va
+  // ko'pincha uchinchi tomon xizmatlariga oqadi.
+  console.warn(
+    "[Telegram] Bildirishnoma yuborilmadi — TELEGRAM_BOT_TOKEN va TELEGRAM_CHAT_ID o'rnating. Ariza serverda saqlandi."
   );
   return { success: false, error: "Telegram env o'rnatilmagan" };
 }

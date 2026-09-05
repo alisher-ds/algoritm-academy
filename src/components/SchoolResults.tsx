@@ -342,7 +342,7 @@ export default function SchoolResults() {
                   Bitiruvchilarimiz Qabul Qilingan Nufuzli Oliygohlar va Talabalar Faxri
                 </h3>
               </div>
-              <span className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 bg-white px-3 py-1.5 rounded-xl border border-slate-200/80 shadow-2xs">
+              <span className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 bg-white px-3 py-1.5 rounded-xl border border-slate-200/80 shadow-sm">
                 <Sparkles className="w-3.5 h-3.5 text-amber-500" />
                 To'xtatib ko'rish uchun ustiga bosing
               </span>
@@ -354,7 +354,7 @@ export default function SchoolResults() {
                 {UNIVERSITIES.map((uni, idx) => (
                   <div
                     key={`uni-${idx}`}
-                    className="flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-white hover:bg-brand-50/40 border border-slate-200/80 hover:border-brand-400 shadow-2xs hover:shadow-sm transition-all duration-200 cursor-default mx-2"
+                    className="flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-white hover:bg-brand-50/40 border border-slate-200/80 hover:border-brand-400 shadow-sm hover:shadow-sm transition-all duration-200 cursor-default mx-2"
                   >
                     <div className="w-9 h-9 rounded-xl bg-slate-50 border border-slate-200/70 flex items-center justify-center text-base shrink-0">
                       {uni.icon}
@@ -383,7 +383,7 @@ export default function SchoolResults() {
                 {STUDENT_ACHIEVEMENTS.map((st, idx) => (
                   <div
                     key={`st-${idx}`}
-                    className="flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-white hover:bg-amber-50/30 border border-slate-200/80 hover:border-amber-400 shadow-2xs hover:shadow-sm transition-all duration-200 cursor-default mx-2"
+                    className="flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-white hover:bg-amber-50/30 border border-slate-200/80 hover:border-amber-400 shadow-sm hover:shadow-sm transition-all duration-200 cursor-default mx-2"
                   >
                     <div className="w-9 h-9 rounded-xl bg-brand-50 border border-brand-200/60 flex items-center justify-center text-base shrink-0">
                       {st.avatar}
@@ -393,7 +393,7 @@ export default function SchoolResults() {
                         <span className="text-xs sm:text-sm font-bold text-slate-900">
                           {st.name}
                         </span>
-                        <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-slate-900 text-white shadow-2xs">
+                        <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-slate-900 text-white shadow-sm">
                           {st.score}
                         </span>
                       </div>

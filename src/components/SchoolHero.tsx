@@ -90,20 +90,28 @@ export default function SchoolHero({ onOpenLeadModal }: SchoolHeroProps) {
     return () => clearInterval(timer);
   }, [paused, next]);
 
-  // Klaviatura o'qlari
+  // Klaviatura o'qlari — faqat karuselning o'zi fokusda bo'lganda.
+  // Ilgari listener `window` da turardi va formada matn tahrirlayotgan yoki
+  // <select> da tanlayotgan foydalanuvchining strelkalarini ham o'g'irlardi.
+  const sectionRef = useRef<HTMLElement>(null);
   useEffect(() => {
+    const node = sectionRef.current;
+    if (!node) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "ArrowRight") next();
-      if (e.key === "ArrowLeft") prev();
+      if (e.key === "ArrowRight") { e.preventDefault(); next(); }
+      if (e.key === "ArrowLeft") { e.preventDefault(); prev(); }
     };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
+    node.addEventListener("keydown", handler);
+    return () => node.removeEventListener("keydown", handler);
   }, [next, prev]);
 
   return (
     <section
-      className="relative flex h-[85svh] sm:h-[90svh] lg:h-screen min-h-[500px] w-full flex-col justify-end overflow-hidden pb-8 sm:pb-12 lg:pb-16 pt-20 text-white select-none"
+      ref={sectionRef}
+      tabIndex={-1}
+      className="relative flex h-[85svh] sm:h-[90svh] lg:h-screen min-h-[500px] w-full flex-col justify-end overflow-hidden pb-8 sm:pb-12 lg:pb-16 pt-20 text-white select-none focus:outline-none"
       aria-label="Algoritm ta'lim ekotizimi bosh sahifasi"
+      aria-roledescription="karusel"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onTouchStart={(e) => {
@@ -157,9 +165,15 @@ export default function SchoolHero({ onOpenLeadModal }: SchoolHeroProps) {
                     </p>
 
                     {/* Ixchamlashtirilgan, o'ta katta bo'lmagan H1 (mobilda 2 qatordan oshmaydi) */}
-                    <h1 className={`mt-1.5 font-display text-2xl sm:text-3xl lg:text-4xl font-extrabold uppercase leading-tight tracking-tight text-white drop-shadow-md ${isCurrent ? "animate-hero-title" : ""}`}>
-                      {s.title}
-                    </h1>
+                    {/* Sahifada bitta <h1> bo'lishi kerak — faqat joriy slayd sarlavha,
+                        qolganlari oddiy matn (SEO va ekran o'qigich uchun). */}
+                    {React.createElement(
+                      isCurrent ? "h1" : "p",
+                      {
+                        className: `mt-1.5 font-display text-2xl sm:text-3xl lg:text-4xl font-extrabold uppercase leading-tight tracking-tight text-white drop-shadow-md ${isCurrent ? "animate-hero-title" : ""}`,
+                      },
+                      s.title
+                    )}
 
                     {/* Qisqa va lo'nda bitta jumla */}
                     <p className={`mt-2 text-xs sm:text-sm text-slate-200/90 font-medium max-w-md leading-relaxed drop-shadow-sm ${isCurrent ? "animate-hero-desc" : ""}`}>

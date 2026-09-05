@@ -3,8 +3,8 @@ import { sendLeadNotification } from "@/lib/telegram";
 import { createLead, deleteLead, listLeads, updateLead } from "@/lib/leadStore";
 import { normalizeUzPhone } from "@/lib/phone";
 import { isAuthed, isSameOrigin } from "@/lib/adminAuth";
-import { clientIp, rateLimit } from "@/lib/rateLimit";
-import type { LeadType, LeadStatus } from "@/lib/leads";
+import { clientIdentity, rateLimit } from "@/lib/rateLimit";
+import { LEAD_OPTIONS, type LeadType, type LeadStatus } from "@/lib/leads";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +21,14 @@ function unauthorized() {
 }
 
 const VALID_TYPES: LeadType[] = ["maktab", "kurs", "umumiy"];
+const FALLBACK_INTEREST = "Boshqa yo'nalish / Maslahat olish";
+/** Sayt formalari yuboradigan rasmiy manbalar. Ro'yxatda yo'q qiymat "sayt" ga tushadi. */
+const ALLOWED_SOURCES = new Set([
+  "sayt",
+  "Sayt — ro'yxatdan o'tish oynasi",
+  "Sayt — pastki ariza formasi",
+  "Admin — offline migratsiya",
+]);
 const VALID_STATUSES: LeadStatus[] = ["yangi", "boglangan", "qabul_qilindi", "bekor_qilindi"];
 const MAX_BODY_BYTES = 8 * 1024;
 
@@ -28,6 +36,9 @@ const MAX_BODY_BYTES = 8 * 1024;
 function clean(value: string, max: number): string {
   return value
     .replace(/[\u0000-\u001f\u007f]/g, " ")
+    // Ko'rinmas belgilar (zero-width space va h.k.) — ularsiz "   " kabi bo'sh ism
+    // uzunlik tekshiruvidan o'tib ketardi.
+    .replace(/[\u200b-\u200f\u2028-\u202f\u2060-\u206f\ufeff]/g, "")
     .replace(/\s+/g, " ")
     .trim()
     .slice(0, max);
@@ -42,13 +53,21 @@ function normalizeLeadBody(body: Record<string, unknown>) {
   const type: LeadType = VALID_TYPES.includes(rawType as LeadType)
     ? (rawType as LeadType)
     : "umumiy";
-  const targetInterest = str(body.targetInterest, 160) || "Umumiy ma'lumot";
+  // Yo'nalish faqat rasmiy ro'yxatdan bo'lishi mumkin. Ilgari bu erkin matn edi va
+  // bot Telegram bildirishnomasiga ixtiyoriy reklama matnini joylashtira olardi.
+  const rawInterest = str(body.targetInterest, 160);
+  const knownInterest = LEAD_OPTIONS.find((o) => o.value === rawInterest);
+  const targetInterest = knownInterest ? knownInterest.value : FALLBACK_INTEREST;
   const preferredTime = str(body.preferredTime, 80) || undefined;
   const notes = str(body.notes, 400) || undefined;
-  const source = str(body.source, 60) || "sayt";
+  // Manba ham erkin matn bo'lmasligi kerak — u ham Telegram xabariga tushadi.
+  const rawSource = str(body.source, 60);
+  const source = ALLOWED_SOURCES.has(rawSource) ? rawSource : "sayt";
 
   const errors: string[] = [];
-  if (name.length < 2) errors.push("Ism kamida 2 ta belgidan iborat bo'lishi kerak");
+  if (name.length < 2 || !/\p{L}/u.test(name)) {
+    errors.push("Ismni to'liq kiriting (kamida 2 ta harf)");
+  }
 
   const phone = normalizeUzPhone(rawPhone);
   if (!phone) {
@@ -87,10 +106,20 @@ export async function POST(req: Request) {
     if (!isSameOrigin(req)) return forbidden();
 
     // Rate-limit: IP bo'yicha 1 daqiqada 5 ta, 1 soatda 20 ta.
-    const ip = clientIp(req);
+    const { key: ip, trusted } = clientIdentity(req);
     const perMinute = await rateLimit(`lead:m:${ip}`, 5, 60);
     const perHour = await rateLimit(`lead:h:${ip}`, 20, 3600);
-    const blocked = !perMinute.allowed ? perMinute : !perHour.allowed ? perHour : null;
+    // IP sarlavhasiga ishonib bo'lmasa (proksi sozlanmagan), bot uni aylantirib
+    // yuqoridagi chegaralarni chetlab o'tishi mumkin — shu sabab umumiy shift qo'yamiz.
+    // Haqiqiy trafik bunga yetmaydi, spam esa shu yerda to'xtaydi.
+    const globalCap = trusted ? null : await rateLimit("lead:global", 60, 60);
+    const blocked = !perMinute.allowed
+      ? perMinute
+      : !perHour.allowed
+        ? perHour
+        : globalCap && !globalCap.allowed
+          ? globalCap
+          : null;
     if (blocked) {
       return json(
         { success: false, error: "Juda ko'p so'rov yuborildi, birozdan so'ng urinib ko'ring" },

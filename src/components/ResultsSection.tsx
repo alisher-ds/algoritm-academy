@@ -54,7 +54,7 @@ export default function ResultsSection() {
               placeholder="Ko'rsatkich, soha yoki ball bo'yicha qidirish (masalan: SAT 1520, Davlat Granti, 189, Al-Xorazmiy)..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium focus:outline-hidden focus:border-brand-500 focus:bg-white transition"
+              className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-brand-500 focus:bg-white transition"
             />
           </div>
 
@@ -66,7 +66,7 @@ export default function ResultsSection() {
                 onClick={() => setFilter(cat.id)}
                 className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition ${
                   filter === cat.id
-                    ? "bg-brand-700 text-white shadow-xs"
+                    ? "bg-brand-700 text-white shadow-sm"
                     : "bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900"
                 }`}
               >
@@ -89,7 +89,7 @@ export default function ResultsSection() {
             {filteredResults.map((item) => (
               <div
                 key={item.id}
-                className="p-6 rounded-3xl bg-white border border-slate-200 shadow-xs hover:border-brand-400 hover:shadow-md transition-all duration-200 flex flex-col justify-between"
+                className="p-6 rounded-3xl bg-white border border-slate-200 shadow-sm hover:border-brand-400 hover:shadow-md transition-all duration-200 flex flex-col justify-between"
               >
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-3">
