@@ -166,7 +166,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
       qualLabel: "MALAKA",
       experience: "4+ yil",
       students: "2 500+",
-      image: "",
+      image: "/images/adham_sohibov.png",
       videoUrl: "",
       bio: "Prezident maktabi, Al-Xorazmiy va ixtisoslashtirilgan maktablarga tayyorlov bo'yicha yetakchi murabbiy. Matematika va tanqidiy fikrlash bo'yicha 100 dan ortiq shogirdlari Prezident va Al-Xorazmiy maktablariga qabul qilingan.",
       highlights: [
@@ -753,7 +753,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
                     name={selectedMember.name}
                     image={selectedMember.image}
                     subject={selectedMember.subject}
-                    className="h-56 w-full object-cover object-top sm:h-72"
+                    className="h-64 sm:h-80 w-full object-cover object-top"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
                 </div>
