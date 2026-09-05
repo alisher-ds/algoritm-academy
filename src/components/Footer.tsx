@@ -9,7 +9,7 @@ import ScrollReveal from "@/components/ScrollReveal";
 export default function Footer() {
   return (
     <footer className="relative overflow-hidden bg-night-deep text-slate-300 border-t border-white/10">
-      <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-4 pt-5 pb-20 sm:py-5 sm:px-6 lg:px-8">
         <ScrollReveal variant="fade-up" duration={700}>
           <div className="grid grid-cols-1 gap-5 md:grid-cols-3 lg:grid-cols-12 items-center">
             {/* 1. Brand & Tarmoqlar */}

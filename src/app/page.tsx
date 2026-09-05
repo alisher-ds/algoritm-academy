@@ -18,6 +18,7 @@ import { Phone } from "lucide-react";
 import { ECOSYSTEM_DATA } from "@/data/ecosystemData";
 import LeadBannerSection from "@/components/LeadBannerSection";
 import LeadModal from "@/components/LeadModal";
+import MobileFloatingDock from "@/components/MobileFloatingDock";
 
 export default function HomePage() {
   const [leadModalOpen, setLeadModalOpen] = useState(false);
@@ -85,15 +86,18 @@ export default function HomePage() {
         initialCourse={leadTarget}
       />
 
-      {/* Floating Quick Call Button (Inter Nation uslubida) */}
+      {/* Desktop Floating Quick Call Button */}
       <a
         href={`tel:${ECOSYSTEM_DATA.contact.phoneMain.replace(/\D/g, "")}`}
         aria-label="Qo'ng'iroq qilish"
         title="Qo'ng'iroq qilish"
-        className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-emerald-500 hover:bg-emerald-400 text-white shadow-2xl shadow-emerald-500/40 flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 group cursor-pointer"
+        className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-emerald-500 hover:bg-emerald-400 text-white shadow-2xl shadow-emerald-500/40 hidden md:flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 group cursor-pointer"
       >
         <Phone className="w-6 h-6 fill-white" />
       </a>
+
+      {/* Mobile Floating Quick-Action Dock (Apple / iOS Style) */}
+      <MobileFloatingDock onOpenLeadModal={handleOpenLeadModal} />
     </div>
   );
 }
