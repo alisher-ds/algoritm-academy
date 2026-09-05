@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Phone, Menu, X, GraduationCap, School } from "lucide-react";
+import { Phone, Menu, X, GraduationCap, School, Camera, PhoneCall } from "lucide-react";
 import { ECOSYSTEM_DATA } from "@/data/ecosystemData";
 
 interface NavbarProps {
@@ -12,10 +12,12 @@ interface NavbarProps {
 
 const NAV_LINKS = [
   { href: "/#dasturlar", label: "Maktab 0–11", icon: School },
-  { href: "/kurslar", label: "Kurslar", icon: GraduationCap },
+  { href: "/kurslar", label: "O'quv markazi", icon: GraduationCap, highlight: true },
   { href: "/#natijalar", label: "Natijalar" },
   { href: "/#sharoitlar", label: "Sharoitlar" },
   { href: "/#ustozlar", label: "Ustozlar" },
+  { href: "/galereya", label: "Galereya", icon: Camera },
+  { href: "/aloqa", label: "Aloqa", icon: PhoneCall },
   { href: "/#qabul", label: "Qabul" },
 ] as const;
 
@@ -102,22 +104,42 @@ export default function Navbar({ onOpenLeadModal }: NavbarProps) {
           </Link>
 
           {/* Desktop nav */}
-          <nav className="hidden items-center gap-1 lg:flex" aria-label="Asosiy navigatsiya">
+          <nav className="hidden items-center gap-0.5 lg:flex xl:gap-1" aria-label="Asosiy navigatsiya">
             {NAV_LINKS.map((link) => {
               const isActive =
                 (isHome && link.href.startsWith("/#") && activeSection === link.href.replace("/#", "")) ||
                 pathname === link.href;
+              const isHighlight = "highlight" in link && Boolean(link.highlight);
+
+              if (isHighlight) {
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    aria-current={isActive ? "true" : undefined}
+                    className={`relative inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all duration-200 border ${
+                      isActive
+                        ? "bg-brand-500 text-slate-950 border-brand-400 shadow-[0_0_15px_rgba(0,230,118,0.4)]"
+                        : "bg-brand-500/15 text-brand-300 border-brand-500/35 hover:bg-brand-500/25 hover:text-white hover:border-brand-400 shadow-[0_0_10px_rgba(0,230,118,0.15)]"
+                    }`}
+                  >
+                    <GraduationCap className="w-3.5 h-3.5 shrink-0" />
+                    <span>{link.label}</span>
+                  </Link>
+                );
+              }
+
               return (
                 <Link
                   key={link.href}
                   href={link.href}
                   aria-current={isActive ? "true" : undefined}
-                  className={`relative rounded-full px-3.5 py-1.5 text-[13px] font-medium transition-colors ${
+                  className={`relative rounded-full px-2.5 py-1.5 text-xs xl:text-[13px] font-medium transition-colors ${
                     isActive ? "text-brand-400 font-semibold" : "text-slate-300 hover:text-white"
                   }`}
                 >
                   {isActive && (
-                    <span className="absolute inset-x-3 -bottom-px h-px bg-gradient-to-r from-transparent via-brand-400 to-transparent" />
+                    <span className="absolute inset-x-2 -bottom-px h-px bg-gradient-to-r from-transparent via-brand-400 to-transparent" />
                   )}
                   {link.label}
                 </Link>
@@ -168,17 +190,45 @@ export default function Navbar({ onOpenLeadModal }: NavbarProps) {
             aria-label="Mobil navigatsiya"
             className="animate-fade-in border-t border-white/10 py-3 lg:hidden"
           >
-            <div className="flex flex-col">
-              {NAV_LINKS.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="rounded-xl px-3 py-2.5 text-sm font-medium text-slate-200 transition-colors hover:bg-white/5 hover:text-white"
-                >
-                  {link.label}
-                </Link>
-              ))}
+            <div className="flex flex-col gap-1">
+              {NAV_LINKS.map((link) => {
+                const isActive =
+                  (isHome && link.href.startsWith("/#") && activeSection === link.href.replace("/#", "")) ||
+                  pathname === link.href;
+                const isHighlight = "highlight" in link && Boolean(link.highlight);
+
+                if (isHighlight) {
+                  return (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="my-1 flex items-center justify-between rounded-xl px-3.5 py-2.5 text-sm font-bold bg-brand-500/15 border border-brand-500/30 text-brand-300 transition-colors hover:bg-brand-500/25 hover:text-white"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <GraduationCap className="h-4 w-4 text-brand-400" />
+                        <span>{link.label}</span>
+                      </div>
+                      <span className="text-[10px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-300 border border-brand-500/30">
+                        Kurslar & PMT
+                      </span>
+                    </Link>
+                  );
+                }
+
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+                      isActive ? "text-brand-400 font-semibold bg-white/5" : "text-slate-200 hover:bg-white/5 hover:text-white"
+                    }`}
+                  >
+                    {link.label}
+                  </Link>
+                );
+              })}
             </div>
             <div className="mt-3 flex flex-col gap-2 border-t border-white/10 pt-3">
               <a
