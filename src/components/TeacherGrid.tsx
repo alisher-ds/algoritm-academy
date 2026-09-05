@@ -691,7 +691,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
             </div>
 
             <a
-              href={`tel:${ECOSYSTEM_DATA.contact.phoneMain.replace(/\D/g, "")}`}
+              href={`tel:+${ECOSYSTEM_DATA.contact.phoneMain.replace(/\D/g, "")}`}
               className="px-6 py-3 rounded-full bg-slate-900 hover:bg-brand-500 text-white font-bold text-xs uppercase tracking-wider transition shrink-0 shadow-sm flex items-center gap-2"
             >
               <Phone className="w-3.5 h-3.5" />

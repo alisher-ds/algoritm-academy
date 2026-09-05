@@ -1,10 +1,10 @@
-﻿import { test, expect } from "@playwright/test";
+import { test, expect } from "@playwright/test";
 
 test.describe("Lead Modal & Form Accessibility", () => {
   test("ochilganda dialog role va aria-modal atributlariga ega bo'ladi, Escape bilan yopiladi", async ({ page }) => {
     await page.goto("/");
-    const openBtn = page.getByRole("button", { name: /Qabulga Yozilish|1-Dars Bepul Joy Olish/i }).first();
-    await openBtn.click();
+    // Karusel ichidagi (vaqtincha ko'rinmas) tugma o'rniga navbar'dagi barqaror CTA.
+    await page.getByRole("button", { name: "Ariza topshirish" }).first().click();
 
     const dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible();
@@ -17,19 +17,21 @@ test.describe("Lead Modal & Form Accessibility", () => {
 
   test("tarmoq uzilganda ariza xotirada saqlangani haqida xabar beradi", async ({ page }) => {
     await page.goto("/");
-    const openBtn = page.getByRole("button", { name: /Qabulga Yozilish|1-Dars Bepul Joy Olish/i }).first();
-    await openBtn.click();
+    await page.getByRole("button", { name: "Ariza topshirish" }).first().click();
 
     const dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible();
 
     await page.route("**/api/leads", (route) => route.abort("internetdisconnected"));
 
-    await page.fill('input[placeholder*="Ism"]', "E2E Offline Test");
-    await page.fill('input[placeholder*="Telefon"]', "+998 90 123 45 67");
+    // Placeholder o'rniga label — placeholder matni dizayn bilan birga o'zgaradi.
+    await dialog.getByLabel(/Ism va Familiyangiz/i).fill("E2E Offline Test");
+    await dialog.getByLabel(/Telefon Raqamingiz/i).fill("+998 90 123 45 67");
     await dialog.getByRole("button", { name: /Yuborish|Tasdiqlash/i }).click();
 
-    await expect(dialog.getByText(/Qabul Qilindi|Qurilmangizda saqlandi/i)).toBeVisible();
+    // Tasdiq ekrani + "qurilmada saqlandi" belgisi — ikkalasi ham ko'rinishi kerak.
+    await expect(dialog.getByRole("heading", { name: /Arizangiz Qabul Qilindi/i })).toBeVisible();
+    await expect(dialog.getByText(/Qurilmangizda saqlandi/i)).toBeVisible();
   });
 });
 

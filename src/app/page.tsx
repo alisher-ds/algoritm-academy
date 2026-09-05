@@ -83,7 +83,7 @@ export default function HomePage() {
 
       {/* Floating Quick Call Button (Inter Nation uslubida) */}
       <a
-        href={`tel:${ECOSYSTEM_DATA.contact.phoneMain.replace(/\D/g, "")}`}
+        href={`tel:+${ECOSYSTEM_DATA.contact.phoneMain.replace(/\D/g, "")}`}
         aria-label="Qo'ng'iroq qilish"
         title="Qo'ng'iroq qilish"
         className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-emerald-500 hover:bg-emerald-400 text-white shadow-2xl shadow-emerald-500/40 flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 group cursor-pointer"

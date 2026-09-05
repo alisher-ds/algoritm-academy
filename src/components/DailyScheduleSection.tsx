@@ -43,7 +43,7 @@ export default function DailyScheduleSection() {
                 className="h-full flex"
               >
                 <div
-                  className="group p-4 sm:p-5 rounded-2xl bg-white border border-slate-200/90 shadow-xs hover:border-brand-500 hover:shadow-md transition-all duration-200 text-left flex flex-col justify-between w-full"
+                  className="group p-4 sm:p-5 rounded-2xl bg-white border border-slate-200/90 shadow-sm hover:border-brand-500 hover:shadow-md transition-all duration-200 text-left flex flex-col justify-between w-full"
                 >
                   <div>
                     <div className="flex items-center justify-between mb-3">

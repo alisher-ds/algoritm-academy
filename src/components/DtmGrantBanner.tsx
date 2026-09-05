@@ -10,7 +10,7 @@ export default function DtmGrantBanner() {
       category: "DTM Natijadorlik",
     },
     {
-      score: "SAT 1450+",
+      score: "SAT 1500+",
       label: "Xalqaro Grant Natijasi",
       subtext: "AQSH va Xorijiy OTMlar",
       category: "Xalqaro SAT",
