@@ -298,8 +298,8 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
       qualLabel: "KATTA TAJRIBA",
       experience: "Ko'p yillik",
       students: "3 000+",
-      image: "",
-      videoUrl: "",
+      image: "/images/shohista_jalilovna.png",
+      videoUrl: "/videos/shohista_teacher_intro.mp4",
       bio: "Algoritm maktabining boshlang'ich rus sinflari ustozi. Rus tilida boshlang'ich ta'lim bo'yicha ko'p yillik amaliy tajribaga ega malakali pedagoglardan biri. O'quvchilarda dastlabki sinfdanoq to'g'ri talaffuz, savodxonlik va hisoblashni shakllantiradi.",
       highlights: [
         "Maktabning eng malakali boshlang'ich rus sinf ustozlaridan biri",
@@ -307,7 +307,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
         "1-4 sinf rus tili savodxonligi va mantiqiy tafakkur",
         "Bolalar psixologiyasi va individual ta'lim yondashuvi"
       ],
-      isRealVideo: false
+      isRealVideo: true
     },
     {
       id: "tm-gavhar",
