@@ -11,7 +11,6 @@ import DailyScheduleSection from "@/components/DailyScheduleSection";
 import SchoolResults from "@/components/SchoolResults";
 import CourseCatalog from "@/components/CourseCatalog";
 import TeacherGrid from "@/components/TeacherGrid";
-import TestimonialsSection from "@/components/TestimonialsSection";
 import AdmissionRoadmap from "@/components/AdmissionRoadmap";
 import FAQAccordion from "@/components/FAQAccordion";
 import { Phone } from "lucide-react";
@@ -62,10 +61,7 @@ export default function HomePage() {
           }
         />
 
-        {/* 9. Ota-onalar Fikri & Samimiy Tavsiyalar */}
-        <TestimonialsSection />
-
-        {/* 10. 4 Bosqichli Shaffof Qabul Yo'l Xaritasi */}
+        {/* 9. 4 Bosqichli Shaffof Qabul Yo'l Xaritasi */}
         <AdmissionRoadmap onOpenLeadModal={handleOpenLeadModal} />
 
         {/* 11. Savol-Javoblar (FAQ) */}
