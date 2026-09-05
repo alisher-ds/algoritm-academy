@@ -3,7 +3,6 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { 
-  Flame, 
   MapPin, 
   ArrowRight, 
   Sparkles, 
@@ -53,12 +52,6 @@ export default function KurslarPage() {
             </div>
 
             <div className="max-w-3xl">
-              {/* Badge */}
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-brand-500/15 text-brand-300 text-xs font-bold border border-brand-500/30 mb-6 shadow-[0_0_20px_rgba(0,230,118,0.2)]">
-                <Flame className="w-3.5 h-3.5 text-amber-400 fill-amber-400 animate-pulse" />
-                <span>2026-Mavsum Qabuli Ochiq: 8 ta yangi guruh shakllantirildi</span>
-              </div>
-
               <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-tight mb-6">
                 Algoritm Ta'lim Markazi Kurslari va{" "}
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-400 via-emerald-300 to-teal-200">
