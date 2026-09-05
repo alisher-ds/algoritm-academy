@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
-import { X, CheckCircle2, Phone, User, Send, Sparkles, Loader2, Info, AlertCircle } from "lucide-react";
+import { X, CheckCircle2, Phone, User, Send, Loader2, Info, AlertCircle } from "lucide-react";
 import { submitLead, type LeadType } from "@/lib/leads";
 
 interface LeadModalProps {
@@ -208,11 +208,7 @@ export default function LeadModal({
         ) : (
           <div>
             <div className="text-left mb-6">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-500/20 text-brand-400 text-[10px] font-bold tracking-wider uppercase border border-brand-500/30">
-                <Sparkles className="w-3 h-3" />
-                1 Kunlik Bepul Sinov Darsi
-              </span>
-              <h3 className="font-display text-2xl font-extrabold text-white mt-2">
+              <h3 className="font-display text-2xl font-extrabold text-white">
                 Qabulga Yozilish
               </h3>
               <p className="text-xs text-slate-400 mt-1">
@@ -314,7 +310,7 @@ export default function LeadModal({
               </div>
 
               <p className="text-[11px] text-slate-400 text-center">
-                Ma&apos;lumotlaringiz maxfiy saqlanadi. Mutaxassisimiz 15 daqiqada aloqaga chiqadi.
+                Ma&apos;lumotlaringiz maxfiy saqlanadi. Mutaxassisimiz tez orada aloqaga chiqadi.
               </p>
             </form>
           </div>

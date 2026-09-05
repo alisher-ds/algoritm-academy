@@ -104,7 +104,7 @@ export default function LeadBannerSection() {
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-brand-400 shrink-0" />
-                  <span>15 daqiqada mutaxassis aloqasi</span>
+                  <span>Tez orada mutaxassis aloqasi</span>
                 </div>
               </div>
             </div>

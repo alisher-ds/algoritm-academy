@@ -10,8 +10,7 @@ import {
   Search, 
   CheckCircle2, 
   GraduationCap,
-  MapPin,
-  Flame
+  MapPin
 } from "lucide-react";
 import { ECOSYSTEM_DATA } from "@/data/ecosystemData";
 import SectionHeader from "@/components/SectionHeader";
@@ -108,10 +107,6 @@ export default function CourseCatalog({ onOpenLeadModal, compact = false }: Cour
             <div className="absolute top-0 right-0 w-80 h-80 bg-brand-500/10 rounded-full blur-3xl pointer-events-none" />
             <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
               <div className="space-y-3 max-w-2xl">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-500/20 text-brand-300 text-xs font-bold border border-brand-500/30">
-                  <Flame className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
-                  <span>2026-Mavsum: 8 ta yangi guruh ochildi!</span>
-                </div>
                 <h3 className="font-display text-xl sm:text-2xl font-black text-white tracking-tight">
                   Biologiya, Kimyo, Fizika, Ingliz tili 0 dan, Matematika 5–8, Ona tili, Huquq va Tarix
                 </h3>
@@ -217,7 +212,7 @@ export default function CourseCatalog({ onOpenLeadModal, compact = false }: Cour
               <div className="pt-4 border-t border-white/10">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <span className="text-[10px] text-slate-500 font-semibold uppercase block">Kafedra Mudiri / Murabbiy</span>
+                    <span className="text-[10px] text-slate-500 font-semibold uppercase block">Murabbiy</span>
                     <h4 className="text-xs font-bold text-white">{course.mentor.name}</h4>
                     <span className="text-[10px] text-slate-400 block">{course.mentor.role}</span>
                   </div>

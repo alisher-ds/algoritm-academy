@@ -641,11 +641,6 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
           </div>
         </div>
 
-        {/* Foydalanuvchiga qisqa eslatma */}
-        <p className="text-center text-xs text-slate-400 mt-4 flex items-center justify-center gap-2 font-medium">
-          <span>👈 Barmoq yoki sichqoncha bilan surishingiz yoki ustoz kartochkasini bosishingiz mumkin 👉</span>
-        </p>
-
         {/* Bottom Reassurance Banner */}
         <div className="mt-14 p-6 sm:p-8 rounded-3xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-6 text-left">
           <div className="flex items-center gap-4">

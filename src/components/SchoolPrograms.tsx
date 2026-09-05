@@ -26,7 +26,7 @@ export default function SchoolPrograms({ onOpenLeadModal }: SchoolProgramsProps)
         
         {/* Section Header */}
         <SectionHeader
-          eyebrow="1-qanot: Algoritm School"
+          eyebrow="Algoritm School"
           eyebrowIcon={School}
           title="0–11 sinf xususiy maktab dasturlari"
           description="0-sinfdan boshlab OTM grantlarigacha bo'lgan uzluksiz, o'zbek va rus tillaridagi chuqurlashtirilgan to'liq kunlik ta'lim bosqichlari."
