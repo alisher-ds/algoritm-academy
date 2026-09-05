@@ -6,6 +6,7 @@ import Footer from "@/components/Footer";
 import SchoolHero from "@/components/SchoolHero";
 import SchoolAbout from "@/components/SchoolAbout";
 import SchoolPrograms from "@/components/SchoolPrograms";
+import StudentJourneyTimeline from "@/components/StudentJourneyTimeline";
 import SchoolFeatures from "@/components/SchoolFeatures";
 import SchoolResults from "@/components/SchoolResults";
 import CourseCatalog from "@/components/CourseCatalog";
@@ -39,7 +40,10 @@ export default function HomePage() {
         {/* 2. 1-QANOT: 0 – 11 Sinf Xususiy Maktab Dasturlari */}
         <SchoolPrograms onOpenLeadModal={handleOpenLeadModal} />
 
-        {/* 3. Maktab Sharoitlari (3 mahal ovqat, yotoqxona, xavfsiz transport, 15+ to'garak) */}
+        {/* 3. 11 Yillik Muvaffaqiyat Yo'li (Stripe-style Milestone Journey Roadmap) */}
+        <StudentJourneyTimeline onOpenLeadModal={handleOpenLeadModal} />
+
+        {/* 4. Maktab Sharoitlari (Bento Grid: 3 mahal ovqat, yotoqxona, xavfsiz transport, 15+ to'garak) */}
         <SchoolFeatures />
 
         {/* 4. Akademik Natijalar (Ekotizim Faxri: 6 ta rasmiy blok — 600+ OTM, 100+ SAT, 300+ PMT) */}
