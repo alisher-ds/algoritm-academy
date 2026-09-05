@@ -193,7 +193,7 @@ export default function SchoolResults() {
             </div>
             <div className="flex items-center gap-1.5 text-brand-800 font-bold shrink-0 bg-brand-100/70 px-3 py-1.5 rounded-xl border border-brand-200">
               <CheckCircle2 className="w-4 h-4 text-brand-600" />
-              <span>100% Tasdiqlangan Natijadorlik</span>
+              <span>Rasmiy Tasdiqlangan Natijalar</span>
             </div>
           </div>
         </ScrollReveal>

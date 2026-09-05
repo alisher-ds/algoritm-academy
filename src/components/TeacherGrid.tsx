@@ -235,7 +235,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
       students: "1000+",
       image: "/images/aziz_xolmurodov.png",
       videoUrl: "/videos/aziz_teacher_intro.mp4",
-      bio: "Algoritm ta'lim tizimining yetakchi matematika ustozi — Milliy sertifikatning eng yuqori A+ darajasi sohibi. O'quvchilar va o'qituvchilar uchun attestatsiya, milliy sertifikat va DTM ga 100% natija bilan tayyorlaydi. 200+ shogirdi sertifikat sohibi, 300+ nafari oliygohga kirgan.",
+      bio: "Algoritm ta'lim tizimining yetakchi matematika ustozi — Milliy sertifikatning eng yuqori A+ darajasi sohibi. O'quvchilar va o'qituvchilar uchun attestatsiya, milliy sertifikat va DTM ga yuqori natijadorlik metodikasi bilan tayyorlaydi. 200+ shogirdi sertifikat sohibi, 300+ nafari oliygohga kirgan.",
       highlights: [
         "Milliy sertifikat (A+) oliy darajasi sohibi",
         "200+ sertifikat sohibi shogirdlar",

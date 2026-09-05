@@ -316,7 +316,7 @@ export default function SchoolFeatures() {
                   Kichik Sinf & Uy Vazifasi
                 </h3>
                 <p className="text-slate-600 text-xs sm:text-sm leading-relaxed mb-5">
-                  Har bir bolaga 100% individual e'tibor. Barcha uyga vazifalar darsdan so'ng ustozlar nazoratida maktabda to'liq yechiladi.
+                  Har bir bolaga alohida individual e'tibor. Barcha uyga vazifalar darsdan so'ng ustozlar nazoratida maktabda to'liq yechiladi.
                 </p>
 
                 <div className="space-y-2 mb-5">

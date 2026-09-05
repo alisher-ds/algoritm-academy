@@ -55,7 +55,7 @@ export default function DiagnosticQuizModal({
 
       if (interest === "sat") {
         res = {
-          title: "SAT Digital & 100% Xalqaro Grant",
+          title: "SAT Digital & Xalqaro Grantlar Dasturi",
           description: "Digital SAT platformasi, Math va Reading modullari bo'yicha xalqaro grant yutish kursi.",
           track: "Algoritm Academy (O'quv Markazi)",
           branch: "Qarshi sh., Islom Karimov 291V",
@@ -70,7 +70,7 @@ export default function DiagnosticQuizModal({
       } else if (interest === "math") {
         res = {
           title: "Matematika (Milliy Sertifikat A+ & DTM)",
-          description: "Milliy sertifikat A+ va OTMlarga 100% davlat grantiga kirish uchun chuqurlashtirilgan mualliflik kursi.",
+          description: "Milliy sertifikat A+ va OTM davlat grantlariga kirishga qaratilgan chuqurlashtirilgan mualliflik kursi.",
           track: "Algoritm Academy (O'quv Markazi)",
           branch: "Qarshi sh., Islom Karimov 291V",
         };
@@ -227,7 +227,7 @@ export default function DiagnosticQuizModal({
                 {[
                   "Prezident yoki ixtisoslashgan maktabga kirish",
                   "SAT / IELTS olib xorijiy grant yutish",
-                  "Davlat OTMlariga 100% grantga kirish",
+                  "Davlat OTMlariga byudjet / grant asosida kirish",
                   "Matematika bilimlarini mustahkamlash",
                 ].map((item, idx) => (
                   <button
