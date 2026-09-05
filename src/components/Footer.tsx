@@ -134,14 +134,32 @@ export default function Footer() {
           <div className="space-y-4 lg:col-span-3">
             <h4 className="text-[13px] font-bold text-white">Aloqa va manzil</h4>
 
-            <p className="flex items-start gap-2.5 text-sm text-slate-400">
+            <div className="flex items-start gap-2.5 text-sm text-slate-400">
               <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-brand-400" />
-              <span>
-                {ECOSYSTEM_DATA.contact.address}
-                <br />
-                <span className="text-xs text-slate-500">{ECOSYSTEM_DATA.contact.landmark}</span>
-              </span>
-            </p>
+              <div>
+                <span>{ECOSYSTEM_DATA.contact.address}</span>
+                <div className="text-xs text-slate-500 mt-0.5">{ECOSYSTEM_DATA.contact.landmark}</div>
+                <div className="flex items-center gap-3 mt-1.5 text-xs">
+                  <a
+                    href="https://maps.app.goo.gl/Rkv1RmfmowBawY5x5"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-brand-400 hover:text-brand-300 font-semibold underline underline-offset-2"
+                  >
+                    Maktab xaritada ↗
+                  </a>
+                  <span className="text-slate-600">·</span>
+                  <a
+                    href="https://maps.app.goo.gl/2Grpzgi6X6SeiruA6"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-brand-400 hover:text-brand-300 font-semibold underline underline-offset-2"
+                  >
+                    Markaz xaritada ↗
+                  </a>
+                </div>
+              </div>
+            </div>
 
             <p className="flex items-center gap-2.5 text-sm">
               <School className="h-4 w-4 shrink-0 text-brand-400" />

@@ -75,6 +75,10 @@ export const ECOSYSTEM_DATA = {
     description: "Qarshi shahridagi matematika, ingliz tili va IT chuqurlashtirilgan, 3 mahal parhezli issiq ovqat, to'garaklar va to'liq kunlik ta'lim dasturiga ega zamonaviy xususiy maktab.",
     address: "Qarshi shahri, Mustaqillik shoh ko'chasi (Geolog MFY)",
     landmark: "Mo'ljal: Yangi Shifoxona qarshisida",
+    googleMapsUrl: "https://maps.app.goo.gl/Rkv1RmfmowBawY5x5",
+    yandexMapsUrl: "https://yandex.uz/maps/?pt=65.784375,38.841000&z=17&l=map",
+    yandexRouteUrl: "https://yandex.uz/maps/?rtext=~38.841000,65.784375&rtt=auto",
+    coordinates: { lat: 38.8410, lng: 65.784375 },
     // Maktab qabul raqami — data_mastery_algoritm.md (message arxivi) asosida
     phone: "+998 (99) 141-05-05",
     telegram: "https://t.me/algoritm_xususiy_maktab",
@@ -200,6 +204,10 @@ export const ECOSYSTEM_DATA = {
     description: "Prezident maktabiga tayyorlov (PMT), SAT 1400+, IELTS 8.0, Matematika Milliy Sertifikat va DTM grant repetitorlik kurslari.",
     address: "Qarshi shahri, Islom Karimov ko'chasi 291V-uy",
     landmark: "Mo'ljal: Zulfina Med klinikasi yonida",
+    googleMapsUrl: "https://maps.app.goo.gl/2Grpzgi6X6SeiruA6",
+    yandexMapsUrl: "https://yandex.uz/maps/?pt=65.79575,38.84325&z=17&l=map",
+    yandexRouteUrl: "https://yandex.uz/maps/?rtext=~38.84325,65.79575&rtt=auto",
+    coordinates: { lat: 38.84325, lng: 65.79575 },
     // O'quv markazi raqamlari — data_mastery_algoritm.md asosida
     phone: "+998 (90) 895-05-05",
     phoneSecondary: "+998 (88) 895-05-05",

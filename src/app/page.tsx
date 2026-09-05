@@ -13,6 +13,7 @@ import CourseCatalog from "@/components/CourseCatalog";
 import TeacherGrid from "@/components/TeacherGrid";
 import AdmissionRoadmap from "@/components/AdmissionRoadmap";
 import FAQAccordion from "@/components/FAQAccordion";
+import InteractiveMapSection from "@/components/InteractiveMapSection";
 import { Phone } from "lucide-react";
 import { ECOSYSTEM_DATA } from "@/data/ecosystemData";
 import LeadBannerSection from "@/components/LeadBannerSection";
@@ -66,6 +67,9 @@ export default function HomePage() {
 
         {/* 10. Savol-Javoblar (FAQ) */}
         <FAQAccordion categoryFilter="hammasi" />
+
+        {/* 11. Interaktiv Geografik Xarita & Binolarimiz */}
+        <InteractiveMapSection />
 
         {/* 12. Universal Ariza Topshirish Bloki */}
         <LeadBannerSection />

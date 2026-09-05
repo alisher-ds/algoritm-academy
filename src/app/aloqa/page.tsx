@@ -15,6 +15,7 @@ import {
   Globe,
   } from "lucide-react";
 import { ECOSYSTEM_DATA } from "@/data/ecosystemData";
+import InteractiveMapSection from "@/components/InteractiveMapSection";
 
 export default function AloqaPage() {
   const [leadModalOpen, setLeadModalOpen] = useState(false);
@@ -65,7 +66,17 @@ export default function AloqaPage() {
                     <div className="flex items-start gap-3">
                       <MapPin className="w-5 h-5 text-brand-600 shrink-0 mt-0.5" />
                       <span>
-                        <strong>Manzil:</strong> {ECOSYSTEM_DATA.school.address} ({ECOSYSTEM_DATA.school.landmark})
+                        <strong>Manzil:</strong>{" "}
+                        <a
+                          href="https://maps.app.goo.gl/Rkv1RmfmowBawY5x5"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-brand-700 font-bold hover:underline"
+                          title="Google Maps'da ochish"
+                        >
+                          {ECOSYSTEM_DATA.school.address}
+                        </a>{" "}
+                        ({ECOSYSTEM_DATA.school.landmark})
                       </span>
                     </div>
                     <div className="flex items-center gap-3">
@@ -101,18 +112,27 @@ export default function AloqaPage() {
                   </div>
                 </div>
 
-                <div className="pt-5 border-t border-slate-200 flex flex-wrap gap-3 items-center justify-between">
+                <div className="pt-5 border-t border-slate-200 flex flex-wrap gap-2.5 items-center justify-between">
                   <a
                     href={`tel:${ECOSYSTEM_DATA.school.phone.replace(/\D/g, "")}`}
-                    className="px-5 py-3 rounded-2xl bg-brand-600 hover:bg-brand-500 text-white font-black text-xs uppercase tracking-wider transition"
+                    className="px-4 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-black text-xs uppercase tracking-wider transition"
                   >
                     Maktabga Qo'ng'iroq
                   </a>
+                  <a
+                    href="https://maps.app.goo.gl/Rkv1RmfmowBawY5x5"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 hover:border-brand-500 text-slate-800 font-bold text-xs uppercase tracking-wider transition flex items-center gap-1.5 shadow-sm"
+                  >
+                    <MapPin className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Google Maps</span>
+                  </a>
                   <button
                     onClick={() => setLeadModalOpen(true)}
-                    className="px-5 py-3 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider transition"
+                    className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider transition"
                   >
-                    Maktab Qabuliga Yozilish
+                    Qabulga Yozilish
                   </button>
                 </div>
               </div>
@@ -138,7 +158,17 @@ export default function AloqaPage() {
                     <div className="flex items-start gap-3">
                       <MapPin className="w-5 h-5 text-brand-600 shrink-0 mt-0.5" />
                       <span>
-                        <strong>Manzil:</strong> {ECOSYSTEM_DATA.academy.address} ({ECOSYSTEM_DATA.academy.landmark})
+                        <strong>Manzil:</strong>{" "}
+                        <a
+                          href="https://maps.app.goo.gl/2Grpzgi6X6SeiruA6"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-brand-700 font-bold hover:underline"
+                          title="Google Maps'da ochish"
+                        >
+                          {ECOSYSTEM_DATA.academy.address}
+                        </a>{" "}
+                        ({ECOSYSTEM_DATA.academy.landmark})
                       </span>
                     </div>
                     <div className="flex items-center gap-3">
@@ -169,18 +199,27 @@ export default function AloqaPage() {
                   </div>
                 </div>
 
-                <div className="pt-5 border-t border-slate-200 flex flex-wrap gap-3 items-center justify-between">
+                <div className="pt-5 border-t border-slate-200 flex flex-wrap gap-2.5 items-center justify-between">
                   <a
                     href={`tel:${ECOSYSTEM_DATA.academy.phone.replace(/\D/g, "")}`}
-                    className="px-5 py-3 rounded-2xl bg-brand-600 hover:bg-brand-500 text-white font-black text-xs uppercase tracking-wider transition"
+                    className="px-4 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-black text-xs uppercase tracking-wider transition"
                   >
                     Markazga Qo'ng'iroq
                   </a>
+                  <a
+                    href="https://maps.app.goo.gl/2Grpzgi6X6SeiruA6"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 hover:border-brand-500 text-slate-800 font-bold text-xs uppercase tracking-wider transition flex items-center gap-1.5 shadow-sm"
+                  >
+                    <MapPin className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Google Maps</span>
+                  </a>
                   <button
                     onClick={() => setLeadModalOpen(true)}
-                    className="px-5 py-3 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider transition"
+                    className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider transition"
                   >
-                    Kursga Yozilish (1-Dars Bepul)
+                    1-Dars Bepul
                   </button>
                 </div>
               </div>
@@ -220,6 +259,9 @@ export default function AloqaPage() {
 
           </div>
         </section>
+
+        {/* Real Interactive Map Section */}
+        <InteractiveMapSection />
       </main>
 
       <Footer />
