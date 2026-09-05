@@ -21,18 +21,19 @@ interface StudentJourneyTimelineProps {
 const JOURNEY_STAGES = [
   {
     step: "01",
-    phase: "Boshlang'ich Bosqich",
-    grade: "1 – 4 Sinf",
-    age: "7 – 10 yosh",
-    title: "Mantiqiy Tafakkur & Prezident Maktabi (PMT) Poydevori",
+    phase: "Boshlang'ich & Tayyorlov Bosqichi",
+    grade: "0 – 4 Sinf",
+    age: "5 – 10 yosh",
+    title: "Mantiqiy Tafakkur, 0-Sinf & PMT Poydevori",
     description:
-      "Alohida o'zbek va to'liq rus sinflari. Asosiy e'tibor — bolada mustaqil fikrlash, tanqidiy tahlil, chuqurlashtirilgan matematika va ingliz tili muloqotini shakllantirish.",
+      "0-sinf maktabgacha tayyorlov (rus va o'zbek guruhlari, Nelya Mamadaliyeva, Irina Artikova) hamda 1–4 boshlang'ich sinflar. Bolada mustaqil fikrlash, tanqidiy tahlil, chuqur matematika va ingliz tili muloqoti shakllantiriladi.",
     milestones: [
+      "0-sinfdanoq amaliy Robototexnika, mantiq va aqliy rivojlanish (kvota: 18 ta o'rin)",
       "4-sinf oxiridagi Prezident maktabi (PMT) imtihonlariga 100% intensiv tayyorgarlik",
       "Xalqaro Kenguru, SEAMO va KHISO matematika olimpiadalari g'olibligi",
-      "Erkin ingliz tili muloqoti (Speaking) va robototexnika asoslari",
+      "Erkin ingliz tili muloqoti (Speaking) va rus tilida ravon so'zlashuv",
     ],
-    outcome: "PMT va Ixtisoslashgan Maktablarga Kafolatlangan Kirish",
+    outcome: "0-Sinf Tayyorlovi & PMT/Ixtisos Maktablarga Kafolatlangan Kirish",
     theme: {
       color: "emerald",
       badgeBg: "bg-emerald-50 text-emerald-800 border-emerald-200",
@@ -117,15 +118,18 @@ export default function StudentJourneyTimeline({ onOpenLeadModal }: StudentJourn
   return (
     <section
       className="bg-slate-50/60 py-24 sm:py-32 text-slate-900 border-b border-slate-200/80 relative overflow-hidden"
-      id="muvaffaqiyat-yoli"
+      id="maktab"
     >
+      <div id="dasturlar" className="scroll-mt-24" />
+      <div id="muvaffaqiyat-yoli" className="scroll-mt-24" />
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
         {/* Section Header */}
         <SectionHeader
-          eyebrow="Strategik ta'lim xaritasi"
+          eyebrow="Algoritm School · 0–11 Sinf"
           eyebrowIcon={Compass}
-          title="1-sinfdan global grantlargacha: O'quvchining muvaffaqiyat yo'li"
-          description="Algoritm School'da ta'lim tasodifiy emas: har bir yosh bosqichi uchun aniq akademik maqsad, xalqaro sertifikat va kafolatlangan natija strategiyasi belgilangan."
+          title="0-sinfdan global grantlargacha: O'quvchining muvaffaqiyat yo'li"
+          description="Algoritm School'da ta'lim tasodifiy emas: 0-sinf maktabgacha tayyorlovdan boshlab to 11-sinf bitiruvigacha bo'lgan har bir bosqichda aniq maqsad, xalqaro sertifikat va OTM grantlari strategiyasi belgilangan."
           wide
           className="mb-20"
         />

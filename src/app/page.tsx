@@ -5,7 +5,6 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SchoolHero from "@/components/SchoolHero";
 import SchoolAbout from "@/components/SchoolAbout";
-import SchoolPrograms from "@/components/SchoolPrograms";
 import StudentJourneyTimeline from "@/components/StudentJourneyTimeline";
 import SchoolFeatures from "@/components/SchoolFeatures";
 import SchoolResults from "@/components/SchoolResults";
@@ -38,10 +37,7 @@ export default function HomePage() {
         {/* 1. Asosiy Hero (Bosh Sahifa & Kinetik Slayder) */}
         <SchoolHero onOpenLeadModal={handleOpenLeadModal} />
 
-        {/* 2. 1-QANOT: 0 – 11 Sinf Xususiy Maktab Dasturlari */}
-        <SchoolPrograms onOpenLeadModal={handleOpenLeadModal} />
-
-        {/* 3. 11 Yillik Muvaffaqiyat Yo'li (Stripe-style Milestone Journey Roadmap) */}
+        {/* 2. 0-Sinfdan Global Grantlargacha: O'quvchining Muvaffaqiyat Yo'li (Stripe-style Milestone Journey Roadmap) */}
         <StudentJourneyTimeline onOpenLeadModal={handleOpenLeadModal} />
 
         {/* 4. Maktab Sharoitlari (Bento Grid: 3 mahal ovqat, yotoqxona, xavfsiz transport, 15+ to'garak) */}
