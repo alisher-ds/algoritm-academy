@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { ECOSYSTEM_DATA } from "@/data/ecosystemData";
 import SectionHeader from "@/components/SectionHeader";
+import ScrollReveal from "@/components/ScrollReveal";
 
 interface CourseCatalogProps {
   onOpenLeadModal: (courseTitle: string) => void;
@@ -82,16 +83,16 @@ export default function CourseCatalog({ onOpenLeadModal, compact = false }: Cour
           )}
         </div>
 
-        {/* Category Filter Pills (To'liq sahifada) */}
+        {/* Categories Bar (Faqat katalog sahifasida) */}
         {!compact && (
-          <div className="flex items-center gap-2.5 overflow-x-auto pb-4 mb-10 scrollbar-none">
+          <div className="flex items-center gap-2 overflow-x-auto pb-4 mb-10 no-scrollbar">
             {categories.map((cat) => (
               <button
                 key={cat.id}
                 onClick={() => setActiveCategory(cat.id)}
-                className={`whitespace-nowrap px-5 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all duration-200 ${
+                className={`px-4 py-2 rounded-full text-xs font-bold transition shrink-0 cursor-pointer ${
                   activeCategory === cat.id
-                    ? "bg-brand-400 text-slate-950 shadow-[0_2px_15px_rgba(0,230,118,0.35)]"
+                    ? "bg-brand-500 text-slate-950 shadow-md shadow-brand-500/20"
                     : "bg-white/[0.03] text-slate-400 hover:text-white hover:bg-white/[0.06] border border-white/10"
                 }`}
               >
@@ -103,48 +104,54 @@ export default function CourseCatalog({ onOpenLeadModal, compact = false }: Cour
 
         {/* COMPACT REJIMI UCHUN MAXSUS YANGI GURUHLAR ANONS BANNERI (Main sahifa toza va chiroyli turishi uchun) */}
         {compact && (
-          <div className="mb-10 p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-emerald-950/60 via-slate-900 to-slate-950 border border-brand-500/30 shadow-2xl text-left relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-80 h-80 bg-brand-500/10 rounded-full blur-3xl pointer-events-none" />
-            <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-              <div className="space-y-3 max-w-2xl">
-                <h3 className="font-display text-xl sm:text-2xl font-black text-white tracking-tight">
-                  Biologiya, Kimyo, Fizika, Ingliz tili 0 dan, Matematika 5–8, Ona tili, Huquq va Tarix
-                </h3>
-                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                  Tibbiyot oliygohlari, Ibn Sino va Al-Beruniy ixtisos maktablari, Milliy sertifikat va DTM 189 ball guruhlariga qabul ochildi. Har bir fanning aniq dars kunlari, vaqtlari va murabbiylar jadvali bilan alohida sahifada tanishing.
-                </p>
-              </div>
+          <ScrollReveal variant="fade-up" duration={700}>
+            <div className="mb-10 p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-emerald-950/60 via-slate-900 to-slate-950 border border-brand-500/30 shadow-2xl text-left relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-80 h-80 bg-brand-500/10 rounded-full blur-3xl pointer-events-none" />
+              <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                <div className="space-y-3 max-w-2xl">
+                  <h3 className="font-display text-xl sm:text-2xl font-black text-white tracking-tight">
+                    Biologiya, Kimyo, Fizika, Ingliz tili 0 dan, Matematika 5–8, Ona tili, Huquq va Tarix
+                  </h3>
+                  <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                    Tibbiyot oliygohlari, Ibn Sino va Al-Beruniy ixtisos maktablari, Milliy sertifikat va DTM 189 ball guruhlariga qabul ochildi. Har bir fanning aniq dars kunlari, vaqtlari va murabbiylar jadvali bilan alohida sahifada tanishing.
+                  </p>
+                </div>
 
-              <Link
-                href="/kurslar"
-                className="inline-flex items-center justify-center gap-2 px-6 py-4 rounded-full bg-brand-500 hover:bg-brand-400 text-slate-950 font-extrabold text-xs uppercase tracking-wider transition-all duration-200 shadow-lg shadow-brand-500/25 shrink-0 group cursor-pointer"
-              >
-                <span>Barcha Dars Jadvallarini Ko'rish (8 ta guruh)</span>
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </Link>
+                <Link
+                  href="/kurslar"
+                  className="inline-flex items-center justify-center gap-2 px-6 py-4 rounded-full bg-brand-500 hover:bg-brand-400 text-slate-950 font-extrabold text-xs uppercase tracking-wider transition-all duration-200 shadow-lg shadow-brand-500/25 shrink-0 group cursor-pointer"
+                >
+                  <span>Barcha Dars Jadvallarini Ko'rish (8 ta guruh)</span>
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </Link>
+              </div>
             </div>
-          </div>
+          </ScrollReveal>
         )}
 
         {/* Course Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {displayCourses.map((course) => (
-            <div
+          {displayCourses.map((course, idx) => (
+            <ScrollReveal
               key={course.id}
-              className="group rounded-3xl bg-white/[0.02] border border-white/10 p-6 sm:p-8 flex flex-col justify-between hover:border-brand-500/40 hover:bg-white/[0.04] hover:shadow-[0_10px_35px_rgba(0,200,83,0.15)] transition-all duration-300 relative overflow-hidden text-left"
+              variant="fade-up"
+              delay={idx * 100}
+              duration={700}
+              className="h-full flex"
             >
-              <div>
-                {/* Top badges */}
-                <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
-                  <span className="px-3 py-1 rounded-full bg-brand-500/10 border border-brand-500/30 text-brand-400 text-xs font-bold uppercase tracking-wider">
-                    {course.categoryLabel}
-                  </span>
-                  {course.badge && (
-                    <span className="px-3 py-1 rounded-full bg-white/10 border border-white/15 text-white text-[11px] font-bold">
-                      {course.badge}
+              <div className="group rounded-3xl bg-white/[0.02] border border-white/10 p-6 sm:p-8 flex flex-col justify-between hover:border-brand-500/40 hover:bg-white/[0.04] hover:shadow-[0_10px_35px_rgba(0,200,83,0.15)] transition-all duration-300 relative overflow-hidden text-left w-full">
+                <div>
+                  {/* Top badges */}
+                  <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
+                    <span className="px-3 py-1 rounded-full bg-brand-500/10 border border-brand-500/30 text-brand-400 text-xs font-bold uppercase tracking-wider">
+                      {course.categoryLabel}
                     </span>
-                  )}
-                </div>
+                    {course.badge && (
+                      <span className="px-3 py-1 rounded-full bg-white/10 border border-white/15 text-white text-[11px] font-bold">
+                        {course.badge}
+                      </span>
+                    )}
+                  </div>
 
                 {/* Course Title & Description */}
                 <h3 className="text-xl font-bold text-white mb-2 group-hover:text-brand-400 transition-colors">
@@ -230,11 +237,13 @@ export default function CourseCatalog({ onOpenLeadModal, compact = false }: Cour
                 </button>
               </div>
             </div>
-          ))}
-        </div>
+          </ScrollReveal>
+        ))}
+      </div>
 
-        {/* Compact rejimida pastki tugma */}
-        {compact && (
+      {/* Compact rejimida pastki tugma */}
+      {compact && (
+        <ScrollReveal variant="fade-up" delay={150} duration={700}>
           <div className="mt-10 text-center">
             <Link
               href="/kurslar"
@@ -244,9 +253,11 @@ export default function CourseCatalog({ onOpenLeadModal, compact = false }: Cour
               <ArrowRight className="w-4 h-4 text-brand-400 group-hover:translate-x-1 transition-transform" />
             </Link>
           </div>
-        )}
+        </ScrollReveal>
+      )}
 
-        {/* Bottom Trust Guarantee Note */}
+      {/* Bottom Trust Guarantee Note */}
+      <ScrollReveal variant="fade-up" delay={200} duration={700}>
         <div className="mt-12 p-6 rounded-2xl bg-white/[0.02] border border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
           <div className="flex items-center gap-2 font-medium text-left">
             <Sparkles className="w-5 h-5 text-brand-400 shrink-0" />
@@ -259,6 +270,7 @@ export default function CourseCatalog({ onOpenLeadModal, compact = false }: Cour
             Bepul konsultatsiya olish →
           </button>
         </div>
+      </ScrollReveal>
 
       </div>
     </section>

@@ -3,6 +3,7 @@
 import React from "react";
 import { CheckCircle2, ArrowRight, Heart, Sparkles, BookOpen, Globe, Cpu } from "lucide-react";
 import SectionHeader from "@/components/SectionHeader";
+import ScrollReveal from "@/components/ScrollReveal";
 
 interface SchoolAboutProps {
   onOpenLeadModal: (target?: string) => void;
@@ -42,70 +43,79 @@ export default function SchoolAbout({ onOpenLeadModal }: SchoolAboutProps) {
         
         {/* Section Header */}
         <SectionHeader
- eyebrow="Akademiya falsafasi"
- eyebrowIcon={Sparkles}
- title={<>Nega aynan <span className="text-brand-600">Algoritm Academy</span>?</>}
- description="Biz o'quvchilarni shunchaki dars yodlashga emas, mustaqil fikrlashga, dunyo miqyosida raqobatlasha olishga va milliy o'zligini saqlagan holda yuksak natijalarga erishishga o'rgatamiz."
- wide
- className="mb-16"
- />
+          eyebrow="Akademiya falsafasi"
+          eyebrowIcon={Sparkles}
+          title={<>Nega aynan <span className="text-brand-600">Algoritm Academy</span>?</>}
+          description="Biz o'quvchilarni shunchaki dars yodlashga emas, mustaqil fikrlashga, dunyo miqyosida raqobatlasha olishga va milliy o'zligini saqlagan holda yuksak natijalarga erishishga o'rgatamiz."
+          wide
+          className="mb-16"
+        />
 
         {/* 4 Pillars Bento Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 mb-16">
           {pillars.map((pillar, idx) => (
-            <div
+            <ScrollReveal
               key={idx}
-              className="p-8 rounded-3xl bg-slate-50 border border-slate-200/80 hover:border-brand-400 hover:bg-white hover:shadow-lg hover:shadow-brand-500/5 transition-all duration-300 group flex flex-col justify-between text-left"
+              variant="fade-up"
+              delay={idx * 100}
+              duration={700}
+              className="h-full flex"
             >
-              <div>
-                <div className="flex items-center justify-between mb-6">
-                  <div className="w-12 h-12 rounded-2xl bg-brand-100 flex items-center justify-center">
-                    {pillar.icon}
+              <div
+                className="p-8 rounded-3xl bg-slate-50 border border-slate-200/80 hover:border-brand-400 hover:bg-white hover:shadow-lg hover:shadow-brand-500/5 transition-all duration-300 group flex flex-col justify-between text-left w-full"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="w-12 h-12 rounded-2xl bg-brand-100 flex items-center justify-center">
+                      {pillar.icon}
+                    </div>
+                    <span className="text-[10px] font-black uppercase tracking-wider text-brand-800 bg-brand-50 px-2.5 py-1 rounded-full border border-brand-200">
+                      {pillar.badge}
+                    </span>
                   </div>
-                  <span className="text-[10px] font-black uppercase tracking-wider text-brand-800 bg-brand-50 px-2.5 py-1 rounded-full border border-brand-200">
-                    {pillar.badge}
-                  </span>
+                  <h3 className="text-xl font-bold text-slate-950 mb-3 group-hover:text-brand-700 transition-colors">
+                    {pillar.title}
+                  </h3>
+                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-medium">
+                    {pillar.desc}
+                  </p>
                 </div>
-                <h3 className="text-xl font-bold text-slate-950 mb-3 group-hover:text-brand-700 transition-colors">
-                  {pillar.title}
-                </h3>
-                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-medium">
-                  {pillar.desc}
-                </p>
-              </div>
 
-              <div className="pt-6 mt-6 border-t border-slate-200/80 flex items-center gap-2 text-xs font-bold text-brand-800">
-                <CheckCircle2 className="w-4 h-4 text-brand-600 shrink-0" />
-                <span>Kafolatlangan metodika</span>
+                <div className="pt-6 mt-6 border-t border-slate-200/80 flex items-center gap-2 text-xs font-bold text-brand-800">
+                  <CheckCircle2 className="w-4 h-4 text-brand-600 shrink-0" />
+                  <span>Kafolatlangan metodika</span>
+                </div>
               </div>
-            </div>
+            </ScrollReveal>
           ))}
         </div>
 
         {/* Bottom Banner with Founder Quote */}
-        <div className="p-8 sm:p-10 rounded-3xl bg-slate-900 text-white border border-slate-800 flex flex-col md:flex-row items-center justify-between gap-8 text-left">
-          <div className="max-w-2xl space-y-2">
-            <div className="text-xs font-bold uppercase tracking-wider text-brand-400">
-              Muassis Murojaati
+        <ScrollReveal variant="fade-up" delay={150} duration={700}>
+          <div className="p-8 sm:p-10 rounded-3xl bg-slate-900 text-white border border-slate-800 flex flex-col md:flex-row items-center justify-between gap-8 text-left">
+            <div className="max-w-2xl space-y-2">
+              <div className="text-xs font-bold uppercase tracking-wider text-brand-400">
+                Muassis Murojaati
+              </div>
+              <p className="text-base sm:text-lg text-slate-200 font-medium italic leading-relaxed">
+                "Bizning maqsadimiz — shunchaki sinfda o'tiradigan emas, kelajakda davlatimiz va dunyo miqyosida yetakchilik qiladigan, o'z fikriga ega kuchli shaxslarni tarbiyalashdir."
+              </p>
+              <div className="text-xs text-slate-400 font-semibold pt-1">
+                Bobur Xaydarov — Algoritm Academy Ta'sischisi
+              </div>
             </div>
-            <p className="text-base sm:text-lg text-slate-200 font-medium italic leading-relaxed">
-              "Bizning maqsadimiz — shunchaki sinfda o'tiradigan emas, kelajakda davlatimiz va dunyo miqyosida yetakchilik qiladigan, o'z fikriga ega kuchli shaxslarni tarbiyalashdir."
-            </p>
-            <div className="text-xs text-slate-400 font-semibold pt-1">
-              Bobur Xaydarov — Algoritm Academy Ta'sischisi
-            </div>
-          </div>
 
-          <div className="shrink-0 w-full md:w-auto">
-            <button
-              onClick={() => onOpenLeadModal("Maktab bilan tanishuv")}
-              className="w-full md:w-auto px-7 py-4 rounded-full bg-brand-500 hover:bg-brand-400 text-slate-950 font-black text-xs uppercase tracking-wider shadow-lg hover:shadow-brand-500/25 transition-all flex items-center justify-center gap-2"
-            >
-              <span>Maktab Bilan Tanishuvga Yozilish</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
+            <div className="shrink-0 w-full md:w-auto">
+              <button
+                onClick={() => onOpenLeadModal("Maktab bilan tanishuv")}
+                className="w-full md:w-auto px-7 py-4 rounded-full bg-brand-500 hover:bg-brand-400 text-slate-950 font-black text-xs uppercase tracking-wider shadow-lg hover:shadow-brand-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <span>Maktab Bilan Tanishuvga Yozilish</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
-        </div>
+        </ScrollReveal>
 
       </div>
     </section>

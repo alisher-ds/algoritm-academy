@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { ECOSYSTEM_DATA } from "@/data/ecosystemData";
 import SectionHeader from "@/components/SectionHeader";
+import ScrollReveal from "@/components/ScrollReveal";
 
 interface TeacherGridProps {
   onSelectTeacherForConsultation?: (teacherName: string) => void;
@@ -627,73 +628,77 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
         </div>
 
         {/* Ustozlar interaktiv karuseli — o'zi ravon yuradi, qo'l/sichqoncha bilan suriladi */}
-        <div className="relative w-full group/carousel">
-          {/* Desktop floating yon tugmalari */}
-          <button
-            onClick={() => handleStep(-1)}
-            aria-label="Oldingi ustozlar"
-            className="hidden lg:flex absolute -left-3 top-1/2 -translate-y-1/2 z-30 w-11 h-11 rounded-full bg-white/95 shadow-lg border border-slate-200/90 text-slate-700 hover:bg-brand-500 hover:text-white hover:border-brand-500 items-center justify-center transition-all duration-200 active:scale-95 opacity-0 group-hover/carousel:opacity-100 cursor-pointer"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <button
-            onClick={() => handleStep(1)}
-            aria-label="Keyingi ustozlar"
-            className="hidden lg:flex absolute -right-3 top-1/2 -translate-y-1/2 z-30 w-11 h-11 rounded-full bg-white/95 shadow-lg border border-slate-200/90 text-slate-700 hover:bg-brand-500 hover:text-white hover:border-brand-500 items-center justify-center transition-all duration-200 active:scale-95 opacity-0 group-hover/carousel:opacity-100 cursor-pointer"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
-
-          {/* Toza ochiq chekka — hech qanday oq tuman yoki niqoblarsiz */}
-          <div className="relative w-full overflow-hidden py-3 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
-            {/* Real interaktiv suriluvchi lenta (Touch swipe + Mouse drag + Wheel + RAF Auto-scroll) */}
-            <div
-              ref={scrollRef}
-              onScroll={handleScroll}
-              onMouseDown={handleMouseDown}
-              onMouseMove={handleMouseMove}
-              onMouseUp={handleMouseUp}
-              onMouseLeave={handleMouseLeave}
-              onTouchStart={handleTouchStart}
-              onTouchMove={handleTouchMove}
-              onTouchEnd={handleTouchEnd}
-              onWheel={handleWheel}
-              onMouseEnter={handleMouseEnter}
-              className="flex gap-4 sm:gap-5 overflow-x-auto select-none py-2 will-change-scroll cursor-grab active:cursor-grabbing [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+        <ScrollReveal variant="fade-up" duration={750} delay={100}>
+          <div className="relative w-full group/carousel">
+            {/* Desktop floating yon tugmalari */}
+            <button
+              onClick={() => handleStep(-1)}
+              aria-label="Oldingi ustozlar"
+              className="hidden lg:flex absolute -left-3 top-1/2 -translate-y-1/2 z-30 w-11 h-11 rounded-full bg-white/95 shadow-lg border border-slate-200/90 text-slate-700 hover:bg-brand-500 hover:text-white hover:border-brand-500 items-center justify-center transition-all duration-200 active:scale-95 opacity-0 group-hover/carousel:opacity-100 cursor-pointer"
             >
-              {[...teamMembers, ...teamMembers, ...teamMembers].map((member, idx) => (
-                <div key={`${member.id}-${idx}`} className="shrink-0">
-                  {renderCard(member, `-${idx}`)}
-                </div>
-              ))}
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => handleStep(1)}
+              aria-label="Keyingi ustozlar"
+              className="hidden lg:flex absolute -right-3 top-1/2 -translate-y-1/2 z-30 w-11 h-11 rounded-full bg-white/95 shadow-lg border border-slate-200/90 text-slate-700 hover:bg-brand-500 hover:text-white hover:border-brand-500 items-center justify-center transition-all duration-200 active:scale-95 opacity-0 group-hover/carousel:opacity-100 cursor-pointer"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+
+            {/* Toza ochiq chekka — hech qanday oq tuman yoki niqoblarsiz */}
+            <div className="relative w-full overflow-hidden py-3 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
+              {/* Real interaktiv suriluvchi lenta (Touch swipe + Mouse drag + Wheel + RAF Auto-scroll) */}
+              <div
+                ref={scrollRef}
+                onScroll={handleScroll}
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={handleMouseLeave}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+                onWheel={handleWheel}
+                onMouseEnter={handleMouseEnter}
+                className="flex gap-4 sm:gap-5 overflow-x-auto select-none py-2 will-change-scroll cursor-grab active:cursor-grabbing [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+              >
+                {[...teamMembers, ...teamMembers, ...teamMembers].map((member, idx) => (
+                  <div key={`${member.id}-${idx}`} className="shrink-0">
+                    {renderCard(member, `-${idx}`)}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
+        </ScrollReveal>
 
         {/* Bottom Reassurance Banner */}
-        <div className="mt-14 p-6 sm:p-8 rounded-3xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-6 text-left">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-brand-500/10 border border-brand-500/20 flex items-center justify-center text-brand-500 shrink-0">
-              <Award className="w-6 h-6" />
+        <ScrollReveal variant="fade-up" duration={700} delay={150}>
+          <div className="mt-14 p-6 sm:p-8 rounded-3xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-6 text-left">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-brand-500/10 border border-brand-500/20 flex items-center justify-center text-brand-500 shrink-0">
+                <Award className="w-6 h-6" />
+              </div>
+              <div>
+                <h4 className="text-base font-bold text-slate-900">
+                  Barcha Ustozlar Davlat va Xalqaro Sertifikatlarga Ega
+                </h4>
+                <p className="text-xs sm:text-sm text-slate-600 font-medium mt-0.5">
+                  O'qituvchilarimiz doimiy ravishda malaka oshirish kurslari va metodik sinovlardan o'tadi.
+                </p>
+              </div>
             </div>
-            <div>
-              <h4 className="text-base font-bold text-slate-900">
-                Barcha Ustozlar Davlat va Xalqaro Sertifikatlarga Ega
-              </h4>
-              <p className="text-xs sm:text-sm text-slate-600 font-medium mt-0.5">
-                O'qituvchilarimiz doimiy ravishda malaka oshirish kurslari va metodik sinovlardan o'tadi.
-              </p>
-            </div>
-          </div>
 
-          <a
-            href={`tel:${ECOSYSTEM_DATA.contact.phoneMain.replace(/\D/g, "")}`}
-            className="px-6 py-3 rounded-full bg-slate-900 hover:bg-brand-500 text-white font-bold text-xs uppercase tracking-wider transition shrink-0 shadow-sm flex items-center gap-2"
-          >
-            <Phone className="w-3.5 h-3.5" />
-            <span>Ustoz Bilan Bog'lanish</span>
-          </a>
-        </div>
+            <a
+              href={`tel:${ECOSYSTEM_DATA.contact.phoneMain.replace(/\D/g, "")}`}
+              className="px-6 py-3 rounded-full bg-slate-900 hover:bg-brand-500 text-white font-bold text-xs uppercase tracking-wider transition shrink-0 shadow-sm flex items-center gap-2"
+            >
+              <Phone className="w-3.5 h-3.5" />
+              <span>Ustoz Bilan Bog'lanish</span>
+            </a>
+          </div>
+        </ScrollReveal>
 
       </div>
 
