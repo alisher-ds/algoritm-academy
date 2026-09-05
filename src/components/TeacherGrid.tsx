@@ -686,7 +686,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
                     name={selectedMember.name}
                     image={selectedMember.image}
                     subject={selectedMember.subject}
-                    className="h-full w-full object-cover object-top"
+                    className="h-full w-full object-cover object-center"
                   />
                 </div>
                 <div>
@@ -726,14 +726,24 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
                   />
                 </div>
               ) : (
-                <div className="relative w-full overflow-hidden rounded-2xl border border-white/15 bg-slate-900 shadow-2xl">
-                  <TeacherAvatar
-                    name={selectedMember.name}
-                    image={selectedMember.image}
-                    subject={selectedMember.subject}
-                    className="h-64 sm:h-80 w-full object-cover object-top"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
+                <div className="relative w-full rounded-2xl overflow-hidden bg-slate-950/80 border border-white/15 shadow-2xl flex items-center justify-center py-4 sm:py-6 px-4">
+                  {/* Orqa fondagi ambient blur glow effekti */}
+                  {selectedMember.image && (
+                    <div
+                      aria-hidden
+                      className="absolute inset-0 bg-cover bg-center blur-3xl opacity-20 scale-125 pointer-events-none"
+                      style={{ backgroundImage: `url(${selectedMember.image})` }}
+                    />
+                  )}
+                  {/* Markazdagi to'liq va ixcham ko'rinadigan rasm */}
+                  <div className="relative z-10 h-56 sm:h-64 aspect-[3/3.6] rounded-2xl overflow-hidden shadow-2xl border border-white/20 bg-slate-900">
+                    <TeacherAvatar
+                      name={selectedMember.name}
+                      image={selectedMember.image}
+                      subject={selectedMember.subject}
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
                 </div>
               )}
 
