@@ -51,13 +51,15 @@ const slides: Slide[] = [
   },
 ];
 
-const SLIDE_INTERVAL = 4000;
+const SLIDE_INTERVAL = 6000;
 
 export default function SchoolHero({ onOpenLeadModal }: SchoolHeroProps) {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [prevSlide, setPrevSlide] = useState(0);
   const [paused, setPaused] = useState(false);
+  const [isInView, setIsInView] = useState(true);
   const touchX = useRef<number | null>(null);
+  const sectionRef = useRef<HTMLElement>(null);
 
   const next = useCallback(() => {
     setCurrentSlide((curr) => {
@@ -83,17 +85,28 @@ export default function SchoolHero({ onOpenLeadModal }: SchoolHeroProps) {
     });
   }, []);
 
-  // Avtomatik slayd almashishi (4 soniya) — sichqoncha ustiga borganda to'xtab turadi
+  // Viewport'dan chiqib ketganda (pastga scroll qilinganda) karuselni to'xtatib turish
   useEffect(() => {
-    if (paused) return undefined;
+    const node = sectionRef.current;
+    if (!node || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsInView(entry.isIntersecting);
+      },
+      { threshold: 0.05 }
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
+  // Avtomatik slayd almashishi (6 soniya) — ekran tashqarisida yoki hover/tegish paytida to'xtab turadi
+  useEffect(() => {
+    if (paused || !isInView) return undefined;
     const timer = setInterval(next, SLIDE_INTERVAL);
     return () => clearInterval(timer);
-  }, [paused, next]);
+  }, [paused, isInView, next]);
 
-  // Klaviatura o'qlari — faqat karuselning o'zi fokusda bo'lganda.
-  // Ilgari listener `window` da turardi va formada matn tahrirlayotgan yoki
-  // <select> da tanlayotgan foydalanuvchining strelkalarini ham o'g'irlardi.
-  const sectionRef = useRef<HTMLElement>(null);
+  // Klaviatura o'qlari — faqat karuselning o'zi fokusda bo'lganda
   useEffect(() => {
     const node = sectionRef.current;
     if (!node) return;
@@ -124,17 +137,22 @@ export default function SchoolHero({ onOpenLeadModal }: SchoolHeroProps) {
         touchX.current = null;
       }}
     >
-      {/* 1. Silky-smooth Dual Crossfade: Fotosuratlar va Matn birga yumshoq eriydi */}
+      {/* Sahifa uchun bitta barqaror SEO sarlavhasi */}
+      <h1 className="sr-only">
+        Algoritm Academy — 0–11 Sinf Xususiy Maktabi va Akademik O&apos;quv Markazi
+      </h1>
+
+      {/* Silky-smooth Dual Crossfade: Fotosuratlar va Matn birga yumshoq va tebranmasdan eriydi */}
       <div className="absolute inset-0 z-0 bg-night-deep">
         {slides.map((s, idx) => {
           const isCurrent = idx === currentSlide;
           const isPrev = idx === prevSlide;
 
-          // Faqat joriy va uning ostidagi oldingi slayd ko'rinadi.
-          // Joriy slayd (z-20) 1000ms davomida oldingi slayd (z-10) ustiga mayin erib chiqadi.
-          // Qora fon ko'rinmaydi, rasm sakramaydi, matn birdan yo'qolib qolmaydi.
+          // Joriy slayd (z-20) 1000ms davomida silliq ochiladi.
+          // Oldingi slayd (z-10) uning ostida turadi, boshqa slaydlar esa ko'rinmaydi.
+          // Hech qanday vertikal sakrash (translateY jitter) bo'lmaydi — faqat shaffoflik (opacity) o'zgaradi.
           const zIndex = isCurrent ? "z-20" : isPrev ? "z-10" : "z-0";
-          const opacity = isCurrent ? "opacity-100" : isPrev ? "opacity-100" : "opacity-0";
+          const opacity = isCurrent ? "opacity-100" : "opacity-0";
 
           return (
             <div
@@ -151,37 +169,31 @@ export default function SchoolHero({ onOpenLeadModal }: SchoolHeroProps) {
                 }`}
               />
 
-              {/* Matn o'qilishi uchun tabiiy vinetka (ekranning katta qismi ochiq va yorug') */}
+              {/* Matn o'qilishi uchun tabiiy vinetka */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-transparent" />
               <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/25 to-transparent" />
 
-              {/* Matn va tugma har bir slayd bilan birga sinxron erib almashadi */}
+              {/* Matn va tugma — barqaror, tebranmasdan va qimirlamasdan eriydi */}
               <div className="absolute inset-0 flex flex-col justify-end pb-8 sm:pb-12 lg:pb-16 pointer-events-none">
                 <div className="mx-auto w-full max-w-7xl px-4 sm:px-8 lg:px-12">
                   <div className={`max-w-xl text-left ${isCurrent ? "pointer-events-auto" : "pointer-events-none"}`}>
                     {/* Brend yashil rangidagi ixcham kicker */}
-                    <p className={`font-bold text-brand-400 text-[11px] sm:text-xs tracking-[0.2em] uppercase drop-shadow-md ${isCurrent ? "animate-hero-kicker" : ""}`}>
+                    <p className="font-bold text-brand-400 text-[11px] sm:text-xs tracking-[0.2em] uppercase drop-shadow-md">
                       {s.kicker}
                     </p>
 
-                    {/* Ixchamlashtirilgan, o'ta katta bo'lmagan H1 (mobilda 2 qatordan oshmaydi) */}
-                    {/* Sahifada bitta <h1> bo'lishi kerak — faqat joriy slayd sarlavha,
-                        qolganlari oddiy matn (SEO va ekran o'qigich uchun). */}
-                    {React.createElement(
-                      isCurrent ? "h1" : "p",
-                      {
-                        className: `mt-1.5 font-display text-2xl sm:text-3xl lg:text-4xl font-extrabold uppercase leading-tight tracking-tight text-white drop-shadow-md ${isCurrent ? "animate-hero-title" : ""}`,
-                      },
-                      s.title
-                    )}
+                    {/* Slayd sarlavhasi (barqaror h2, DOM dan o'chirilmaydi va sakramaydi) */}
+                    <h2 className="mt-1.5 font-display text-2xl sm:text-3xl lg:text-4xl font-extrabold uppercase leading-tight tracking-tight text-white drop-shadow-md">
+                      {s.title}
+                    </h2>
 
-                    {/* Qisqa va lo'nda bitta jumla */}
-                    <p className={`mt-2 text-xs sm:text-sm text-slate-200/90 font-medium max-w-md leading-relaxed drop-shadow-sm ${isCurrent ? "animate-hero-desc" : ""}`}>
+                    {/* Qisqa va lo'nda tavsif */}
+                    <p className="mt-2 text-xs sm:text-sm text-slate-200/90 font-medium max-w-md leading-relaxed drop-shadow-sm">
                       {s.desc}
                     </p>
 
-                    {/* O'zimizning brend yashil rangidagi qulay tugma */}
-                    <div className={`mt-4 sm:mt-5 flex items-center gap-3 ${isCurrent ? "animate-hero-btn" : ""}`}>
+                    {/* Qabul/Bog'lanish tugmasi */}
+                    <div className="mt-4 sm:mt-5 flex items-center gap-3">
                       <button
                         onClick={() => onOpenLeadModal(s.title)}
                         tabIndex={isCurrent ? 0 : -1}
