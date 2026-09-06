@@ -43,28 +43,45 @@ export default function AdminPage() {
 
   const PAGE_SIZE = 200;
 
-  const fetchLeads = useCallback(async (): Promise<Lead[] | null> => {
-    try {
-      const res = await fetch(`/api/leads?limit=${PAGE_SIZE}&offset=0`, { cache: "no-store" });
-      if (res.status === 401) return null;
-      const data = await res.json();
-      if (data?.success && Array.isArray(data.leads)) {
-        setLeads(data.leads);
-        setTotal(typeof data.total === "number" ? data.total : data.leads.length);
-        setHasMore(Boolean(data.hasMore));
-        return data.leads;
+  const fetchLeads = useCallback(
+    async (s = search, st = statusFilter, tp = typeFilter): Promise<Lead[] | null> => {
+      try {
+        const params = new URLSearchParams();
+        params.set("limit", String(PAGE_SIZE));
+        params.set("offset", "0");
+        if (s.trim()) params.set("search", s.trim());
+        if (st && st !== "hammasi") params.set("status", st);
+        if (tp && tp !== "hammasi") params.set("type", tp);
+
+        const res = await fetch(`/api/leads?${params.toString()}`, { cache: "no-store" });
+        if (res.status === 401) return null;
+        const data = await res.json();
+        if (data?.success && Array.isArray(data.leads)) {
+          setLeads(data.leads);
+          setTotal(typeof data.total === "number" ? data.total : data.leads.length);
+          setHasMore(Boolean(data.hasMore));
+          return data.leads;
+        }
+        return null;
+      } catch {
+        return null;
       }
-      return null;
-    } catch {
-      return null;
-    }
-  }, []);
+    },
+    [search, statusFilter, typeFilter]
+  );
 
   /** Keyingi sahifani yuklash — butun bazani bir yo'la tortmaslik uchun. */
   const loadMore = useCallback(async () => {
     setLoadingMore(true);
     try {
-      const res = await fetch(`/api/leads?limit=${PAGE_SIZE}&offset=${leads.length}`, {
+      const params = new URLSearchParams();
+      params.set("limit", String(PAGE_SIZE));
+      params.set("offset", String(leads.length));
+      if (search.trim()) params.set("search", search.trim());
+      if (statusFilter && statusFilter !== "hammasi") params.set("status", statusFilter);
+      if (typeFilter && typeFilter !== "hammasi") params.set("type", typeFilter);
+
+      const res = await fetch(`/api/leads?${params.toString()}`, {
         cache: "no-store",
       });
       const data = await res.json();
@@ -78,7 +95,7 @@ export default function AdminPage() {
     } finally {
       setLoadingMore(false);
     }
-  }, [leads.length]);
+  }, [leads.length, search, statusFilter, typeFilter]);
 
   // Local (offline) to'plangan arizalarni serverga ko'chirish
   const migrateLocalLeads = useCallback(async (currentLeads?: Lead[]) => {
@@ -145,7 +162,7 @@ export default function AdminPage() {
 
   useEffect(() => {
     (async () => {
-      const freshLeads = await fetchLeads();
+      const freshLeads = await fetchLeads("", "hammasi", "hammasi");
       if (freshLeads) {
         setAuthState("tayyor");
       } else {
@@ -153,6 +170,14 @@ export default function AdminPage() {
       }
     })();
   }, [fetchLeads]);
+
+  useEffect(() => {
+    if (authState !== "tayyor") return;
+    const timer = setTimeout(() => {
+      fetchLeads(search, statusFilter, typeFilter);
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [search, statusFilter, typeFilter, authState, fetchLeads]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

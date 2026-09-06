@@ -122,4 +122,39 @@ describe("leadStore (fayl backend)", () => {
       s.createLead({ name: "Salim", phone: "+998909998877", type: "kurs", targetInterest: "SAT" }, "key-conflict")
     ).rejects.toThrow("Bu yuborish kaliti boshqa ariza uchun ishlatilgan");
   });
+
+  it("listLeadsPage qidiruv va filtrlar bo'yicha to'g'ri filtrlaydi", async () => {
+    const s = await store();
+    const l1 = await s.addLead({ name: "Bobur Xaydarov", phone: "+998901112233", type: "maktab", targetInterest: "0–11 Sinf" });
+    const l2 = await s.addLead({ name: "Aziz Qodirov", phone: "+998909998877", type: "kurs", targetInterest: "Digital SAT", notes: "Azamat Qodirov bilan suhbat" });
+    const l3 = await s.addLead({ name: "Malika Rahimova", phone: "+998935554433", type: "kurs", targetInterest: "IELTS 7+" });
+
+    await s.updateLead(l2.id, { status: "boglangan" });
+
+    // Qidiruv ism bo'yicha
+    const searchByName = await s.listLeadsPage(0, 10, { search: "Aziz" });
+    expect(searchByName.leads).toHaveLength(1);
+    expect(searchByName.leads[0].name).toBe("Aziz Qodirov");
+    expect(searchByName.total).toBe(1);
+
+    // Qidiruv izoh (notes) bo'yicha
+    const searchByNote = await s.listLeadsPage(0, 10, { search: "Azamat Qodirov" });
+    expect(searchByNote.leads).toHaveLength(1);
+    expect(searchByNote.leads[0].notes).toBe("Azamat Qodirov bilan suhbat");
+
+    // Qidiruv telefon raqami bo'yicha
+    const searchByPhone = await s.listLeadsPage(0, 10, { search: "93555" });
+    expect(searchByPhone.leads).toHaveLength(1);
+    expect(searchByPhone.leads[0].name).toBe("Malika Rahimova");
+
+    // Status bo'yicha filtr
+    const filterStatus = await s.listLeadsPage(0, 10, { status: "boglangan" });
+    expect(filterStatus.leads).toHaveLength(1);
+    expect(filterStatus.leads[0].id).toBe(l2.id);
+
+    // Tur bo'yicha filtr
+    const filterType = await s.listLeadsPage(0, 10, { type: "maktab" });
+    expect(filterType.leads).toHaveLength(1);
+    expect(filterType.leads[0].name).toBe("Bobur Xaydarov");
+  });
 });

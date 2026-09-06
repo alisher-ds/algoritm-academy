@@ -104,9 +104,23 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const limit = Number(searchParams.get("limit") ?? 200);
   const offset = Number(searchParams.get("offset") ?? 0);
+  const search = searchParams.get("search") || undefined;
+  const rawStatus = searchParams.get("status") || undefined;
+  const rawType = searchParams.get("type") || undefined;
+
+  const status =
+    rawStatus && (VALID_STATUSES.includes(rawStatus as LeadStatus) || rawStatus === "hammasi")
+      ? (rawStatus as LeadStatus | "hammasi")
+      : undefined;
+  const type =
+    rawType && (VALID_TYPES.includes(rawType as LeadType) || rawType === "hammasi")
+      ? (rawType as LeadType | "hammasi")
+      : undefined;
+
   const page = await listLeadsPage(
     Number.isFinite(offset) ? offset : 0,
-    Number.isFinite(limit) ? limit : 200
+    Number.isFinite(limit) ? limit : 200,
+    { search, status, type }
   );
   return json(
     { success: true, leads: page.leads, total: page.total, offset: page.offset, hasMore: page.hasMore },
