@@ -9,6 +9,7 @@
 
 import { createHash } from "crypto";
 import { promises as fs } from "fs";
+import os from "os";
 import path from "path";
 import type { Lead, LeadPayload, LeadStatus, LeadType } from "./leads";
 
@@ -105,7 +106,11 @@ let fileCache: Lead[] | null = null;
 let writeChain: Promise<void> = Promise.resolve();
 
 function leadsFilePath(): string {
-  return process.env.LEADS_FILE || path.join(process.cwd(), ".data", "leads.json");
+  if (process.env.LEADS_FILE) return process.env.LEADS_FILE;
+  if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
+    return path.join(os.tmpdir(), "leads.json");
+  }
+  return path.join(process.cwd(), ".data", "leads.json");
 }
 
 async function filePersist(leads: Lead[]): Promise<void> {
@@ -113,13 +118,16 @@ async function filePersist(leads: Lead[]): Promise<void> {
   writeChain = writeChain
     .catch(() => undefined)
     .then(async () => {
-      await fs.mkdir(path.dirname(file), { recursive: true });
-      // Atomik yozish: avval vaqtinchalik faylga, keyin rename.
-      const tmp = `${file}.${process.pid}.tmp`;
-      await fs.writeFile(tmp, JSON.stringify(leads, null, 2), "utf8");
-      await fs.rename(tmp, file);
-      // Kesh faqat disk muvaffaqiyatli yangilangandan KEYIN yangilanadi — aks holda
-      // yozuv xato bo'lsa xotiradagi holat diskdan farq qilib qolardi.
+      try {
+        await fs.mkdir(path.dirname(file), { recursive: true });
+        // Atomik yozish: avval vaqtinchalik faylga, keyin rename.
+        const tmp = `${file}.${process.pid}.${Date.now()}.tmp`;
+        await fs.writeFile(tmp, JSON.stringify(leads, null, 2), "utf8");
+        await fs.rename(tmp, file);
+      } catch (err) {
+        // Serverless yoki read-only fayl tizimida kesh xotirada saqlanadi
+        console.warn("[leadStore] Fayl tizimiga yozishda ogohlantirish (kesh xotirada saqlandi):", err);
+      }
       fileCache = leads;
     });
   await writeChain;

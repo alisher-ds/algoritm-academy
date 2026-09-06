@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef, useState, useEffect } from "react";
-import { X, Play, Pause, Volume2, VolumeX, Maximize, ExternalLink } from "lucide-react";
+import { X, Play, Pause, Volume2, VolumeX, Maximize, ExternalLink, Loader2 } from "lucide-react";
 
 interface VideoModalProps {
   isOpen: boolean;
@@ -26,6 +26,7 @@ export default function VideoModal({
   // Ilgari `autoPlay` bor edi-yu video muted emasdi, ya'ni avtoijro hech qachon ishlamasdi.
   const [isMuted, setIsMuted] = useState(true);
   const [progress, setProgress] = useState(0);
+  const [isBuffering, setIsBuffering] = useState(true);
 
   useEffect(() => {
     if (!isOpen || !videoRef.current) return;
@@ -34,7 +35,14 @@ export default function VideoModal({
     setProgress(0);
     el.muted = true;
     setIsMuted(true);
-    el.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
+    setIsBuffering(true);
+    el.play().then(() => {
+      setIsPlaying(true);
+      setIsBuffering(false);
+    }).catch(() => {
+      setIsPlaying(false);
+      setIsBuffering(false);
+    });
   }, [isOpen, videoUrl]);
 
   // Escape bilan yopish + orqa fonda scroll bloklash
@@ -154,17 +162,29 @@ export default function VideoModal({
             ref={videoRef}
             src={videoUrl}
             poster={poster}
-            preload="metadata"
+            preload="auto"
             playsInline
             muted={isMuted}
             onTimeUpdate={handleTimeUpdate}
+            onWaiting={() => setIsBuffering(true)}
+            onPlaying={() => setIsBuffering(false)}
+            onCanPlay={() => setIsBuffering(false)}
+            onLoadedData={() => setIsBuffering(false)}
             onEnded={() => setIsPlaying(false)}
             onClick={togglePlay}
             className="w-full h-full object-contain cursor-pointer"
           />
 
+          {/* Buffering Indicator */}
+          {isBuffering && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 z-30 pointer-events-none backdrop-blur-sm">
+              <Loader2 className="w-10 h-10 animate-spin text-brand-400 mb-2" />
+              <span className="text-xs font-semibold text-slate-200">Video yuklanmoqda...</span>
+            </div>
+          )}
+
           {/* Big Center Play/Pause Indicator on click */}
-          {!isPlaying && (
+          {!isPlaying && !isBuffering && (
             <button
               onClick={togglePlay}
               className="absolute inset-0 flex items-center justify-center bg-black/40 transition"
