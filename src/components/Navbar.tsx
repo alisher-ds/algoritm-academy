@@ -53,11 +53,19 @@ export default function Navbar({ onOpenLeadModal }: NavbarProps) {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Mobile menyu ochiqda body scroll'ni bloklash
+  const navRef = React.useRef<HTMLElement>(null);
+
+  // Mobile menyu ochiqda tashqariga bosilganda yopish (asosiy sahifa scroll'ini bloklamaydi)
   useEffect(() => {
-    document.body.style.overflow = mobileMenuOpen ? "hidden" : "";
+    if (!mobileMenuOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (navRef.current && !navRef.current.contains(e.target as Node)) {
+        setMobileMenuOpen(false);
+      }
+    };
+    document.addEventListener("click", handleClickOutside);
     return () => {
-      document.body.style.overflow = "";
+      document.removeEventListener("click", handleClickOutside);
     };
   }, [mobileMenuOpen]);
 
@@ -77,14 +85,13 @@ export default function Navbar({ onOpenLeadModal }: NavbarProps) {
   const phoneLabel = isHome ? "Maktab qabuli" : "O'quv markazi";
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50 px-3 sm:px-6">
+    <header ref={navRef} className="fixed inset-x-0 top-0 z-50 px-3 sm:px-6">
+      {/* Asosiy navbar kapsulasi (har doim rounded-full shaklida barqaror turadi) */}
       <div
-        className={`mx-auto mt-3 max-w-7xl border px-4 sm:px-6 transition-all duration-300 ${
-          mobileMenuOpen
-            ? "rounded-2xl border-white/15 bg-night-deep/95 backdrop-blur-2xl shadow-2xl"
-            : isScrolled
-            ? "rounded-full border-white/15 bg-night-deep/90 shadow-2xl backdrop-blur-2xl"
-            : "rounded-full border-white/15 bg-black/35 backdrop-blur-xl shadow-lg"
+        className={`mx-auto mt-3 max-w-7xl border px-4 sm:px-6 rounded-full transition-colors duration-200 ${
+          isScrolled || mobileMenuOpen
+            ? "border-white/15 bg-night-deep/90 shadow-2xl backdrop-blur-2xl"
+            : "border-white/15 bg-black/35 backdrop-blur-xl shadow-lg"
         }`}
       >
         <div className="flex h-14 items-center justify-between gap-3">
@@ -157,9 +164,7 @@ export default function Navbar({ onOpenLeadModal }: NavbarProps) {
               <span className="font-mono tracking-tight">{primaryPhone}</span>
             </a>
 
-            {/* CTA faqat forma ochish imkoni bo'lgan sahifalarda ko'rsatiladi.
-                Ilgari /admin da tugmalar ko'rinardi, lekin bosilganda hech nima
-                bo'lmasdi (onOpenLeadModal berilmagan). */}
+            {/* CTA faqat forma ochish imkoni bo'lgan sahifalarda ko'rsatiladi */}
             {onOpenLeadModal && (
               <>
                 <button
@@ -189,75 +194,76 @@ export default function Navbar({ onOpenLeadModal }: NavbarProps) {
             </button>
           </div>
         </div>
+      </div>
 
-        {/* Mobile panel */}
-        {mobileMenuOpen && (
-          <nav
-            id="mobile-menu"
-            aria-label="Mobil navigatsiya"
-            className="animate-fade-in border-t border-white/10 py-3 lg:hidden"
-          >
-            <div className="flex flex-col gap-1">
-              {NAV_LINKS.map((link) => {
-                const isActive =
-                  (isHome && link.href.startsWith("/#") && activeSection === link.href.replace("/#", "")) ||
-                  pathname === link.href;
-                const isHighlight = "highlight" in link && Boolean(link.highlight);
+      {/* Mobil menyu paneli — alohida karta sifatida birdaniga ochiladi (dumaloqdan to'rtburchakka o'tish kechikishi bo'lmaydi) */}
+      {mobileMenuOpen && (
+        <nav
+          id="mobile-menu"
+          aria-label="Mobil navigatsiya"
+          className="mx-auto mt-2 max-w-7xl rounded-2xl border border-white/15 bg-night-deep/95 backdrop-blur-2xl shadow-2xl p-4 lg:hidden max-h-[calc(100vh-5.5rem)] overflow-y-auto"
+        >
+          <div className="flex flex-col gap-1">
+            {NAV_LINKS.map((link) => {
+              const isActive =
+                (isHome && link.href.startsWith("/#") && activeSection === link.href.replace("/#", "")) ||
+                pathname === link.href;
+              const isHighlight = "highlight" in link && Boolean(link.highlight);
 
-                if (isHighlight) {
-                  return (
-                    <Link
-                      key={link.href}
-                      href={link.href}
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="my-1 flex items-center justify-between rounded-xl px-3.5 py-2.5 text-sm font-bold bg-brand-500/15 border border-brand-500/30 text-brand-300 transition-colors hover:bg-brand-500/25 hover:text-white"
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <GraduationCap className="h-4 w-4 text-brand-400" />
-                        <span>{link.label}</span>
-                      </div>
-                      <span className="text-[10px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-300 border border-brand-500/30">
-                        Kurslar & PMT
-                      </span>
-                    </Link>
-                  );
-                }
-
+              if (isHighlight) {
                 return (
                   <Link
                     key={link.href}
                     href={link.href}
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
-                      isActive ? "text-brand-400 font-semibold bg-white/5" : "text-slate-200 hover:bg-white/5 hover:text-white"
-                    }`}
+                    className="my-1 flex items-center justify-between rounded-xl px-3.5 py-2.5 text-sm font-bold bg-brand-500/15 border border-brand-500/30 text-brand-300 transition-colors hover:bg-brand-500/25 hover:text-white"
                   >
-                    {link.label}
+                    <div className="flex items-center gap-2.5">
+                      <GraduationCap className="h-4 w-4 text-brand-400" />
+                      <span>{link.label}</span>
+                    </div>
+                    <span className="text-[10px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-300 border border-brand-500/30">
+                      Kurslar & PMT
+                    </span>
                   </Link>
                 );
-              })}
-            </div>
-            <div className="mt-3 flex flex-col gap-2 border-t border-white/10 pt-3">
-              <a
-                href={`tel:+${primaryPhone.replace(/\D/g, "")}`}
-                className="flex items-center justify-center gap-2 rounded-xl bg-white/10 px-4 py-3 text-sm font-semibold text-white"
-              >
-                <Phone className="h-4 w-4 text-brand-400" />
-                <span className="font-mono">{primaryPhone}</span>
-                <span className="text-xs text-slate-400">{phoneLabel}</span>
-              </a>
-              {onOpenLeadModal && (
-                <button
-                  onClick={() => openLead("Mobil qabul arizasi")}
-                  className="w-full rounded-xl bg-brand-500 px-4 py-3 text-xs font-bold uppercase tracking-wider text-white transition hover:bg-brand-400"
+              }
+
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+                    isActive ? "text-brand-400 font-semibold bg-white/5" : "text-slate-200 hover:bg-white/5 hover:text-white"
+                  }`}
                 >
-                  Qabulga ariza qoldirish — 1-dars bepul
-                </button>
-              )}
-            </div>
-          </nav>
-        )}
-      </div>
+                  {link.label}
+                </Link>
+              );
+            })}
+          </div>
+          <div className="mt-3 flex flex-col gap-2 border-t border-white/10 pt-3">
+            <a
+              href={`tel:+${primaryPhone.replace(/\D/g, "")}`}
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center justify-center gap-2 rounded-xl bg-white/10 px-4 py-3 text-sm font-semibold text-white"
+            >
+              <Phone className="h-4 w-4 text-brand-400" />
+              <span className="font-mono">{primaryPhone}</span>
+              <span className="text-xs text-slate-400">{phoneLabel}</span>
+            </a>
+            {onOpenLeadModal && (
+              <button
+                onClick={() => openLead("Mobil qabul arizasi")}
+                className="w-full rounded-xl bg-brand-500 px-4 py-3 text-xs font-bold uppercase tracking-wider text-white transition hover:bg-brand-400"
+              >
+                Qabulga ariza qoldirish — 1-dars bepul
+              </button>
+            )}
+          </div>
+        </nav>
+      )}
     </header>
   );
 }
