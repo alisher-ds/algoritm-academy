@@ -12,8 +12,8 @@ import {
   School,
   GraduationCap,
   Award,
-  Globe,
   } from "lucide-react";
+import { TelegramIcon, InstagramIcon } from "@/components/SocialIcons";
 import { ECOSYSTEM_DATA } from "@/data/ecosystemData";
 import InteractiveMapSection from "@/components/InteractiveMapSection";
 
@@ -242,17 +242,17 @@ export default function AloqaPage() {
                   href={ECOSYSTEM_DATA.contact.telegram}
                   target="_blank"
                   rel="noreferrer"
-                  className="px-5 py-3 rounded-2xl bg-white/10 hover:bg-brand-600 text-white font-bold text-xs uppercase tracking-wider transition flex items-center gap-2"
+                  className="px-5 py-3 rounded-2xl bg-white/10 hover:bg-[#229ED9] text-white font-bold text-xs uppercase tracking-wider transition flex items-center gap-2.5 shadow-sm"
                 >
-                  <Send className="w-4 h-4" /> Telegram
+                  <TelegramIcon className="w-4.5 h-4.5" /> Telegram
                 </a>
                 <a
                   href={ECOSYSTEM_DATA.contact.instagram}
                   target="_blank"
                   rel="noreferrer"
-                  className="px-5 py-3 rounded-2xl bg-white/10 hover:bg-brand-600 text-white font-bold text-xs uppercase tracking-wider transition flex items-center gap-2"
+                  className="px-5 py-3 rounded-2xl bg-white/10 hover:bg-gradient-to-tr hover:from-[#f09433] hover:via-[#dc2743] hover:to-[#bc1888] text-white font-bold text-xs uppercase tracking-wider transition flex items-center gap-2.5 shadow-sm"
                 >
-                  <Globe className="w-4 h-4" /> Instagram
+                  <InstagramIcon className="w-4.5 h-4.5" /> Instagram
                 </a>
               </div>
             </div>
