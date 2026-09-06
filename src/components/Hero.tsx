@@ -94,7 +94,7 @@ export default function Hero({ onOpenLeadModal, onOpenVideoModal, onOpenQuizModa
           <div className="lg:col-span-5">
             <div className="group relative overflow-hidden rounded-[1.75rem] border border-slate-200/80 bg-white p-2 shadow-card">
               <div className="relative aspect-[4/3] w-full overflow-hidden rounded-3xl bg-slate-100">
-                <img
+                <img loading="lazy" decoding="async"
                   src="/images/slides/slide_2_it_ai_lab.jpg"
                   alt="Algoritm Academy — zamonaviy o'quv xonasi"
                   className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"

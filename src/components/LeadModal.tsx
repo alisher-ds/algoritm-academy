@@ -215,16 +215,19 @@ export default function LeadModal({
                   <span>{errorMessage}</span>
                 </div>
               )}
-              <input
-                type="text"
-                name="website"
-                tabIndex={-1}
-                autoComplete="off"
-                aria-hidden="true"
-                value={honeypot}
-                onChange={(e) => setHoneypot(e.target.value)}
-                className="absolute left-[-9999px] w-px h-px opacity-0"
-              />
+              {/* Botlar to'ldiradigan yashirin maydon (yuqoridagi izohga qarang). */}
+              <div hidden>
+                <label htmlFor="lead-website-modal">Veb-sayt (to'ldirmang)</label>
+                <input
+                  id="lead-website-modal"
+                  type="text"
+                  name="website"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  value={honeypot}
+                  onChange={(e) => setHoneypot(e.target.value)}
+                />
+              </div>
 
               <div>
                 <label htmlFor="lead-name" className="text-[11px] font-bold text-slate-300 uppercase tracking-wider block mb-1.5">

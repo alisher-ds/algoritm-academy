@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { ArrowRight, CheckCircle2, ShieldCheck, Loader2, Info } from "lucide-react";
 import { submitLead, LEAD_OPTIONS } from "@/lib/leads";
 import { normalizeUzPhone } from "@/lib/phone";
@@ -16,6 +16,11 @@ export default function LeadBannerSection() {
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [honeypot, setHoneypot] = useState("");
+  // Tasdiq xabarini yashiradigan taymer — komponent unmount bo'lsa bekor qilinadi.
+  const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (resetTimer.current) clearTimeout(resetTimer.current);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,14 +54,14 @@ export default function LeadBannerSection() {
       setError(null);
       setName("");
       setPhone("");
-      setTimeout(() => setSubmitted(false), 5000);
+      resetTimer.current = setTimeout(() => setSubmitted(false), 5000);
     } else if (res.storedLocally) {
       // Server ulanmagan bo'lsa ham lokal saqlanadi, foydalanuvchiga halol xabar
       setSubmitted(true);
       setError("Serverga ulanish imkoni bo'lmadi — ariza shu qurilmada saqlandi. Tez orada qayta urinib ko'ring yoki qo'ng'iroq qiling.");
       setName("");
       setPhone("");
-      setTimeout(() => {
+      resetTimer.current = setTimeout(() => {
         setSubmitted(false);
         setError(null);
       }, 8000);
@@ -117,16 +122,21 @@ export default function LeadBannerSection() {
                 ) : (
                   <form onSubmit={handleSubmit} className="space-y-4 text-left">
                     {/* Honeypot — botlar uchun (odamlar ko'rmaydi) */}
-                    <input
-                      type="text"
-                      name="website"
-                      tabIndex={-1}
-                      autoComplete="off"
-                      aria-hidden="true"
-                      value={honeypot}
-                      onChange={(e) => setHoneypot(e.target.value)}
-                      className="absolute left-[-9999px] w-px h-px opacity-0"
-                    />
+                    {/* Botlar to'ldiradigan yashirin maydon. `aria-hidden` fokuslanuvchi
+                        elementda a11y qoidasini buzadi va `left-[-9999px]` gorizontal
+                        overflow'ga sabab bo'ladi — o'rniga standart "visually hidden". */}
+                    <div hidden>
+                      <label htmlFor="lead-website">Veb-sayt (to'ldirmang)</label>
+                      <input
+                        id="lead-website"
+                        type="text"
+                        name="website"
+                        tabIndex={-1}
+                        autoComplete="off"
+                        value={honeypot}
+                        onChange={(e) => setHoneypot(e.target.value)}
+                      />
+                    </div>
 
                     <div>
                       <label className="block text-xs font-black text-slate-800 uppercase tracking-wider mb-1.5">

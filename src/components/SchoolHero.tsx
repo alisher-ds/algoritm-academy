@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
+import { Sparkles, ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
 
 interface SchoolHeroProps {
   onOpenLeadModal: (targetName?: string) => void;
@@ -83,12 +83,22 @@ export default function SchoolHero({ onOpenLeadModal }: SchoolHeroProps) {
     });
   }, []);
 
-  // Avtomatik slayd almashishi (4 soniya) — sichqoncha ustiga borganda to'xtab turadi
+  // Foydalanuvchi qo'lda to'xtatgan bo'lsa, sichqoncha ketgach ham davom etmaydi.
+  const [manualPause, setManualPause] = useState(false);
+
+  // Avtomatik slayd almashishi (4 soniya). "Harakatni kamaytirish" sozlamasi yoqilgan
+  // bo'lsa umuman ishga tushmaydi (WCAG 2.2.2).
   useEffect(() => {
-    if (paused) return undefined;
+    if (paused || manualPause) return undefined;
+    if (
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      return undefined;
+    }
     const timer = setInterval(next, SLIDE_INTERVAL);
     return () => clearInterval(timer);
-  }, [paused, next]);
+  }, [paused, manualPause, next]);
 
   // Klaviatura o'qlari — faqat karuselning o'zi fokusda bo'lganda.
   // Ilgari listener `window` da turardi va formada matn tahrirlayotgan yoki
@@ -114,6 +124,8 @@ export default function SchoolHero({ onOpenLeadModal }: SchoolHeroProps) {
       aria-roledescription="karusel"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
+      onFocus={() => setPaused(true)}
+      onBlur={() => setPaused(false)}
       onTouchStart={(e) => {
         touchX.current = e.touches[0].clientX;
       }}
@@ -143,9 +155,14 @@ export default function SchoolHero({ onOpenLeadModal }: SchoolHeroProps) {
               aria-hidden={!isCurrent}
             >
               {/* Fotosurat (Yumshoq, uzluksiz kinomatografik zoom) */}
+              {/* Birinchi slayd — sahifaning LCP elementi: darhol va yuqori prioritet bilan.
+                  Qolgan slaydlar lazy — ilgari 4 ta katta JPG bir vaqtda yuklanardi. */}
               <img
                 src={s.image}
                 alt=""
+                loading={idx === 0 ? "eager" : "lazy"}
+                fetchPriority={idx === 0 ? "high" : "low"}
+                decoding={idx === 0 ? "sync" : "async"}
                 className={`h-full w-full object-cover object-[center_30%] sm:object-center transition-transform duration-[7000ms] ease-out will-change-transform ${
                   isCurrent ? "scale-105" : "scale-100"
                 }`}
@@ -221,7 +238,14 @@ export default function SchoolHero({ onOpenLeadModal }: SchoolHeroProps) {
       </div>
 
       {/* 3. O'ng-pastki burchakdagi zamonaviy nozik indikatorlar */}
-      <div className="absolute bottom-4 right-4 sm:bottom-6 sm:right-8 lg:bottom-10 lg:right-12 z-30 flex items-center gap-1.5">
+      <div className="absolute bottom-4 right-4 sm:bottom-6 sm:right-8 lg:bottom-10 lg:right-12 z-30 flex items-center gap-2">
+        <button
+          onClick={() => setManualPause((v) => !v)}
+          aria-label={manualPause ? "Slaydlarni davom ettirish" : "Slaydlarni to'xtatish"}
+          className="mr-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/35 text-white/80 backdrop-blur-sm transition hover:bg-black/60 hover:text-white"
+        >
+          {manualPause ? <Play className="h-3 w-3 fill-current" /> : <Pause className="h-3 w-3 fill-current" />}
+        </button>
         {slides.map((_, idx) => (
           <button
             key={idx}
