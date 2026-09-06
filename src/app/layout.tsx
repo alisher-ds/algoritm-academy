@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "@fontsource-variable/inter/wght.css";
 import "@fontsource-variable/manrope/wght.css";
 import "./globals.css";
+import { ECOSYSTEM_DATA } from "@/data/ecosystemData";
 
 // Production'da aniq domen o'rnating: .env.local -> NEXT_PUBLIC_SITE_URL=https://...
 const siteUrl =
@@ -10,6 +11,7 @@ const siteUrl =
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
+  alternates: { canonical: "/" },
   title: {
     default: "Algoritm Academy — Xususiy Maktab va Akademik Tayyorlov Ekotizimi",
     template: "%s · Algoritm Academy",
@@ -59,22 +61,77 @@ export const metadata: Metadata = {
   },
 };
 
-const organizationJsonLd = {
-  "@context": "https://schema.org",
-  "@type": "EducationalOrganization",
-  name: "Algoritm Academy",
-  alternateName: "Algoritm School",
-  url: siteUrl,
-  telephone: "+998991410505",
+/**
+ * Schema.org ma'lumotlari ECOSYSTEM_DATA dan hosil qilinadi — ilgari telefon va
+ * manzil qo'lda takrorlangan edi va kontent yangilanganda schema eskirib qolardi.
+ */
+const { school, academy, contact } = ECOSYSTEM_DATA;
+
+const campusSchema = (
+  id: string,
+  name: string,
+  campus: { address: string; coordinates: { lat: number; lng: number }; phone: string; workingHours: string }
+) => ({
+  "@type": "Place",
+  "@id": `${siteUrl}#${id}`,
+  name,
   address: {
     "@type": "PostalAddress",
+    streetAddress: campus.address,
     addressLocality: "Qarshi",
     addressRegion: "Qashqadaryo",
     addressCountry: "UZ",
-    streetAddress: "Mustaqillik shoh ko'chasi (Geolog MFY)",
+  },
+  geo: {
+    "@type": "GeoCoordinates",
+    latitude: campus.coordinates.lat,
+    longitude: campus.coordinates.lng,
+  },
+  telephone: campus.phone.replace(/\D/g, "").replace(/^/, "+"),
+  openingHours: `Mo-Sa ${campus.workingHours.replace(/\s/g, "")}`,
+});
+
+const organizationJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "EducationalOrganization",
+  "@id": `${siteUrl}#organization`,
+  name: ECOSYSTEM_DATA.name,
+  alternateName: school.name,
+  url: siteUrl,
+  logo: `${siteUrl}/icon.png`,
+  image: `${siteUrl}/og-cover.jpg`,
+  email: contact.email,
+  telephone: `+${contact.phoneMain.replace(/\D/g, "")}`,
+  address: {
+    "@type": "PostalAddress",
+    streetAddress: school.address,
+    addressLocality: "Qarshi",
+    addressRegion: "Qashqadaryo",
+    addressCountry: "UZ",
+  },
+  geo: {
+    "@type": "GeoCoordinates",
+    latitude: school.coordinates.lat,
+    longitude: school.coordinates.lng,
   },
   areaServed: "Qarshi",
   knowsLanguage: ["uz", "ru", "en"],
+  sameAs: [contact.telegram, contact.instagram, school.telegram],
+  location: [
+    campusSchema("maktab", school.name, school),
+    campusSchema("markaz", academy.name, academy),
+  ],
+};
+
+/** FAQ javoblari qidiruv natijalarida kengaytirilgan blok sifatida chiqishi uchun. */
+const faqJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: ECOSYSTEM_DATA.faqs.map((f) => ({
+    "@type": "Question",
+    name: f.question,
+    acceptedAnswer: { "@type": "Answer", text: f.answer },
+  })),
 };
 
 export default function RootLayout({
@@ -89,6 +146,10 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
         />
       </head>
       <body className="bg-white text-slate-900 antialiased min-h-screen selection:bg-brand-500/30 selection:text-brand-950 font-sans">

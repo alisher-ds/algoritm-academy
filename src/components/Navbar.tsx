@@ -91,7 +91,7 @@ export default function Navbar({ onOpenLeadModal }: NavbarProps) {
           {/* Brand */}
           <Link href="/" className="group flex items-center gap-2.5" aria-label="Algoritm Academy — bosh sahifa">
             <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-white/10 ring-1 ring-white/15 transition-transform duration-200 group-hover:scale-105">
-              <img src="/logo.png" alt="" className="h-full w-full object-contain" />
+              <img loading="lazy" decoding="async" src="/logo.png" alt="" className="h-full w-full object-contain" />
             </span>
             <span className="flex flex-col leading-none">
               <span className="font-display text-sm font-extrabold tracking-tight text-white">

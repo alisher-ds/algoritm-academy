@@ -21,15 +21,20 @@ export default function VideoModal({
   instagramUrl = "",
 }: VideoModalProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [isPlaying, setIsPlaying] = useState(true);
-  const [isMuted, setIsMuted] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  // Brauzerlar ovozli avtoijroni bloklaydi — shuning uchun ovozsiz boshlaymiz.
+  // Ilgari `autoPlay` bor edi-yu video muted emasdi, ya'ni avtoijro hech qachon ishlamasdi.
+  const [isMuted, setIsMuted] = useState(true);
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    if (isOpen && videoRef.current) {
-      videoRef.current.currentTime = 0;
-      videoRef.current.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
-    }
+    if (!isOpen || !videoRef.current) return;
+    const el = videoRef.current;
+    el.currentTime = 0;
+    setProgress(0);
+    el.muted = true;
+    setIsMuted(true);
+    el.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
   }, [isOpen, videoUrl]);
 
   // Escape bilan yopish + orqa fonda scroll bloklash
@@ -50,22 +55,24 @@ export default function VideoModal({
   if (!isOpen) return null;
 
   const togglePlay = () => {
-    if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause();
-        setIsPlaying(false);
-      } else {
-        videoRef.current.play();
-        setIsPlaying(true);
-      }
+    const el = videoRef.current;
+    if (!el) return;
+    if (isPlaying) {
+      el.pause();
+      setIsPlaying(false);
+    } else {
+      el.play()
+        .then(() => setIsPlaying(true))
+        .catch(() => setIsPlaying(false));
     }
   };
 
   const toggleMute = () => {
-    if (videoRef.current) {
-      videoRef.current.muted = !isMuted;
-      setIsMuted(!isMuted);
-    }
+    const el = videoRef.current;
+    if (!el) return;
+    const next = !isMuted;
+    el.muted = next;
+    setIsMuted(next);
   };
 
   const handleTimeUpdate = () => {
@@ -77,26 +84,43 @@ export default function VideoModal({
   };
 
   const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (videoRef.current) {
-      const rect = e.currentTarget.getBoundingClientRect();
-      const pos = (e.clientX - rect.left) / rect.width;
-      videoRef.current.currentTime = pos * videoRef.current.duration;
-    }
+    const el = videoRef.current;
+    // Metadata hali yuklanmagan bo'lsa `duration` NaN bo'ladi va `currentTime = NaN`
+    // istisno tashlaydi — progress bar ustiga darhol bosilsa shu sodir bo'lardi.
+    if (!el || !Number.isFinite(el.duration) || el.duration <= 0) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const pos = Math.min(Math.max((e.clientX - rect.left) / rect.width, 0), 1);
+    el.currentTime = pos * el.duration;
   };
 
   const toggleFullscreen = () => {
-    if (videoRef.current) {
-      if (document.fullscreenElement) {
-        document.exitFullscreen();
-      } else {
-        videoRef.current.requestFullscreen();
-      }
+    const el = videoRef.current;
+    if (!el) return;
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => undefined);
+      return;
     }
+    if (typeof el.requestFullscreen === "function") {
+      el.requestFullscreen().catch(() => undefined);
+      return;
+    }
+    // iOS Safari standart Fullscreen API'ni video uchun qo'llab-quvvatlamaydi.
+    const ios = el as HTMLVideoElement & { webkitEnterFullscreen?: () => void };
+    ios.webkitEnterFullscreen?.();
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in">
-      <div className="relative w-full max-w-3xl bg-night border border-white/20 rounded-3xl overflow-hidden shadow-2xl flex flex-col">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in"
+      onClick={onClose}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="video-modal-title"
+        className="relative w-full max-w-3xl bg-night border border-white/20 rounded-3xl overflow-hidden shadow-2xl flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header Bar */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-slate-950/90 z-20">
           <div className="flex items-center gap-3">
@@ -107,7 +131,7 @@ export default function VideoModal({
               <span className="text-[10px] font-bold uppercase tracking-wider text-brand-500 block">
                 Algoritm Video Vitrinasi
               </span>
-              <h3 className="text-sm sm:text-base font-bold text-white truncate max-w-sm sm:max-w-md">
+              <h3 id="video-modal-title" className="text-sm sm:text-base font-bold text-white truncate max-w-sm sm:max-w-md">
                 {videoTitle}
               </h3>
             </div>
@@ -132,7 +156,7 @@ export default function VideoModal({
             poster={poster}
             preload="metadata"
             playsInline
-            autoPlay
+            muted={isMuted}
             onTimeUpdate={handleTimeUpdate}
             onEnded={() => setIsPlaying(false)}
             onClick={togglePlay}

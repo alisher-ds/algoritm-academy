@@ -1,5 +1,9 @@
 # ALGORITM ACADEMY — Loyiha Tahlili va Tuzatishlar Jurnali
 
+> ⚠️ **Bu tarixiy jurnal, joriy holat emas.** Quyidagi raqamlar (`public/` hajmi,
+> komponentlar soni, sahifalar ro'yxati) yozilgan sanadagi holatni aks ettiradi va
+> keyin o'zgargan. Joriy holat uchun [`README.md`](README.md) ga qarang.
+
 > **Boshlang'ich commit:** `df6f03e` · **Sana:** 2026-09-04 · **Tarmoq:** `arena/01a06d8f-algoritm-academy`
 > **Yakuniy holat:** `npm run lint` → 0/0 · `tsc` → toza · `npm run build` → ✅ · Lead API e2e → ✅
 
