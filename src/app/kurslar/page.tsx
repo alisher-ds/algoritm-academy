@@ -14,7 +14,6 @@ import {
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CourseCatalog from "@/components/CourseCatalog";
-import FAQAccordion from "@/components/FAQAccordion";
 import LeadBannerSection from "@/components/LeadBannerSection";
 import LeadModal from "@/components/LeadModal";
 import DiagnosticQuizModal from "@/components/DiagnosticQuizModal";
@@ -120,7 +119,7 @@ export default function KurslarPage() {
                   <ShieldCheck className="w-5 h-5 text-brand-400" />
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-white">Kafolatlangan Sifat</h4>
+                  <h4 className="text-xs font-bold text-white">Tasdiqlangan Sifat</h4>
                   <p className="text-[11px] text-slate-400">TOP mentorlar nazorati</p>
                 </div>
               </div>
@@ -131,12 +130,7 @@ export default function KurslarPage() {
         {/* 3. Main Course Catalog Component (with search, category filter pills, cards with timetable) */}
         <CourseCatalog onOpenLeadModal={handleOpenLeadModal} compact={false} />
 
-        {/* 4. FAQ Section */}
-        <div className="bg-slate-900 border-t border-white/10">
-          <FAQAccordion categoryFilter="markaz" />
-        </div>
-
-        {/* 5. Lead Banner Section */}
+        {/* 4. Lead Banner Section */}
         <LeadBannerSection />
       </main>
 

@@ -10,7 +10,6 @@ import CourseCatalog from "@/components/CourseCatalog";
 import ReelsShowcase from "@/components/ReelsShowcase";
 import TeacherGrid from "@/components/TeacherGrid";
 import ResultsSection from "@/components/ResultsSection";
-import FAQAccordion from "@/components/FAQAccordion";
 import LeadBannerSection from "@/components/LeadBannerSection";
 import LeadModal from "@/components/LeadModal";
 import VideoModal from "@/components/VideoModal";
@@ -62,10 +61,7 @@ export default function MarkazPage() {
         {/* 8. Results & Certificates Wall */}
         <ResultsSection />
 
-        {/* 9. FAQ Accordion */}
-        <FAQAccordion categoryFilter="markaz" />
-
-        {/* 10. Lead Capture Banner */}
+        {/* 9. Lead Capture Banner */}
         <LeadBannerSection />
       </main>
 
