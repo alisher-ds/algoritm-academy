@@ -30,7 +30,7 @@ export default function AnimatedCounter({
   prefix = "",
   suffix = "",
   className = "",
-  once = true,
+  once = false,
 }: AnimatedCounterProps) {
   const reducedMotion = useReducedMotion();
   // Boshlang'ich qiymat serverda va klientda bir xil.
