@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { addToOutbox, flushOutbox, getOutbox, removeFromOutbox, submitLead } from '../src/lib/leads';
+import { addToOutbox, flushOutbox, getOutbox, OUTBOX_KEY, removeFromOutbox, submitLead } from '../src/lib/leads';
 
 const storage = new Map<string, string>();
 const localStorageMock = {
@@ -72,5 +72,47 @@ describe('leads outbox & submitLead', () => {
     const result = await flushOutbox();
     expect(result.sent).toBe(1);
     expect(getOutbox()).toHaveLength(0);
+  });
+});
+
+describe("flushOutbox — eskirgan yozuvlarni tozalash", () => {
+  beforeEach(() => {
+    storage.clear();
+    vi.restoreAllMocks();
+  });
+
+  it("10 urinishdan oshgan va 7 kundan eski yozuvlar tashlab yuboriladi", async () => {
+    // Server 500 qaytaradi — ya'ni hech biri muvaffaqiyatli yuborilmaydi.
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("{}", { status: 500 })));
+
+    const eightDaysAgo = new Date(Date.now() - 8 * 24 * 3600_000).toISOString();
+    storage.set(
+      OUTBOX_KEY,
+      JSON.stringify([
+        // 7 kundan eski
+        { id: "eski", payload: {}, createdAt: eightDaysAgo, attempts: 1, nextAttemptAt: 0, state: "pending" },
+        // urinishlari tugagan
+        { id: "charchagan", payload: {}, createdAt: new Date().toISOString(), attempts: 12, nextAttemptAt: 0, state: "pending" },
+      ])
+    );
+
+    await flushOutbox();
+    expect(getOutbox()).toHaveLength(0);
+  });
+
+  it("yangi va urinishlari kam yozuv navbatda qoladi", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("{}", { status: 500 })));
+
+    storage.set(
+      OUTBOX_KEY,
+      JSON.stringify([
+        { id: "yangi", payload: {}, createdAt: new Date().toISOString(), attempts: 1, nextAttemptAt: 0, state: "pending" },
+      ])
+    );
+
+    await flushOutbox();
+    const left = getOutbox();
+    expect(left).toHaveLength(1);
+    expect(left[0].attempts).toBe(2); // urinish soni oshdi, lekin tashlanmadi
   });
 });
