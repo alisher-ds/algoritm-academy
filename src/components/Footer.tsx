@@ -15,8 +15,8 @@ export default function Footer() {
           <div className="grid grid-cols-1 gap-5 md:grid-cols-3 lg:grid-cols-12 items-center">
             {/* 1. Brand & Tarmoqlar */}
             <div className="lg:col-span-4 space-y-1.5">
-              <div className="flex items-center gap-3">
-                <Link href="/" className="group flex items-center gap-2" aria-label="Algoritm Academy">
+              <div>
+                <Link href="/" className="group inline-flex items-center gap-2" aria-label="Algoritm Academy">
                   <span className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-lg bg-white/10 ring-1 ring-white/15 transition-transform group-hover:scale-105">
                     <img src="/logo.png" alt="" loading="lazy" decoding="async" className="h-full w-full object-contain" />
                   </span>
@@ -25,29 +25,6 @@ export default function Footer() {
                     <span className="text-[8px] font-bold uppercase tracking-[0.25em] text-brand-400">Academy</span>
                   </span>
                 </Link>
-
-                <div className="flex items-center gap-2 ml-1">
-                  <a
-                    href={ECOSYSTEM_DATA.contact.telegram}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/5 ring-1 ring-white/10 hover:ring-[#229ED9]/50 hover:scale-110 transition-all duration-200"
-                    aria-label="Telegram"
-                    title="Telegram kanalimiz"
-                  >
-                    <TelegramIcon className="h-4.5 w-4.5" />
-                  </a>
-                  <a
-                    href={ECOSYSTEM_DATA.contact.instagram}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/5 ring-1 ring-white/10 hover:ring-[#e1306c]/50 hover:scale-110 transition-all duration-200"
-                    aria-label="Instagram"
-                    title="Instagram sahifamiz"
-                  >
-                    <InstagramIcon className="h-4.5 w-4.5" />
-                  </a>
-                </div>
               </div>
 
               <p className="text-[11px] text-slate-400 leading-snug">
@@ -134,9 +111,35 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Eng pastki qator: Faqat bitta copyright yozuvi */}
-          <div className="mt-3 pt-2.5 border-t border-white/5 text-center text-[11px] text-slate-500">
-            <p>© {new Date().getFullYear()} Algoritm Academy. Barcha huquqlar himoyalangan.</p>
+          {/* Eng pastki qator: Copyright va Ijtimoiy tarmoqlar */}
+          <div className="mt-4 pt-3 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-slate-400">
+            <p className="text-slate-500">
+              © {new Date().getFullYear()} Algoritm Academy. Barcha huquqlar himoyalangan.
+            </p>
+
+            <div className="flex items-center gap-2.5">
+              <span className="text-slate-500 text-[11px] font-medium">Ijtimoiy tarmoqlar:</span>
+              <a
+                href={ECOSYSTEM_DATA.contact.telegram}
+                target="_blank"
+                rel="noreferrer"
+                className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 ring-1 ring-white/10 hover:ring-white/20 transition-all duration-200"
+                aria-label="Telegram"
+                title="Telegram kanalimiz"
+              >
+                <TelegramIcon variant="monochrome" className="h-3.5 w-3.5" />
+              </a>
+              <a
+                href={ECOSYSTEM_DATA.contact.instagram}
+                target="_blank"
+                rel="noreferrer"
+                className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 ring-1 ring-white/10 hover:ring-white/20 transition-all duration-200"
+                aria-label="Instagram"
+                title="Instagram sahifamiz"
+              >
+                <InstagramIcon variant="monochrome" className="h-3.5 w-3.5" />
+              </a>
+            </div>
           </div>
         </ScrollReveal>
       </div>
