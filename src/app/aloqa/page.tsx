@@ -19,10 +19,16 @@ import InteractiveMapSection from "@/components/InteractiveMapSection";
 
 export default function AloqaPage() {
   const [leadModalOpen, setLeadModalOpen] = useState(false);
+  const [leadTarget, setLeadTarget] = useState("0–11 Sinf Xususiy Maktabi");
+
+  const handleOpenLeadModal = (target: string = "Boshqa yo'nalish / Maslahat olish") => {
+    setLeadTarget(target);
+    setLeadModalOpen(true);
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-slate-950 text-white">
-      <Navbar onOpenLeadModal={() => setLeadModalOpen(true)} />
+      <Navbar onOpenLeadModal={() => handleOpenLeadModal("Boshqa yo'nalish / Maslahat olish")} />
 
       <main className="flex-1">
         {/* Header */}
@@ -133,7 +139,7 @@ export default function AloqaPage() {
                     <span>Google Maps</span>
                   </a>
                   <button
-                    onClick={() => setLeadModalOpen(true)}
+                    onClick={() => handleOpenLeadModal("0–11 Sinf Xususiy Maktabi")}
                     className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider transition"
                   >
                     Qabulga Yozilish
@@ -220,7 +226,7 @@ export default function AloqaPage() {
                     <span>Google Maps</span>
                   </a>
                   <button
-                    onClick={() => setLeadModalOpen(true)}
+                    onClick={() => handleOpenLeadModal("Prezident Maktabiga Tayyorlov (PMT)")}
                     className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider transition"
                   >
                     1-Dars Bepul
@@ -273,7 +279,7 @@ export default function AloqaPage() {
       <LeadModal
         isOpen={leadModalOpen}
         onClose={() => setLeadModalOpen(false)}
-        initialCourse="Aloqa sahifasi arizasi"
+        initialCourse={leadTarget}
       />
     </div>
   );

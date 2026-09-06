@@ -259,4 +259,56 @@ describe("/api/leads — kirish validatsiyasi", () => {
     }
     expect(blocked).toBe(true);
   });
+
+  it("ustoz konsultatsiyasi va izohni (notes) to'g'ri saqlaydi", async () => {
+    const { POST } = await api();
+    const res = await POST(
+      post({
+        name: "Sardor Aliyev",
+        phone: "901234567",
+        type: "kurs",
+        targetInterest: "Digital SAT",
+        notes: "Bobur Xaydarov bilan suhbat",
+      })
+    );
+    expect(res.status).toBe(201);
+    const data = await res.json();
+    expect(data.lead.notes).toBe("Bobur Xaydarov bilan suhbat");
+  });
+
+  it("GET /api/leads qidiruv va filtr parametrlari bilan to'g'ri ishlaydi", async () => {
+    const { POST, GET } = await api();
+    const auth = await import("../src/lib/adminAuth");
+    const token = auth.createSessionToken()!;
+
+    await POST(
+      post({ name: "Farrux Zokirov", phone: "901112233", type: "maktab", targetInterest: "0–11 Sinf Xususiy Maktabi" })
+    );
+    await POST(
+      post({ name: "Jasur Qodirov", phone: "909998877", type: "kurs", targetInterest: "Digital SAT" })
+    );
+
+    const getReq = (query: string) =>
+      new Request(`http://site.uz/api/leads?${query}`, {
+        method: "GET",
+        headers: {
+          host: "site.uz",
+          cookie: `${auth.AUTH_COOKIE}=${token}`,
+        },
+      });
+
+    // Search query
+    const resSearch = await GET(getReq("search=Farrux"));
+    expect(resSearch.status).toBe(200);
+    const dataSearch = await resSearch.json();
+    expect(dataSearch.leads).toHaveLength(1);
+    expect(dataSearch.leads[0].name).toBe("Farrux Zokirov");
+
+    // Type query
+    const resType = await GET(getReq("type=kurs"));
+    expect(resType.status).toBe(200);
+    const dataType = await resType.json();
+    expect(dataType.leads).toHaveLength(1);
+    expect(dataType.leads[0].name).toBe("Jasur Qodirov");
+  });
 });

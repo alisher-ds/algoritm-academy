@@ -22,7 +22,12 @@ function matchInitialCourse(initial?: string): string {
   const direct = LEAD_OPTIONS.find((o) => o.value.toLowerCase() === s);
   if (direct) return direct.value;
 
-  // 2. Maktab
+  // 2. Prezident maktabi (umumiy "maktab" dan oldin tekshirilishi shart, chunki nomi maktab so'zini o'z ichiga oladi)
+  if (s.includes("pmt") || s.includes("prezident")) {
+    return "Prezident maktabiga tayyorlov";
+  }
+
+  // 3. Maktab va maktabgacha
   if (s.includes("maktabgacha") || s.includes("0-sinf")) {
     return "Maktabgacha tayyorlov";
   }
@@ -30,7 +35,7 @@ function matchInitialCourse(initial?: string): string {
     return "0–11 Sinf Xususiy Maktabi";
   }
 
-  // 3. Akademik kurslar & fanlar
+  // 4. Akademik kurslar & fanlar
   if (s.includes("bio")) return "Biologiya";
   if (s.includes("kimyo")) return "Kimyo";
   if (s.includes("fizik")) return "Fizika";
@@ -38,7 +43,6 @@ function matchInitialCourse(initial?: string): string {
   if (s.includes("tarix")) return "Tarix";
   if (s.includes("ona tili") || s.includes("adabiyot")) return "Ona tili";
   if (s.includes("sat")) return "Digital SAT";
-  if (s.includes("pmt") || s.includes("prezident")) return "Prezident maktabiga tayyorlov";
   if (s.includes("ielts")) return "IELTS 7+";
   if (s.includes("ingliz") && (s.includes("0") || s.includes("beginner") || s.includes("noldan"))) {
     return "Ingliz tili 0 dan";
@@ -127,12 +131,18 @@ export default function LeadModal({
       label: courseValue,
     };
 
+    const customNote =
+      initialCourse && initialCourse.trim() !== chosen.value
+        ? initialCourse.trim()
+        : undefined;
+
     const payload = {
       name: name.trim(),
       phone: phone.trim(),
       type: chosen.type,
       targetInterest: chosen.value,
       source: "Sayt — ro'yxatdan o'tish oynasi",
+      notes: customNote,
       website: honeypot,
     };
 
@@ -206,6 +216,12 @@ export default function LeadModal({
               <p className="text-xs text-slate-400 mt-1">
                 Ismingiz, telefon raqamingiz va yo'nalishni tanlang.
               </p>
+              {initialCourse && (
+                <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-500/15 border border-brand-500/30 text-brand-400 text-xs font-semibold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-brand-400 animate-pulse" />
+                  <span>Tanlangan so'rov: <strong className="text-white">{initialCourse}</strong></span>
+                </div>
+              )}
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4 text-left">

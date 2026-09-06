@@ -10,7 +10,7 @@
 import { createHash } from "crypto";
 import { promises as fs } from "fs";
 import path from "path";
-import type { Lead, LeadPayload, LeadStatus } from "./leads";
+import type { Lead, LeadPayload, LeadStatus, LeadType } from "./leads";
 
 const REDIS_KEY = process.env.LEADS_REDIS_KEY || "algoritm:leads";
 
@@ -195,6 +195,12 @@ export async function listLeads(): Promise<Lead[]> {
   );
 }
 
+export interface LeadQueryFilter {
+  search?: string;
+  status?: LeadStatus | "hammasi";
+  type?: LeadType | "hammasi";
+}
+
 export interface LeadPage {
   leads: Lead[];
   total: number;
@@ -204,14 +210,37 @@ export interface LeadPage {
 }
 
 /**
- * Arizalarni sahifa bo'yicha qaytaradi.
- *
- * Ilgari `GET /api/leads` butun ro'yxatni bir yo'la yuborardi — bir necha ming
- * ariza to'planganda bu har so'rovda megabaytlab javob va admin sahifasida
- * o'sha qadar DOM tugunini anglatardi.
+ * Arizalarni sahifa bo'yicha qaytaradi (ixtiyoriy qidiruv va status/tur filtri bilan).
  */
-export async function listLeadsPage(offset = 0, limit = 100): Promise<LeadPage> {
-  const all = await listLeads();
+export async function listLeadsPage(
+  offset = 0,
+  limit = 100,
+  filters?: LeadQueryFilter
+): Promise<LeadPage> {
+  let all = await listLeads();
+
+  if (filters) {
+    if (filters.status && filters.status !== "hammasi") {
+      all = all.filter((l) => l.status === filters.status);
+    }
+    if (filters.type && filters.type !== "hammasi") {
+      all = all.filter((l) => l.type === filters.type);
+    }
+    if (filters.search && filters.search.trim()) {
+      const q = filters.search.trim().toLowerCase();
+      const digits = filters.search.replace(/\D/g, "");
+      all = all.filter((l) => {
+        const matchPhone = digits.length > 0 && l.phone.replace(/\D/g, "").includes(digits);
+        return (
+          l.name.toLowerCase().includes(q) ||
+          matchPhone ||
+          l.targetInterest.toLowerCase().includes(q) ||
+          (l.notes ? l.notes.toLowerCase().includes(q) : false)
+        );
+      });
+    }
+  }
+
   const safeOffset = Math.max(0, Math.floor(offset));
   const safeLimit = Math.min(Math.max(1, Math.floor(limit)), 500);
   const slice = all.slice(safeOffset, safeOffset + safeLimit);

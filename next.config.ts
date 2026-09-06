@@ -64,11 +64,6 @@ const nextConfig: NextConfig = {
           { key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=604800" },
         ],
       },
-      // Next'ning o'z build chiqishi hash'langan — bu yerda `immutable` to'g'ri.
-      {
-        source: "/_next/static/:path*",
-        headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
-      },
     ];
   },
 };
