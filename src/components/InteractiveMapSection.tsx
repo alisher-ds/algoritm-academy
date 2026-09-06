@@ -38,7 +38,8 @@ export default function InteractiveMapSection({
       googleMapsUrl: "https://maps.app.goo.gl/Rkv1RmfmowBawY5x5",
       yandexMapsUrl: "https://yandex.uz/maps/?pt=65.784375,38.841000&z=17&l=map",
       yandexRouteUrl: "https://yandex.uz/maps/?rtext=~38.841000,65.784375&rtt=auto",
-      embedUrl: "https://yandex.uz/map-widget/v1/?ll=65.784375%2C38.841000&z=17",
+      embedUrl:
+        "https://yandex.uz/map-widget/v1/?ll=65.784375%2C38.841000&z=17&pt=65.784375,38.841000,pm2rdm",
       icon: School,
     },
     academy: {
@@ -54,7 +55,8 @@ export default function InteractiveMapSection({
       googleMapsUrl: "https://maps.app.goo.gl/2Grpzgi6X6SeiruA6",
       yandexMapsUrl: "https://yandex.uz/maps/?pt=65.79575,38.84325&z=17&l=map",
       yandexRouteUrl: "https://yandex.uz/maps/?rtext=~38.84325,65.79575&rtt=auto",
-      embedUrl: "https://yandex.uz/map-widget/v1/?ll=65.79575%2C38.84325&z=17",
+      embedUrl:
+        "https://yandex.uz/map-widget/v1/?ll=65.79575%2C38.84325&z=17&pt=65.79575,38.84325,pm2rdm",
       icon: GraduationCap,
     },
   };
@@ -199,32 +201,14 @@ export default function InteractiveMapSection({
                 title={`${current.title} xaritasi`}
                 className="w-full h-full border-0"
                 loading="lazy"
-                allowFullScreen
+                allow="fullscreen"
+                referrerPolicy="no-referrer-when-downgrade"
               />
 
-            {/* Taniqli oddiy qizil metka va "Algoritm" yorlig'i markazda */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-full pointer-events-none z-20 flex flex-col items-center select-none pb-0.5">
-              {/* Algoritm yorlig'i */}
-              <div className="px-3 py-1 rounded-full bg-slate-950/95 border border-brand-400 text-white font-extrabold text-xs shadow-2xl flex items-center gap-1.5 whitespace-nowrap mb-1">
-                <span className="w-2 h-2 rounded-full bg-brand-400 animate-ping" />
-                <span>Algoritm {activeCampus === "school" ? "School" : "Academy"}</span>
-              </div>
-
-              {/* Hamma biladigan oddiy klassik qizil metka */}
-              <div className="relative flex items-center justify-center filter drop-shadow-[0_5px_8px_rgba(0,0,0,0.6)]">
-                <svg className="w-9 h-9" viewBox="0 0 24 24" fill="none">
-                  <path
-                    d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"
-                    fill="#EF4444"
-                    stroke="#FFFFFF"
-                    strokeWidth="1.5"
-                  />
-                  <circle cx="12" cy="9" r="3" fill="#FFFFFF" />
-                </svg>
-                {/* Metka ostidagi soya */}
-                <div className="absolute -bottom-1 w-3 h-1 bg-black/60 rounded-full blur-[1px]" />
-              </div>
-            </div>
+            {/* Metka endi Yandex widget'ining o'zida chiziladi (`&pt=` parametri).
+                Ilgari u iframe markaziga CSS bilan qotirilgan edi — foydalanuvchi
+                xaritani surganda metka joyida qolib, BOSHQA manzilni "Algoritm"
+                deb ko'rsatardi. */}
 
             {/* Map overlay indicator */}
             <div className="absolute bottom-3 right-3 z-10 pointer-events-none">

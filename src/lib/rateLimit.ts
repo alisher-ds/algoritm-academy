@@ -58,13 +58,30 @@ export async function rateLimit(
 ): Promise<Result> {
   if (!upstash()) return memoryLimit(key, limit, windowSeconds * 1000);
   try {
-    const redisKey = `rl:${key}`;
+    // Kalit oynaga bog'langan: `rl:<key>:<oyna raqami>`.
+    //
+    // Ilgari kalit doimiy edi va muddat alohida `EXPIRE ... NX` bilan
+    // qo'yilardi — uning natijasi tekshirilmasdi. Agar u bajarilmasa (tarmoq
+    // uzilishi, Redis < 7.0 da `NX` yo'qligi), kalit TTL siz qolib, hisoblagich
+    // hech qachon tiklanmasdi va foydalanuvchi ABADIY bloklanardi.
+    //
+    // Oyna raqami vaqt bilan o'zi o'zgargani uchun endi hisoblagich EXPIRE
+    // muvaffaqiyatsiz bo'lsa ham avtomatik tiklanadi.
+    const window = Math.floor(Date.now() / 1000 / windowSeconds);
+    const redisKey = `rl:${key}:${window}`;
     const [incr] = await redisPipeline([
       ["INCR", redisKey],
-      ["EXPIRE", redisKey, windowSeconds, "NX"],
+      // Eski kalitlar Redis xotirasida qolib ketmasligi uchun (2 oyna yetarli).
+      ["EXPIRE", redisKey, windowSeconds * 2],
     ]);
     const count = Number(incr.result ?? 0);
-    if (count > limit) return { allowed: false, remaining: 0, retryAfter: windowSeconds };
+    // Oyna tugashiga qancha qolganini aniq hisoblaymiz — foydalanuvchiga
+    // to'g'ri `Retry-After` beriladi.
+    const retryAfter = Math.max(
+      1,
+      (window + 1) * windowSeconds - Math.floor(Date.now() / 1000)
+    );
+    if (count > limit) return { allowed: false, remaining: 0, retryAfter };
     return { allowed: true, remaining: limit - count, retryAfter: 0 };
   } catch (err) {
     console.error("[rateLimit] Redis xatosi, in-memory rejimga o'tildi:", err);

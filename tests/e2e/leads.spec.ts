@@ -46,3 +46,28 @@ test.describe("Admin Panel", () => {
     await expect(page.getByText(/Parol noto'g'ri/i)).toBeVisible();
   });
 });
+
+test.describe("Harakatni kamaytirish rejimi", () => {
+  test.use({ reducedMotion: "reduce" });
+
+  // Eslatma: hydration nomuvofiqligining O'ZI production build'da konsolga
+  // yozilmaydi (React jimgina qayta render qiladi), shuning uchun uni e2e bilan
+  // ushlab bo'lmaydi. Bu yerda tekshiriladigan narsa — kuzatiladigan xatti-harakat:
+  // harakat kamaytirilgan bo'lsa kontent darhol ko'rinishi va sanoq yakuniy
+  // qiymatda turishi kerak (`opacity: 0` da qotib qolmasin).
+  test("kontent darhol ko'rinadi va sanoq yakuniy qiymatda turadi", async ({ page }) => {
+    await page.goto("/");
+
+    const heading = page.getByRole("heading", { level: 1 });
+    await expect(heading).toBeVisible();
+
+    // ScrollReveal bilan o'ralgan bo'lim animatsiya kutmasdan ko'rinadi.
+    const results = page.locator("#natijalar");
+    await expect(results).toBeVisible();
+    await expect(results.getByText("OTM Talabalari").first()).toBeVisible();
+
+    // AnimatedCounter reduced-motion'da 0 da qolmasligi kerak.
+    const counter = results.locator("span", { hasText: /^\d[\d\u00a0]*\+$/ }).first();
+    await expect(counter).not.toHaveText("0+");
+  });
+});

@@ -131,9 +131,13 @@ function TeacherAvatar({
   );
 }
 
-export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherGridProps) {
-  // Rasmiy va haqiqiy Algoritm pedagogik jamoasi
-  const teamMembers = [
+/**
+ * Rasmiy va haqiqiy Algoritm pedagogik jamoasi.
+ *
+ * Modul darajasida: ilgari komponent tanasida edi va har render'da (karusel
+ * pauzasi, modal ochilishi) 8 ta obyekt qaytadan yaratilardi.
+ */
+const TEAM_MEMBERS = [
     {
       id: "tm-bobur",
       name: "Bobur Xaydarov",
@@ -310,10 +314,14 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
       ],
       isRealVideo: true
     }
-  ];
+] as const;
+
+type TeamMember = (typeof TEAM_MEMBERS)[number];
+
+export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherGridProps) {
 
 
-  const [selectedMember, setSelectedMember] = useState<typeof teamMembers[0] | null>(null);
+  const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
 
   // Auto-scroll va drag boshqaruvi
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -504,7 +512,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
     scheduleResume(3000);
   };
 
-  const handleOpenModal = (member: typeof teamMembers[0]) => {
+  const handleOpenModal = (member: TeamMember) => {
     if (hasDraggedRef.current) return;
     setSelectedMember(member);
   };
@@ -528,7 +536,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
     };
   }, [selectedMember, handleCloseModal]);
 
-  const renderCard = (member: (typeof teamMembers)[0], keySuffix: string = "") => (
+  const renderCard = (member: TeamMember, keySuffix: string = "") => (
     // Ilgari bu oddiy `<div onClick>` edi — Tab bilan yuruvchi va ekran o'qigich
     // foydalanuvchisi ustoz profilini umuman ocha olmasdi.
     <div
@@ -677,7 +685,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
                     `aria-hidden` — aks holda ekran o'qigich 8 ta ustozni 24 marta
                     e'lon qilardi. Faqat o'rtadagi (asosiy) to'plam o'qiladi. */}
                 {[0, 1, 2].map((copy) =>
-                  teamMembers.map((member, idx) => (
+                  TEAM_MEMBERS.map((member, idx) => (
                     <div
                       key={`${member.id}-${copy}-${idx}`}
                       className="shrink-0"

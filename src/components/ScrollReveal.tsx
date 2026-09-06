@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import { useReducedMotion } from "@/lib/useReducedMotion";
 
 export type RevealVariant =
   | "fade-up"
@@ -33,28 +34,16 @@ export default function ScrollReveal({
   style,
   ...rest
 }: ScrollRevealProps) {
-  const [isVisible, setIsVisible] = useState<boolean>(() => {
-    if (
-      typeof window !== "undefined" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    ) {
-      return true;
-    }
-    return false;
-  });
+  const reducedMotion = useReducedMotion();
+  const [isVisible, setIsVisible] = useState(false);
 
   const elementRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const node = elementRef.current;
-    if (!node) return;
-
-    if (
-      typeof window !== "undefined" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    ) {
-      return;
-    }
+    // Harakat kamaytirilgan bo'lsa kuzatuvchi umuman kerak emas —
+    // ko'rinish holati render vaqtida quyida hal qilinadi.
+    if (!node || reducedMotion) return;
 
     if (typeof IntersectionObserver === "undefined") {
       const timer = setTimeout(() => setIsVisible(true), 0);
@@ -84,10 +73,13 @@ export default function ScrollReveal({
     return () => {
       observer.disconnect();
     };
-  }, [threshold, once]);
+  }, [threshold, once, reducedMotion]);
+
+  // Harakat kamaytirilgan bo'lsa kontent har doim ko'rinadi va siljimaydi.
+  const shown = isVisible || reducedMotion;
 
   const getTransform = () => {
-    if (isVisible) return "translate3d(0, 0, 0) scale(1)";
+    if (shown) return "translate3d(0, 0, 0) scale(1)";
 
     switch (variant) {
       case "fade-up":
@@ -107,13 +99,13 @@ export default function ScrollReveal({
   };
 
   const dynamicStyle: React.CSSProperties = {
-    opacity: isVisible ? 1 : 0,
+    opacity: shown ? 1 : 0,
     transform: getTransform(),
     transitionProperty: "opacity, transform",
-    transitionDuration: isVisible ? duration + "ms" : "250ms",
-    transitionDelay: isVisible ? delay + "ms" : "0ms",
+    transitionDuration: reducedMotion ? "0ms" : shown ? duration + "ms" : "250ms",
+    transitionDelay: shown && !reducedMotion ? delay + "ms" : "0ms",
     transitionTimingFunction: "cubic-bezier(0.16, 1, 0.3, 1)",
-    willChange: isVisible ? "auto" : "opacity, transform",
+    willChange: shown ? "auto" : "opacity, transform",
     ...style,
   };
 
