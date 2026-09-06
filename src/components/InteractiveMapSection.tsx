@@ -205,10 +205,29 @@ export default function InteractiveMapSection({
                 referrerPolicy="no-referrer-when-downgrade"
               />
 
-            {/* Metka endi Yandex widget'ining o'zida chiziladi (`&pt=` parametri).
-                Ilgari u iframe markaziga CSS bilan qotirilgan edi — foydalanuvchi
-                xaritani surganda metka joyida qolib, BOSHQA manzilni "Algoritm"
-                deb ko'rsatardi. */}
+            {/* Taniqli oddiy klassik qizil metka va "Algoritm" yorlig'i markazda */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-full pointer-events-none z-20 flex flex-col items-center select-none pb-0.5">
+              {/* Algoritm yorlig'i */}
+              <div className="px-3 py-1 rounded-full bg-slate-950/95 border border-brand-400 text-white font-extrabold text-xs shadow-2xl flex items-center gap-1.5 whitespace-nowrap mb-1">
+                <span className="w-2 h-2 rounded-full bg-brand-400 animate-ping" />
+                <span>Algoritm {activeCampus === "school" ? "School" : "Academy"}</span>
+              </div>
+
+              {/* Hamma biladigan oddiy klassik qizil metka */}
+              <div className="relative flex items-center justify-center filter drop-shadow-[0_5px_8px_rgba(0,0,0,0.6)]">
+                <svg className="w-9 h-9" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"
+                    fill="#EF4444"
+                    stroke="#FFFFFF"
+                    strokeWidth="1.5"
+                  />
+                  <circle cx="12" cy="9" r="3" fill="#FFFFFF" />
+                </svg>
+                {/* Metka ostidagi soya */}
+                <div className="absolute -bottom-1 w-3 h-1 bg-black/60 rounded-full blur-[1px]" />
+              </div>
+            </div>
 
             {/* Map overlay indicator */}
             <div className="absolute bottom-3 right-3 z-10 pointer-events-none">
