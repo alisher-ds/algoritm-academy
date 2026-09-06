@@ -59,7 +59,13 @@ export default function ScrollReveal({
             observer.unobserve(node);
           }
         } else if (!once) {
-          setIsVisible(false);
+          // Faqat element ekranning pastki qismidan chiqib ketgandagina (foydalanuvchi yuqoriga qaytganida)
+          // qayta ochilish uchun holatni nollaymiz.
+          // Agar element ekranning yuqorisidan o'tib ketgan bo'lsa (foydalanuvchi pastga scroll qilganida),
+          // uni ASLO yashirmaymiz va siljitmaymiz! Aks holda tepada cheksiz tebranish (jitter loop) paydo bo'ladi.
+          if (entry.boundingClientRect.top > 0) {
+            setIsVisible(false);
+          }
         }
       },
       {
