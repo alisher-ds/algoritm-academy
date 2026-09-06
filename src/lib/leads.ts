@@ -86,6 +86,27 @@ function generateIdempotencyKey(): string {
   return `req_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 }
 
+/** Navbatdagi ariza shuncha urinishdan keyin tashlab yuboriladi. */
+const OUTBOX_MAX_ATTEMPTS = 10;
+/** Shu muddatdan eski ariza yuborilmaydi — u allaqachon ma'nosiz. */
+const OUTBOX_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+
+/**
+ * Muddati o'tgan yoki urinishlari tugagan yozuvlarni chiqarib tashlaydi.
+ *
+ * Ilgari bunday tozalash umuman yo'q edi: server uzoq ishlamay qolsa yozuvlar
+ * foydalanuvchi brauzerida abadiy qolib, har sahifa ochilishida qayta urinardi.
+ */
+function prune(items: OutboxItem[]): { keep: OutboxItem[]; dropped: number } {
+  const now = Date.now();
+  const keep = items.filter((it) => {
+    if (it.attempts >= OUTBOX_MAX_ATTEMPTS) return false;
+    const age = now - new Date(it.createdAt).getTime();
+    return !(Number.isFinite(age) && age > OUTBOX_MAX_AGE_MS);
+  });
+  return { keep, dropped: items.length - keep.length };
+}
+
 export function getOutbox(): OutboxItem[] {
   if (typeof window === "undefined" || !window.localStorage) return [];
   try {
@@ -198,7 +219,10 @@ export async function flushOutbox(): Promise<{ sent: number; remaining: number }
   let sent = 0;
 
   try {
-    const items = getOutbox();
+    // Avval eskirgan yozuvlarni tashlaymiz.
+    const { keep, dropped } = prune(getOutbox());
+    if (dropped > 0) saveOutbox(keep);
+    const items = keep;
     const now = Date.now();
 
     for (const item of items) {
@@ -223,14 +247,24 @@ export async function flushOutbox(): Promise<{ sent: number; remaining: number }
         } else {
           // 5xx yoki 429: urinishlar sonini oshirib keyinga qoldirish
           item.attempts += 1;
-          item.nextAttemptAt = Date.now() + Math.min(300_000, 10_000 * 2 ** Math.min(item.attempts, 5));
-          saveOutbox(getOutbox().map((x) => (x.id === item.id ? item : x)));
+          if (item.attempts >= OUTBOX_MAX_ATTEMPTS) {
+            item.state = "failed";
+            removeFromOutbox(item.id);
+          } else {
+            item.nextAttemptAt =
+              Date.now() + Math.min(300_000, 10_000 * 2 ** Math.min(item.attempts, 5));
+            saveOutbox(getOutbox().map((x) => (x.id === item.id ? item : x)));
+          }
         }
       } catch {
         // Hali ham offline
         item.attempts += 1;
-        item.nextAttemptAt = Date.now() + 15000;
-        saveOutbox(getOutbox().map((x) => (x.id === item.id ? item : x)));
+        if (item.attempts >= OUTBOX_MAX_ATTEMPTS) {
+          removeFromOutbox(item.id);
+        } else {
+          item.nextAttemptAt = Date.now() + 15000;
+          saveOutbox(getOutbox().map((x) => (x.id === item.id ? item : x)));
+        }
         break; // keyingi so'rovlarni urinmay to'xtatish
       }
     }

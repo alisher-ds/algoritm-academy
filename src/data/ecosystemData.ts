@@ -40,7 +40,9 @@ export interface Course {
 export interface Achievement {
   id: string;
   studentName: string;
-  category: "SAT" | "Prezident Maktabi" | "OTM Granti" | "189 Ball" | "Olimpiada" | "Sertifikat" | "Maktab" | string;
+  // Diqqat: bu yerga `| string` qo'shmang — u union'ni bekor qiladi va
+  // xato yozilgan kategoriya jimgina o'tib ketadi.
+  category: "SAT" | "Prezident Maktabi" | "OTM Granti" | "189 Ball" | "Olimpiada" | "Sertifikat" | "Maktab";
   score: string;
   detail: string;
   year: string;
@@ -53,6 +55,67 @@ export interface FAQ {
   question: string;
   answer: string;
   category: "maktab" | "markaz" | "umumiy";
+}
+
+/**
+ * Sayt kontentining yagona manbasi.
+ *
+ * `satisfies` qo'llanadi (annotatsiya emas): u literal tiplarni saqlab qoladi,
+ * lekin quyidagi interfeyslarga muvofiqlikni majburlaydi. Ilgari interfeyslar
+ * eksport qilingan-u hech qayerda ishlatilmasdi — ya'ni kursga `mentor` qo'shishni
+ * unutsangiz yoki `category` ni xato yozsangiz TypeScript indamasdi.
+ */
+export interface EcosystemContent {
+  name: string;
+  licenseNumber: string;
+  stats: { label: string; value: string; icon: string }[];
+  contact: {
+    phoneMain: string;
+    phoneSecondary: string;
+    telegram: string;
+    instagram: string;
+    address: string;
+    landmark: string;
+    email: string;
+    workingHours: string;
+  };
+  school: {
+    name: string;
+    tagline: string;
+    description: string;
+    address: string;
+    landmark: string;
+    googleMapsUrl: string;
+    yandexMapsUrl: string;
+    yandexRouteUrl: string;
+    coordinates: { lat: number; lng: number };
+    phone: string;
+    telegram: string;
+    workingHours: string;
+    stats: { label: string; value: string; icon: string }[];
+    programs: SchoolProgram[];
+    features: { id: string; title: string; description: string; icon: string; badge: string }[];
+    dailySchedule: { time: string; title: string; icon: string }[];
+    admissionSteps: { step: string; title: string; description: string }[];
+  };
+  academy: {
+    name: string;
+    tagline: string;
+    description: string;
+    address: string;
+    landmark: string;
+    googleMapsUrl: string;
+    yandexMapsUrl: string;
+    yandexRouteUrl: string;
+    coordinates: { lat: number; lng: number };
+    phone: string;
+    phoneSecondary: string;
+    workingHours: string;
+  };
+  courses: Course[];
+  achievements: Achievement[];
+  faqs: FAQ[];
+  gallery: { id: string; title: string; category: string; image: string }[];
 }
 
 export const ECOSYSTEM_DATA = {
@@ -1038,4 +1101,4 @@ export const ECOSYSTEM_DATA = {
       image: "/images/slides/slide_6_campus_hall.jpg",
     },
   ],
-};
+} satisfies EcosystemContent;

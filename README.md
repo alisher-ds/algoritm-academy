@@ -25,6 +25,10 @@ Boshqa skriptlar:
 | `npm run build` | Production build |
 | `npm run start` | Production serverni ishga tushirish |
 | `npm run lint` | ESLint tekshiruvi |
+| `npm run typecheck` | `tsc --noEmit` |
+| `npm test` | Vitest (unit + API route testlari) |
+| `npm run test:watch` | Vitest kuzatuv rejimida |
+| `npm run test:e2e` | Playwright (avval `npm run build` kerak) |
 
 ## Sahifalar
 
@@ -35,7 +39,7 @@ Boshqa skriptlar:
 | `/aloqa` | Manzillar, telefonlar, Telegram |
 | `/galereya` | Foto lavhalar |
 | `/admin` | **CRM** — arizalar boshqaruvi (parol bilan) |
-| `/kurslar` | `/markaz` ga qayta yo'naltiradi |
+| `/kurslar` | Barcha kurslar katalogi va dars jadvallari |
 | `/maktab` | `/` ga qayta yo'naltiradi |
 | `/api/leads` | Arizalar API si (GET/POST/PATCH/DELETE) |
 | `/api/leads/auth`, `/api/leads/logout` | Admin kirish/chiqish |
@@ -58,23 +62,29 @@ Boshqa skriptlar:
 | Cookie | `HttpOnly`, `SameSite=Strict`, production'da `Secure`. |
 | Revoke | `ADMIN_SESSION_SECRET` yoki `ADMIN_PASSWORD` o'zgarsa — barcha sessiyalar bekor bo'ladi. |
 | Parol tekshiruvi | Doimiy vaqtda (timing-safe) solishtiriladi. |
-| Brute-force | `/api/leads/auth` — 15 daqiqada 8 ta urinish (IP bo'yicha). |
+| Brute-force | `/api/leads/auth` — 15 daqiqada 8 ta urinish (IP bo'yicha) + noto'g'ri urinishlar uchun global shift. |
+| IP aniqlash | Proksi sarlavhalariga **faqat** `TRUSTED_IP_HEADER` o'rnatilganda yoki Vercel'da ishoniladi (ular soxtalashtirilishi mumkin). Aks holda qo'shimcha global chegara qo'llanadi — pastdagi eslatmaga qarang. |
 | Spam | `/api/leads` — 1 daqiqada 5 ta, 1 soatda 20 ta + yashirin honeypot maydoni. |
 | CSRF | O'zgartiruvchi so'rovlarda `Origin`/`Referer` same-origin bo'lishi shart. |
-| Kirish validatsiyasi | Body hajmi ≤ 8 KB, nazorat belgilari tozalanadi, telefon/ism qat'iy tekshiriladi. |
+| Kirish validatsiyasi | Body ≤ 8 KB; nazorat va ko'rinmas belgilar tozalanadi; ismda kamida bitta harf; telefon O'zbekiston operator kodi bo'yicha tekshiriladi; `targetInterest` va `source` faqat ruxsat etilgan qiymatlardan. |
 | Sarlavhalar | `nosniff`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, prod'da HSTS; `/admin` va `/api` — `no-store` + `noindex`. |
+
+> **Muhim (proksi orqasida deploy):** nginx yoki Cloudflare ortida ishlatsangiz
+> `TRUSTED_IP_HEADER` ni **albatta** o'rnating (`x-real-ip` / `cf-connecting-ip`).
+> Usiz proksi sarlavhalariga ishonilmaydi va IP bo'yicha cheklov o'rniga umumiy
+> chegara ishlaydi. Vercel'da kerak emas — avtomatik aniqlanadi.
 
 > **Muhim:** production'da `ADMIN_PASSWORD` **majburiy**. O'rnatilmasa `/api/leads/auth` `503` qaytaradi va admin paneliga kirib bo'lmaydi (default parol faqat `NODE_ENV=development` da ishlaydi).
 
 ## Testlar va CI
 
 ```bash
-npm test          # vitest (30 ta test: auth, leadStore, rate-limit, API route'lar)
+npm test          # vitest (auth, leadStore, rate-limit, telefon, API route'lar)
 npm run typecheck # tsc --noEmit
 npm run lint      # eslint
 ```
 
-GitHub Actions (`.github/workflows/ci.yml`) har push/PR da lint → typecheck → test → build ni ishga tushiradi.
+GitHub Actions (`.github/workflows/ci.yml`): lint → typecheck → test → build → e2e.
 
 ## Ma'lumotlar manbasi
 
@@ -88,6 +98,7 @@ TELEGRAM_BOT_TOKEN=...           # @BotFather orqali olinadi
 TELEGRAM_CHAT_ID=...             # xabar boradigan chat/guruh ID si
 ADMIN_PASSWORD=...               # /admin paroli — production'da MAJBURIY
 ADMIN_SESSION_SECRET=...         # sessiya imzosi (openssl rand -hex 32) — tavsiya etiladi
+TRUSTED_IP_HEADER=...            # proksi orqasida: x-real-ip yoki cf-connecting-ip
 NEXT_PUBLIC_SITE_URL=...         # https://sizning-domen.uz (SEO metadataBase uchun)
 
 # Saqlash — variant A (serverless/Vercel uchun tavsiya):
@@ -117,6 +128,7 @@ tests/                   # vitest testlari
 
 ## Eslatmalar
 
-- Rasmlar `public/` da statik. `public/images/media_*.jpg` — kelajakda foydalanish uchun arxiv (saytga hozir ulanmagan).
-- Rasmlar `loading="lazy"` / `decoding="async"` bilan yuklanadi; hero rasmi `fetchPriority="high"`. `/images` va `/videos` uchun 1 yillik immutable kesh sarlavhalari o'rnatilgan.
-- **Yirik videolar** (`public/videos/aziz_teacher_intro.mp4` ≈ 19 MB) hozircha repo ichida. Modal'da `preload="metadata"` + poster ishlatiladi, ya'ni video faqat ochilganda yuklanadi. Media yanada o'ssa — Vercel Blob / S3 / Cloudflare Stream kabi tashqi xotiraga ko'chirish tavsiya etiladi.
+- Rasmlar `public/` da statik. `public/images/media_*.jpg` (30 ta) va `public/images/unis/*.svg` (16 ta) — **hozir hech qayerda ishlatilmaydi** (~1.5 MB). Galereyaga qo'shish yoki o'chirish kerak.
+- Rasmlar `loading="lazy"` / `decoding="async"` bilan yuklanadi; hero'ning birinchi slaydi `loading="eager"` + `fetchPriority="high"`. `/images` va `/videos` uchun `max-age=86400, stale-while-revalidate=604800` (immutable emas — fayl nomlarida hash yo'q). Rasmni almashtirsangiz eng ko'pi bilan bir kunda yangilanadi; darhol kerak bo'lsa fayl nomiga versiya qo'shing (`slide_1.v2.jpg`). Next'ning `/_next/static` chiqishi hash'langan, unga 1 yillik `immutable` qo'llanadi.
+- ⚠️ **Yirik videolar:** `public/videos/` da **131 MB** video bor (eng kattasi 33.5 MB). Har `git clone` shuncha tortadi va mobil foydalanuvchi ustoz videosini ochganda o'nlab MB sarflaydi. Modal'da `preload="metadata"` + poster ishlatiladi (video faqat ochilganda yuklanadi), lekin **eng to'g'ri yechim** — Cloudflare Stream / Mux / Vercel Blob ga ko'chirish yoki `ffmpeg -crf 28 -vf scale=-2:720` bilan qayta kodlash.
+- Hero slayd rasmlari 1024px kenglikda — katta monitorlarda cho'ziladi. 1920px manbalar tavsiya etiladi.

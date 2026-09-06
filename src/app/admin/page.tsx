@@ -37,14 +37,21 @@ export default function AdminPage() {
   const [typeFilter, setTypeFilter] = useState<string>("hammasi");
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [total, setTotal] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  const PAGE_SIZE = 200;
 
   const fetchLeads = useCallback(async (): Promise<Lead[] | null> => {
     try {
-      const res = await fetch("/api/leads", { cache: "no-store" });
+      const res = await fetch(`/api/leads?limit=${PAGE_SIZE}&offset=0`, { cache: "no-store" });
       if (res.status === 401) return null;
       const data = await res.json();
       if (data?.success && Array.isArray(data.leads)) {
         setLeads(data.leads);
+        setTotal(typeof data.total === "number" ? data.total : data.leads.length);
+        setHasMore(Boolean(data.hasMore));
         return data.leads;
       }
       return null;
@@ -52,6 +59,26 @@ export default function AdminPage() {
       return null;
     }
   }, []);
+
+  /** Keyingi sahifani yuklash — butun bazani bir yo'la tortmaslik uchun. */
+  const loadMore = useCallback(async () => {
+    setLoadingMore(true);
+    try {
+      const res = await fetch(`/api/leads?limit=${PAGE_SIZE}&offset=${leads.length}`, {
+        cache: "no-store",
+      });
+      const data = await res.json();
+      if (data?.success && Array.isArray(data.leads)) {
+        setLeads((prev) => [...prev, ...data.leads]);
+        setHasMore(Boolean(data.hasMore));
+        if (typeof data.total === "number") setTotal(data.total);
+      }
+    } catch {
+      setNotice("Keyingi arizalarni yuklab bo'lmadi");
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [leads.length]);
 
   // Local (offline) to'plangan arizalarni serverga ko'chirish
   const migrateLocalLeads = useCallback(async (currentLeads?: Lead[]) => {
@@ -343,7 +370,10 @@ export default function AdminPage() {
               <span className="px-3 py-1 rounded-full bg-brand-500/15 text-brand-500 text-xs font-bold uppercase tracking-wider border border-brand-500/30">
                 CRM Portal
               </span>
-              <span className="text-xs text-slate-400 font-mono">{leads.length} ta jami ariza</span>
+              <span className="text-xs text-slate-400 font-mono">
+                {total} ta jami ariza
+                {leads.length < total ? ` · ${leads.length} tasi yuklangan` : ""}
+              </span>
             </div>
             <h1 className="font-display text-3xl font-extrabold text-white mt-2">
               Arizalar va Qabul Boshqaruvi
@@ -516,6 +546,21 @@ export default function AdminPage() {
               </tbody>
             </table>
           </div>
+
+          {hasMore && (
+            <div className="border-t border-white/10 p-4 text-center">
+              <button
+                onClick={loadMore}
+                disabled={loadingMore}
+                className="rounded-full bg-white/10 px-6 py-2.5 text-xs font-bold text-white transition hover:bg-white/20 disabled:opacity-50"
+              >
+                {loadingMore ? "Yuklanmoqda..." : `Yana ${PAGE_SIZE} ta yuklash`}
+              </button>
+              <p className="mt-2 text-[11px] text-slate-500">
+                CSV eksport faqat yuklangan arizalarni oladi.
+              </p>
+            </div>
+          )}
         </div>
       </main>
 

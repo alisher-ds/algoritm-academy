@@ -27,16 +27,20 @@ export default function AloqaPage() {
       <main className="flex-1">
         {/* Header */}
         <section className="relative pt-20 pb-16 bg-slate-950 border-b border-white/10">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center max-w-3xl">
+          {/* Ilgari bitta className'da `max-w-7xl` va `max-w-3xl` birga yozilgan edi —
+              CSS tartibida 7xl yutib, mo'ljallangan tor ustun ishlamasdi. */}
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="mx-auto max-w-3xl text-center">
             <span className="text-xs font-bold uppercase tracking-wider text-brand-400 block mb-2">
               Markazimiz & Aloqa
             </span>
             <h1 className="font-display text-3xl font-extrabold uppercase tracking-tight text-white sm:text-5xl">
               Biz bilan bog&apos;laning
             </h1>
-            <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
+            <p className="mt-3 text-slate-300 text-sm sm:text-base leading-relaxed">
               Algoritm Academy maktabi yoki o'quv markazimizga tashrif buyuring yoki to'g'ridan-to'g'ri qo'ng'iroq qiling.
             </p>
+            </div>
           </div>
         </section>
 

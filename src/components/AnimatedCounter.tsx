@@ -1,6 +1,17 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import { useReducedMotion } from "@/lib/useReducedMotion";
+
+/**
+ * Minglik ajratgich sifatida probel (o'zbek yozuv qoidasi).
+ *
+ * `toLocaleString()` ishlatilmaydi: u serverda va brauzerda turli natija berib
+ * (`1,000` va `1 000`) hydration nomuvofiqligiga olib kelishi mumkin.
+ */
+export function formatNumber(value: number): string {
+  return String(value).replace(/\B(?=(\d{3})+(?!\d))/g, "\u00a0");
+}
 
 interface AnimatedCounterProps {
   target: number;
@@ -21,30 +32,19 @@ export default function AnimatedCounter({
   className = "",
   once = true,
 }: AnimatedCounterProps) {
-  const [count, setCount] = useState<number>(() => {
-    if (
-      typeof window !== "undefined" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    ) {
-      return target;
-    }
-    return start;
-  });
+  const reducedMotion = useReducedMotion();
+  // Boshlang'ich qiymat serverda va klientda bir xil.
+  const [count, setCount] = useState(start);
 
   const nodeRef = useRef<HTMLSpanElement>(null);
   const rafRef = useRef<number | null>(null);
   const isAnimatingRef = useRef(false);
 
   useEffect(() => {
-    if (
-      typeof window !== "undefined" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    ) {
-      return;
-    }
-
     const node = nodeRef.current;
-    if (!node) return;
+    // Harakat kamaytirilgan bo'lsa sanoq animatsiyasi ishga tushmaydi —
+    // yakuniy qiymat quyida to'g'ridan-to'g'ri ko'rsatiladi.
+    if (!node || reducedMotion) return;
 
     if (typeof IntersectionObserver === "undefined") {
       const timer = setTimeout(() => setCount(target), 0);
@@ -108,12 +108,12 @@ export default function AnimatedCounter({
         cancelAnimationFrame(rafRef.current);
       }
     };
-  }, [target, start, duration, once]);
+  }, [target, start, duration, once, reducedMotion]);
 
   return (
     <span ref={nodeRef} className={className}>
       {prefix}
-      {count.toLocaleString()}
+      {formatNumber(reducedMotion ? target : count)}
       {suffix}
     </span>
   );

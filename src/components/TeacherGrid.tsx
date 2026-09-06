@@ -45,7 +45,7 @@ function TeacherAvatar({
   className?: string;
 }) {
   if (image) {
-    return <img src={image} alt={name} className={className} />;
+    return <img loading="lazy" decoding="async" src={image} alt={name} className={className} />;
   }
 
   // Fan yo'nalishi bo'yicha maxsus zamonaviy rang va grafik mavzu
@@ -131,9 +131,13 @@ function TeacherAvatar({
   );
 }
 
-export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherGridProps) {
-  // Rasmiy va haqiqiy Algoritm pedagogik jamoasi
-  const teamMembers = [
+/**
+ * Rasmiy va haqiqiy Algoritm pedagogik jamoasi.
+ *
+ * Modul darajasida: ilgari komponent tanasida edi va har render'da (karusel
+ * pauzasi, modal ochilishi) 8 ta obyekt qaytadan yaratilardi.
+ */
+const TEAM_MEMBERS = [
     {
       id: "tm-bobur",
       name: "Bobur Xaydarov",
@@ -310,11 +314,14 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
       ],
       isRealVideo: true
     }
-  ];
+] as const;
+
+type TeamMember = (typeof TEAM_MEMBERS)[number];
+
+export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherGridProps) {
 
 
-  const [selectedMember, setSelectedMember] = useState<typeof teamMembers[0] | null>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
 
   // Auto-scroll va drag boshqaruvi
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -505,7 +512,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
     scheduleResume(3000);
   };
 
-  const handleOpenModal = (member: typeof teamMembers[0]) => {
+  const handleOpenModal = (member: TeamMember) => {
     if (hasDraggedRef.current) return;
     setSelectedMember(member);
   };
@@ -529,11 +536,22 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
     };
   }, [selectedMember, handleCloseModal]);
 
-  const renderCard = (member: (typeof teamMembers)[0], keySuffix: string = "") => (
+  const renderCard = (member: TeamMember, keySuffix: string = "") => (
+    // Ilgari bu oddiy `<div onClick>` edi — Tab bilan yuruvchi va ekran o'qigich
+    // foydalanuvchisi ustoz profilini umuman ocha olmasdi.
     <div
       key={`${member.id}${keySuffix}`}
+      role="button"
+      tabIndex={0}
+      aria-label={`${member.name} — batafsil ma'lumot`}
       onClick={() => handleOpenModal(member)}
-      className="group relative select-none rounded-2xl sm:rounded-3xl overflow-hidden bg-white border border-slate-200/90 hover:border-brand-500 cursor-pointer shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between shrink-0 w-[220px] sm:w-[255px]"
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          setSelectedMember(member);
+        }
+      }}
+      className="group relative select-none rounded-2xl sm:rounded-3xl overflow-hidden bg-white border border-slate-200/90 hover:border-brand-500 cursor-pointer shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between shrink-0 w-[220px] sm:w-[255px] focus-visible:outline-2 focus-visible:outline-brand-500 focus-visible:outline-offset-2"
     >
       {/* 1. Toza fotosurat yoki maxsus zamonaviy grafik portret */}
       <div className="relative aspect-[3/3.6] w-full overflow-hidden bg-slate-950">
@@ -663,11 +681,21 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
                 onMouseEnter={handleMouseEnter}
                 className="flex gap-4 sm:gap-5 overflow-x-auto select-none py-2 will-change-scroll cursor-grab active:cursor-grabbing [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
               >
-                {[...teamMembers, ...teamMembers, ...teamMembers].map((member, idx) => (
-                  <div key={`${member.id}-${idx}`} className="shrink-0">
-                    {renderCard(member, `-${idx}`)}
-                  </div>
-                ))}
+                {/* Cheksiz aylanish uchun ro'yxat 3 marta takrorlanadi. Nusxalar
+                    `aria-hidden` — aks holda ekran o'qigich 8 ta ustozni 24 marta
+                    e'lon qilardi. Faqat o'rtadagi (asosiy) to'plam o'qiladi. */}
+                {[0, 1, 2].map((copy) =>
+                  TEAM_MEMBERS.map((member, idx) => (
+                    <div
+                      key={`${member.id}-${copy}-${idx}`}
+                      className="shrink-0"
+                      aria-hidden={copy !== 1}
+                      {...(copy !== 1 ? { inert: "" as unknown as boolean } : {})}
+                    >
+                      {renderCard(member, `-${copy}-${idx}`)}
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </div>
@@ -704,8 +732,17 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
 
       {/* DETAILED USER-FRIENDLY VIDEO & PROFILE MODAL */}
       {selectedMember && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-xl animate-fade-in">
-          <div className="relative w-full max-w-3xl bg-night rounded-3xl overflow-hidden shadow-2xl border border-white/20 text-white text-left max-h-[92vh] flex flex-col">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-xl animate-fade-in"
+          onClick={handleCloseModal}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="teacher-modal-title"
+            className="relative w-full max-w-3xl bg-night rounded-3xl overflow-hidden shadow-2xl border border-white/20 text-white text-left max-h-[92vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
             
             {/* Modal Header */}
             <div className="p-5 sm:p-6 bg-slate-950/80 backdrop-blur-md flex items-center justify-between border-b border-white/10 shrink-0">
@@ -722,7 +759,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
                   <span className="text-[11px] font-bold text-brand-400 uppercase tracking-wider block">
                     {selectedMember.role}
                   </span>
-                  <h3 className="font-display text-lg font-extrabold text-white leading-tight sm:text-xl mt-0.5">
+                  <h3 id="teacher-modal-title" className="font-display text-lg font-extrabold text-white leading-tight sm:text-xl mt-0.5">
                     {selectedMember.name}
                   </h3>
                 </div>
@@ -744,7 +781,6 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
               {selectedMember.isRealVideo && selectedMember.videoUrl ? (
                 <div className="relative w-full h-80 sm:h-[440px] rounded-2xl overflow-hidden bg-black border border-white/15 shadow-2xl flex items-center justify-center group">
                   <video
-                    ref={videoRef}
                     src={selectedMember.videoUrl}
                     poster={selectedMember.image}
                     controls
