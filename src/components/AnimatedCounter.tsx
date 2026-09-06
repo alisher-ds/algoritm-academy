@@ -89,12 +89,14 @@ export default function AnimatedCounter({
             rafRef.current = requestAnimationFrame(step);
           }
         } else if (!once) {
-          isAnimatingRef.current = false;
-          if (rafRef.current !== null) {
-            cancelAnimationFrame(rafRef.current);
-            rafRef.current = null;
+          if (entry.boundingClientRect.top > 0) {
+            isAnimatingRef.current = false;
+            if (rafRef.current !== null) {
+              cancelAnimationFrame(rafRef.current);
+              rafRef.current = null;
+            }
+            setCount(start);
           }
-          setCount(start);
         }
       },
       { threshold: 0.15 }
