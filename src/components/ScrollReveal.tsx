@@ -26,11 +26,11 @@ export default function ScrollReveal({
   children,
   variant = "fade-up",
   delay = 0,
-  duration = 750,
+  duration = 800,
   threshold = 0.1,
-  distance = 24,
+  distance = 32,
   className = "",
-  once = true,
+  once = false,
   style,
   ...rest
 }: ScrollRevealProps) {
@@ -64,7 +64,7 @@ export default function ScrollReveal({
       },
       {
         threshold,
-        rootMargin: "0px 0px 50px 0px",
+        rootMargin: "0px 0px -40px 0px",
       }
     );
 
@@ -102,7 +102,7 @@ export default function ScrollReveal({
     opacity: shown ? 1 : 0,
     transform: getTransform(),
     transitionProperty: "opacity, transform",
-    transitionDuration: reducedMotion ? "0ms" : shown ? duration + "ms" : "250ms",
+    transitionDuration: reducedMotion ? "0ms" : shown ? duration + "ms" : "350ms",
     transitionDelay: shown && !reducedMotion ? delay + "ms" : "0ms",
     transitionTimingFunction: "cubic-bezier(0.16, 1, 0.3, 1)",
     willChange: shown ? "auto" : "opacity, transform",
