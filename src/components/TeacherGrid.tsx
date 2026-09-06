@@ -786,7 +786,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
                     controls
                     autoPlay
                     playsInline
-                    preload="metadata"
+                    preload="auto"
                     className="w-full h-full object-contain bg-black"
                   />
                 </div>
