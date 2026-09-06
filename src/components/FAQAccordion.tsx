@@ -7,7 +7,7 @@ import SectionHeader from "@/components/SectionHeader";
 import ScrollReveal from "@/components/ScrollReveal";
 
 interface FAQAccordionProps {
-  categoryFilter?: "maktab" | "markaz" | "kurslar" | "qabul" | "umumiy" | "hammasi";
+  categoryFilter?: "maktab" | "markaz" | "umumiy" | "hammasi";
 }
 
 export default function FAQAccordion({ categoryFilter = "hammasi" }: FAQAccordionProps) {
@@ -18,10 +18,6 @@ export default function FAQAccordion({ categoryFilter = "hammasi" }: FAQAccordio
     if (f.category === categoryFilter) return true;
     // "umumiy" savollar har bir bo'limda foydali — doim qo'shiladi
     if (f.category === "umumiy") return true;
-    // "kurslar" so'rovi markaz (o'quv markazi) savollarini anglatadi
-    if (categoryFilter === "kurslar" && f.category === "markaz") return true;
-    // "qabul" so'rovi maktabga qabul savollari bilan birga umumiy savollarni ko'rsatadi
-    if (categoryFilter === "qabul" && f.category === "maktab") return true;
     return false;
   });
 
@@ -61,6 +57,9 @@ export default function FAQAccordion({ categoryFilter = "hammasi" }: FAQAccordio
                   <button
                     type="button"
                     onClick={() => toggleFAQ(idx)}
+                    aria-expanded={isOpen}
+                    aria-controls={`faq-answer-${idx}`}
+                    id={`faq-question-${idx}`}
                     className="w-full py-5 px-6 sm:px-8 flex items-center justify-between gap-4 text-left cursor-pointer"
                   >
                     <span className="text-base sm:text-lg font-bold text-slate-950">
@@ -75,11 +74,24 @@ export default function FAQAccordion({ categoryFilter = "hammasi" }: FAQAccordio
                     </div>
                   </button>
 
-                  {isOpen && (
-                    <div className="px-6 sm:px-8 pb-6 text-sm text-slate-600 leading-relaxed border-t border-slate-100 pt-4 font-medium">
-                      {faq.answer}
+                  {/* Javob HAR DOIM DOM'da bo'ladi va faqat vizual yashiriladi.
+                      Ilgari `{isOpen && ...}` bilan render qilinardi — natijada 12 ta
+                      javobdan faqat bittasi server HTML'iga tushardi va qolganini
+                      qidiruv tizimlari umuman ko'rmasdi. */}
+                  <div
+                    id={`faq-answer-${idx}`}
+                    role="region"
+                    aria-labelledby={`faq-question-${idx}`}
+                    className={`grid transition-[grid-template-rows] duration-300 ease-out ${
+                      isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+                    }`}
+                  >
+                    <div className="overflow-hidden">
+                      <div className="px-6 sm:px-8 pb-6 text-sm text-slate-600 leading-relaxed border-t border-slate-100 pt-4 font-medium">
+                        {faq.answer}
+                      </div>
                     </div>
-                  )}
+                  </div>
                 </div>
               </ScrollReveal>
             );

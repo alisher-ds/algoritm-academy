@@ -1,8 +1,117 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { X, ArrowRight, Sparkles, Loader2 } from "lucide-react";
 import confetti from "canvas-confetti";
+
+type Stage = "boshlangich" | "orta" | "abituriyent" | "katta";
+
+interface QuizResult {
+  title: string;
+  description: string;
+  track: string;
+  branch: string;
+  /** Nega aynan shu kurs tavsiya etilgani — foydalanuvchining javoblariga asoslangan. */
+  reason: string;
+}
+
+const BRANCH = "Qarshi sh., Islom Karimov 291V";
+const TRACK = "Algoritm Academy (O'quv Markazi)";
+
+const STAGES: { id: Stage; label: string }[] = [
+  { id: "boshlangich", label: "3 - 4 sinf (PMT yoshi)" },
+  { id: "orta", label: "5 - 8 sinf (O'rta maktab)" },
+  { id: "abituriyent", label: "9 - 11 sinf (Abituriyent / Yuqori)" },
+  { id: "katta", label: "Talaba yoki katta yoshdagilar" },
+];
+
+const GOALS = [
+  "Prezident yoki ixtisoslashgan maktabga kirish",
+  "SAT / IELTS olib xorijiy grant yutish",
+  "Davlat OTMlariga byudjet / grant asosida kirish",
+  "Matematika bilimlarini mustahkamlash",
+];
+
+/**
+ * Uchala bosqich javobini ham hisobga oladi.
+ *
+ * Ilgari natija FAQAT 1-bosqichdan hisoblanardi — yosh va maqsad savollari
+ * umuman ishlatilmasdi, ya'ni "3 bosqichli diagnostika" aslida 1 bosqichli edi.
+ */
+function recommend(interest: string, stage: Stage | "", goal: string): QuizResult {
+  const base = (title: string, description: string, reason: string): QuizResult => ({
+    title,
+    description,
+    track: TRACK,
+    branch: BRANCH,
+    reason,
+  });
+
+  // Yosh eng kuchli cheklov: PMT imtihoni 4-sinf yakunida topshiriladi.
+  if (stage === "boshlangich") {
+    return base(
+      "Prezident Maktabiga Tayyorlov (PMT)",
+      "Mantiqiy fikrlash, Cambridge ingliz tili va olimpiada darajasidagi matematika bo'yicha intensiv kurs.",
+      "3–4 sinf — PMT imtihoniga tayyorgarlik uchun eng mos yosh."
+    );
+  }
+
+  // SAT 8-sinfdan boshlab ma'noli; kichik yoshda o'rniga poydevor kerak.
+  if (interest === "sat") {
+    if (stage === "orta") {
+      return base(
+        "IELTS 7+ & CEFR Intensive",
+        "Speaking, Writing, Reading va Listening ko'nikmalarini jadal rivojlantirish va xalqaro sertifikat olish kursi.",
+        "SAT uchun hali erta — avval ingliz tili poydevorini mustahkamlash tavsiya etiladi."
+      );
+    }
+    return base(
+      "SAT Digital & Xalqaro Grantlar Dasturi",
+      "AQSH va xorijiy nufuzli universitetlarga grant yutish uchun SAT Math va Reading & Writing intensiv kursi.",
+      "Xalqaro grant maqsadi va mos yosh — SAT to'g'ridan-to'g'ri shu yo'nalish."
+    );
+  }
+
+  if (interest === "ielts") {
+    return base(
+      "IELTS 7+ & CEFR Intensive",
+      "Speaking, Writing, Reading va Listening ko'nikmalarini jadal rivojlantirish va xalqaro sertifikat olish kursi.",
+      "Xalqaro til sertifikati — barcha yoshlar uchun ochiq yo'nalish."
+    );
+  }
+
+  if (interest === "math") {
+    // Abituriyent uchun DTM/Milliy sertifikat, kichikroq yosh uchun umumiy matematika.
+    return base(
+      "Matematika (Milliy Sertifikat A+ & DTM)",
+      "Milliy sertifikat A+ va OTM davlat grantlariga kirishga qaratilgan chuqurlashtirilgan mualliflik kursi.",
+      stage === "abituriyent"
+        ? "9–11 sinf va grant maqsadi — Milliy sertifikat eng qisqa yo'l."
+        : "Matematikani chuqurlashtirish — keyingi bosqichlarga mustahkam poydevor."
+    );
+  }
+
+  // interest === "pmt", lekin yosh o'tib ketgan bo'lsa — maqsadga qarab yo'naltiramiz.
+  if (goal.includes("xorijiy grant")) {
+    return base(
+      "SAT Digital & Xalqaro Grantlar Dasturi",
+      "AQSH va xorijiy nufuzli universitetlarga grant yutish uchun SAT Math va Reading & Writing intensiv kursi.",
+      "PMT yoshi o'tgan, ammo maqsad xorijiy grant — SAT shu maqsadga olib boradi."
+    );
+  }
+  if (goal.includes("Davlat OTM")) {
+    return base(
+      "Matematika (Milliy Sertifikat A+ & DTM)",
+      "Milliy sertifikat A+ va OTM davlat grantlariga kirishga qaratilgan chuqurlashtirilgan mualliflik kursi.",
+      "Davlat granti maqsadi — Milliy sertifikat va DTM yo'nalishi."
+    );
+  }
+  return base(
+    "Prezident Maktabiga Tayyorlov (PMT)",
+    "Mantiqiy fikrlash, Cambridge ingliz tili va olimpiada darajasidagi matematika bo'yicha intensiv kurs.",
+    "Tanlovingiz bo'yicha eng mos yo'nalish."
+  );
+}
 
 interface DiagnosticQuizModalProps {
   isOpen: boolean;
@@ -17,13 +126,36 @@ export default function DiagnosticQuizModal({
 }: DiagnosticQuizModalProps) {
   const [step, setStep] = useState(1);
   const [interest, setInterest] = useState<string>("");
+  const [stage, setStage] = useState<Stage | "">("");
   const [analyzing, setAnalyzing] = useState(false);
-  const [result, setResult] = useState<{
-    title: string;
-    description: string;
-    track: string;
-    branch: string;
-  } | null>(null);
+  const [result, setResult] = useState<QuizResult | null>(null);
+
+  // Tahlil taymeri — oyna yopilsa bekor qilinadi, aks holda yopilgandan keyin
+  // confetti otilib, natija ekrani fon rejimida ochilib qolardi.
+  const analyzeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    // `isOpen` o'zgarganda (yopilganda ham, ochilganda ham) kutayotgan taymer bekor qilinadi.
+    return () => {
+      if (analyzeTimer.current) {
+        clearTimeout(analyzeTimer.current);
+        analyzeTimer.current = null;
+      }
+    };
+  }, [isOpen]);
+
+  // Oyna yopilib qayta ochilganda testni boshidan boshlash. Ilgari `step` va
+  // `result` tiklanmasdi va foydalanuvchi 1-bosqich o'rniga eski natijani ko'rardi.
+  const [prevOpen, setPrevOpen] = useState(isOpen);
+  if (prevOpen !== isOpen) {
+    setPrevOpen(isOpen);
+    if (isOpen) {
+      setStep(1);
+      setInterest("");
+      setStage("");
+      setResult(null);
+      setAnalyzing(false);
+    }
+  }
 
   // Escape bilan yopish + orqa fonda scroll bloklash
   useEffect(() => {
@@ -42,51 +174,24 @@ export default function DiagnosticQuizModal({
 
   if (!isOpen) return null;
 
-  const handleCalculate = () => {
+  const handleCalculate = (goal: string) => {
     setAnalyzing(true);
-    setTimeout(() => {
+    analyzeTimer.current = setTimeout(() => {
       setAnalyzing(false);
-      let res = {
-        title: "Prezident Maktabiga Tayyorlov (PMT)",
-        description: "Mantiqiy fikrlash, Cambridge ingliz tili va olimpiada darajasidagi matematika bo'yicha intensiv kurs.",
-        track: "Algoritm Academy (O'quv Markazi)",
-        branch: "Qarshi sh., Islom Karimov 291V",
-      };
-
-      if (interest === "sat") {
-        res = {
-          title: "SAT Digital & Xalqaro Grantlar Dasturi",
-          description: "Digital SAT platformasi, Math va Reading modullari bo'yicha xalqaro grant yutish kursi.",
-          track: "Algoritm Academy (O'quv Markazi)",
-          branch: "Qarshi sh., Islom Karimov 291V",
-        };
-      } else if (interest === "ielts") {
-        res = {
-          title: "IELTS 7+ & CEFR Intensive",
-          description: "Speaking va Writing bo'yicha kuchli mentorlar bilan xalqaro sertifikat olish dasturi.",
-          track: "Algoritm Academy (O'quv Markazi)",
-          branch: "Qarshi sh., Islom Karimov 291V",
-        };
-      } else if (interest === "math") {
-        res = {
-          title: "Matematika (Milliy Sertifikat A+ & DTM)",
-          description: "Milliy sertifikat A+ va OTM davlat grantlariga kirishga qaratilgan chuqurlashtirilgan mualliflik kursi.",
-          track: "Algoritm Academy (O'quv Markazi)",
-          branch: "Qarshi sh., Islom Karimov 291V",
-        };
-      }
-
-      setResult(res);
+      setResult(recommend(interest, stage, goal));
       setStep(4);
       try {
         confetti({ particleCount: 80, spread: 60, colors: ["#00c853", "#ffffff"] });
-      } catch {}
-    }, 1000);
+      } catch {
+        // confetti ishlamasa test natijasi baribir ko'rsatiladi
+      }
+    }, 900);
   };
 
   const handleReset = () => {
     setStep(1);
     setInterest("");
+    setStage("");
     setResult(null);
   };
 
@@ -139,7 +244,10 @@ export default function DiagnosticQuizModal({
               <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
                 {result.description}
               </p>
-              <div className="pt-3 border-t border-white/10 flex flex-col gap-1 text-xs text-slate-400">
+              <div className="pt-3 border-t border-white/10 flex flex-col gap-1.5 text-xs text-slate-400">
+                <span className="text-brand-300">
+                  <strong className="text-brand-400">Nega aynan shu:</strong> {result.reason}
+                </span>
                 <span>🏛 <strong>Markaz:</strong> {result.track}</span>
                 <span>📍 <strong>Manzil:</strong> {result.branch}</span>
               </div>
@@ -203,18 +311,16 @@ export default function DiagnosticQuizModal({
             {/* Step 2 */}
             {step === 2 && (
               <div className="space-y-3">
-                {[
-                  "3 - 4 sinf (PMT yoshi)",
-                  "5 - 8 sinf (O'rta maktab)",
-                  "9 - 11 sinf (Abituriyent / Yuqori)",
-                  "Talaba yoki Katta yoshdagilar",
-                ].map((item, idx) => (
+                {STAGES.map((item) => (
                   <button
-                    key={idx}
-                    onClick={() => setStep(3)}
+                    key={item.id}
+                    onClick={() => {
+                      setStage(item.id);
+                      setStep(3);
+                    }}
                     className="w-full text-left p-4 rounded-2xl bg-white/5 border border-white/10 hover:border-brand-500 hover:bg-white/10 transition text-sm font-semibold text-white flex items-center justify-between"
                   >
-                    <span>{item}</span>
+                    <span>{item.label}</span>
                     <ArrowRight className="w-4 h-4 text-slate-400" />
                   </button>
                 ))}
@@ -224,15 +330,10 @@ export default function DiagnosticQuizModal({
             {/* Step 3 */}
             {step === 3 && (
               <div className="space-y-3">
-                {[
-                  "Prezident yoki ixtisoslashgan maktabga kirish",
-                  "SAT / IELTS olib xorijiy grant yutish",
-                  "Davlat OTMlariga byudjet / grant asosida kirish",
-                  "Matematika bilimlarini mustahkamlash",
-                ].map((item, idx) => (
+                {GOALS.map((item) => (
                   <button
-                    key={idx}
-                    onClick={handleCalculate}
+                    key={item}
+                    onClick={() => handleCalculate(item)}
                     className="w-full text-left p-4 rounded-2xl bg-white/5 border border-white/10 hover:border-brand-500 hover:bg-white/10 transition text-sm font-semibold text-white flex items-center justify-between"
                   >
                     <span>{item}</span>

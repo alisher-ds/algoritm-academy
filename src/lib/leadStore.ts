@@ -195,6 +195,35 @@ export async function listLeads(): Promise<Lead[]> {
   );
 }
 
+export interface LeadPage {
+  leads: Lead[];
+  total: number;
+  offset: number;
+  limit: number;
+  hasMore: boolean;
+}
+
+/**
+ * Arizalarni sahifa bo'yicha qaytaradi.
+ *
+ * Ilgari `GET /api/leads` butun ro'yxatni bir yo'la yuborardi — bir necha ming
+ * ariza to'planganda bu har so'rovda megabaytlab javob va admin sahifasida
+ * o'sha qadar DOM tugunini anglatardi.
+ */
+export async function listLeadsPage(offset = 0, limit = 100): Promise<LeadPage> {
+  const all = await listLeads();
+  const safeOffset = Math.max(0, Math.floor(offset));
+  const safeLimit = Math.min(Math.max(1, Math.floor(limit)), 500);
+  const slice = all.slice(safeOffset, safeOffset + safeLimit);
+  return {
+    leads: slice,
+    total: all.length,
+    offset: safeOffset,
+    limit: safeLimit,
+    hasMore: safeOffset + slice.length < all.length,
+  };
+}
+
 let writeQueue: Promise<unknown> = Promise.resolve();
 
 function enqueueWrite<T>(task: () => Promise<T>): Promise<T> {

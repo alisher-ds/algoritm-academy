@@ -26,17 +26,19 @@ export default function CourseCatalog({ onOpenLeadModal, compact = false }: Cour
   const [activeCategory, setActiveCategory] = useState<string>("hammasi");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
+  const allCourses = ECOSYSTEM_DATA.courses;
+  // Sonlar matnga qo'lda yozilmaydi — kurs qo'shilganda sayt yolg'on gapirmasligi uchun.
+  const newGroupCount = allCourses.filter((c) => c.isNewGroup).length;
+
   const categories = [
     { id: "hammasi", label: "Barcha Kurslar" },
-    { id: "yangi-guruhlar", label: "⚡ Yangi Guruhlar (8 ta)" },
+    { id: "yangi-guruhlar", label: `⚡ Yangi Guruhlar (${newGroupCount} ta)` },
     { id: "aniq-fanlar", label: "Matematika & Fizika" },
     { id: "tabiiy-fanlar", label: "Biologiya & Kimyo" },
     { id: "tillar", label: "Ingliz Tili & SAT" },
     { id: "gumanitar", label: "Ona Tili, Huquq & Tarix" },
     { id: "prezident-maktabi", label: "Prezident Maktabi (PMT)" },
   ];
-
-  const allCourses = ECOSYSTEM_DATA.courses;
 
   const filteredCourses = allCourses.filter((course) => {
     const matchesCategory =
@@ -122,12 +124,33 @@ export default function CourseCatalog({ onOpenLeadModal, compact = false }: Cour
                   href="/kurslar"
                   className="inline-flex items-center justify-center gap-2 px-6 py-4 rounded-full bg-brand-500 hover:bg-brand-400 text-slate-950 font-extrabold text-xs uppercase tracking-wider transition-all duration-200 shadow-lg shadow-brand-500/25 shrink-0 group cursor-pointer"
                 >
-                  <span>Barcha Dars Jadvallarini Ko'rish (8 ta guruh)</span>
+                  <span>Barcha Dars Jadvallarini Ko'rish ({newGroupCount} ta guruh)</span>
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </Link>
               </div>
             </div>
           </ScrollReveal>
+        )}
+
+        {/* Qidiruv/filtr natija bermasa — bo'sh holat. Ilgari grid jimgina bo'sh
+            qolardi va foydalanuvchi sayt buzilgan deb o'ylardi. */}
+        {displayCourses.length === 0 && (
+          <div className="rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center">
+            <Search className="mx-auto mb-3 h-8 w-8 text-slate-600" />
+            <p className="text-sm font-semibold text-white">Bunday kurs topilmadi</p>
+            <p className="mt-1 text-xs text-slate-400">
+              Boshqa so'z bilan qidiring yoki filtrlarni tozalang.
+            </p>
+            <button
+              onClick={() => {
+                setSearchQuery("");
+                setActiveCategory("hammasi");
+              }}
+              className="mt-5 rounded-full bg-brand-500 px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-slate-950 transition hover:bg-brand-400"
+            >
+              Filtrlarni tozalash
+            </button>
+          </div>
         )}
 
         {/* Course Cards Grid */}
@@ -252,7 +275,7 @@ export default function CourseCatalog({ onOpenLeadModal, compact = false }: Cour
               href="/kurslar"
               className="inline-flex items-center gap-2 px-8 py-4 rounded-full bg-white/[0.05] hover:bg-white/10 text-white border border-white/15 hover:border-brand-400/50 text-xs font-bold uppercase tracking-wider transition shadow-sm group cursor-pointer"
             >
-              <span>Barcha 12 ta Kurs va Dars Jadvallarini Ko'rish</span>
+              <span>Barcha {allCourses.length} ta Kurs va Dars Jadvallarini Ko'rish</span>
               <ArrowRight className="w-4 h-4 text-brand-400 group-hover:translate-x-1 transition-transform" />
             </Link>
           </div>

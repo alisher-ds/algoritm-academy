@@ -44,13 +44,29 @@ const nextConfig: NextConfig = {
           { key: "X-Robots-Tag", value: "noindex, nofollow" },
         ],
       },
-      // Statik media uzoq muddat keshlansin.
+      // Statik media.
+      //
+      // `immutable` ISHLATILMAYDI: fayl nomlarida hash yo'q (`slide_1.jpg`),
+      // shuning uchun `immutable` bilan rasmni almashtirsangiz qaytgan
+      // foydalanuvchi bir yil davomida eskisini ko'rardi va uni tuzatib
+      // bo'lmasdi. `stale-while-revalidate` esa tez ishlaydi-yu, fon rejimida
+      // yangilanadi. Fayl nomiga versiya qo'shsangiz (`slide_1.v2.jpg`)
+      // `immutable` ga qaytish xavfsiz bo'ladi.
       {
         source: "/videos/:path*",
-        headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=604800" },
+        ],
       },
       {
         source: "/images/:path*",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=604800" },
+        ],
+      },
+      // Next'ning o'z build chiqishi hash'langan — bu yerda `immutable` to'g'ri.
+      {
+        source: "/_next/static/:path*",
         headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
       },
     ];

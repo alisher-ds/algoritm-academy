@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
+import { Sparkles, ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
 
 interface SchoolHeroProps {
   onOpenLeadModal: (targetName?: string) => void;
@@ -102,6 +102,12 @@ export default function SchoolHero({ onOpenLeadModal }: SchoolHeroProps) {
   // Avtomatik slayd almashishi (6 soniya) — ekran tashqarisida yoki hover/tegish paytida to'xtab turadi
   useEffect(() => {
     if (paused || !isInView) return undefined;
+    if (
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      return undefined;
+    }
     const timer = setInterval(next, SLIDE_INTERVAL);
     return () => clearInterval(timer);
   }, [paused, isInView, next]);
@@ -127,6 +133,8 @@ export default function SchoolHero({ onOpenLeadModal }: SchoolHeroProps) {
       aria-roledescription="karusel"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
+      onFocus={() => setPaused(true)}
+      onBlur={() => setPaused(false)}
       onTouchStart={(e) => {
         touchX.current = e.touches[0].clientX;
       }}
@@ -161,9 +169,14 @@ export default function SchoolHero({ onOpenLeadModal }: SchoolHeroProps) {
               aria-hidden={!isCurrent}
             >
               {/* Fotosurat (Yumshoq, uzluksiz kinomatografik zoom) */}
+              {/* Birinchi slayd — sahifaning LCP elementi: darhol va yuqori prioritet bilan.
+                  Qolgan slaydlar lazy — ilgari 4 ta katta JPG bir vaqtda yuklanardi. */}
               <img
                 src={s.image}
                 alt=""
+                loading={idx === 0 ? "eager" : "lazy"}
+                fetchPriority={idx === 0 ? "high" : "low"}
+                decoding={idx === 0 ? "sync" : "async"}
                 className={`h-full w-full object-cover object-[center_30%] sm:object-center transition-transform duration-[7000ms] ease-out will-change-transform ${
                   isCurrent ? "scale-105" : "scale-100"
                 }`}

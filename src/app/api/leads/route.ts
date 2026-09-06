@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { sendLeadNotification } from "@/lib/telegram";
-import { createLead, deleteLead, listLeads, updateLead } from "@/lib/leadStore";
+import { createLead, deleteLead, listLeadsPage, updateLead } from "@/lib/leadStore";
 import { normalizeUzPhone } from "@/lib/phone";
 import { isAuthed, isSameOrigin } from "@/lib/adminAuth";
 import { clientIdentity, rateLimit } from "@/lib/rateLimit";
@@ -93,11 +93,26 @@ async function readJsonBody(req: Request): Promise<Record<string, unknown> | nul
   }
 }
 
-/** GET — faqat admin (imzolangan cookie). Barcha arizalar ro'yxati. */
+/**
+ * GET — faqat admin (imzolangan cookie).
+ *
+ * `?limit=` va `?offset=` bilan sahifalanadi (default 200 ta). Eski mijozlar
+ * uchun `leads` maydoni saqlab qolingan, `total`/`hasMore` esa qo'shimcha.
+ */
 export async function GET(req: Request) {
   if (!isAuthed(req)) return unauthorized();
-  const leads = await listLeads();
-  return json({ success: true, leads }, 200, { "Cache-Control": "no-store" });
+  const { searchParams } = new URL(req.url);
+  const limit = Number(searchParams.get("limit") ?? 200);
+  const offset = Number(searchParams.get("offset") ?? 0);
+  const page = await listLeadsPage(
+    Number.isFinite(offset) ? offset : 0,
+    Number.isFinite(limit) ? limit : 200
+  );
+  return json(
+    { success: true, leads: page.leads, total: page.total, offset: page.offset, hasMore: page.hasMore },
+    200,
+    { "Cache-Control": "no-store" }
+  );
 }
 
 /** POST — ochiq (sayt formalari). Yangi ariza + Telegram bildirishnoma. */
