@@ -9,6 +9,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: false, error: "So'rov rad etildi" }, { status: 403 });
   }
   const res = NextResponse.json({ success: true });
-  res.cookies.set(AUTH_COOKIE, "", sessionCookieOptions(0));
+  res.cookies.set(AUTH_COOKIE, "", sessionCookieOptions(0, req));
   return res;
 }

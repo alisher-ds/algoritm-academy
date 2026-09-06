@@ -195,10 +195,20 @@ export async function listLeads(): Promise<Lead[]> {
   );
 }
 
+export interface LeadStatsSummary {
+  total: number;
+  yangi: number;
+  boglangan: number;
+  qabul_qilindi: number;
+  bekor_qilindi: number;
+  todayCount: number;
+}
+
 export interface LeadQueryFilter {
   search?: string;
   status?: LeadStatus | "hammasi";
   type?: LeadType | "hammasi";
+  dateRange?: "bugun" | "hafta" | "oy" | "hammasi";
 }
 
 export interface LeadPage {
@@ -207,17 +217,44 @@ export interface LeadPage {
   offset: number;
   limit: number;
   hasMore: boolean;
+  stats?: LeadStatsSummary;
 }
 
 /**
- * Arizalarni sahifa bo'yicha qaytaradi (ixtiyoriy qidiruv va status/tur filtri bilan).
+ * Arizalarni sahifa bo'yicha qaytaradi (qidiruv, status, tur va sana filtrlari hamda umumiy statistika bilan).
  */
 export async function listLeadsPage(
   offset = 0,
   limit = 100,
   filters?: LeadQueryFilter
 ): Promise<LeadPage> {
-  let all = await listLeads();
+  const rawAll = await listLeads();
+
+  // Baza bo'yicha umumiy KPI statistikasini hisoblash
+  const now = Date.now();
+  const todayStr = new Date(now).toLocaleDateString("en-CA", { timeZone: "Asia/Tashkent" });
+  const stats: LeadStatsSummary = {
+    total: rawAll.length,
+    yangi: 0,
+    boglangan: 0,
+    qabul_qilindi: 0,
+    bekor_qilindi: 0,
+    todayCount: 0,
+  };
+
+  for (const l of rawAll) {
+    if (l.status === "yangi") stats.yangi++;
+    else if (l.status === "boglangan") stats.boglangan++;
+    else if (l.status === "qabul_qilindi") stats.qabul_qilindi++;
+    else if (l.status === "bekor_qilindi") stats.bekor_qilindi++;
+
+    const itemDate = new Date(l.createdAt).toLocaleDateString("en-CA", { timeZone: "Asia/Tashkent" });
+    if (itemDate === todayStr) {
+      stats.todayCount++;
+    }
+  }
+
+  let all = rawAll;
 
   if (filters) {
     if (filters.status && filters.status !== "hammasi") {
@@ -225,6 +262,21 @@ export async function listLeadsPage(
     }
     if (filters.type && filters.type !== "hammasi") {
       all = all.filter((l) => l.type === filters.type);
+    }
+    if (filters.dateRange && filters.dateRange !== "hammasi") {
+      const oneDayMs = 24 * 60 * 60 * 1000;
+      if (filters.dateRange === "bugun") {
+        all = all.filter((l) => {
+          const itemDate = new Date(l.createdAt).toLocaleDateString("en-CA", { timeZone: "Asia/Tashkent" });
+          return itemDate === todayStr;
+        });
+      } else if (filters.dateRange === "hafta") {
+        const weekAgo = now - 7 * oneDayMs;
+        all = all.filter((l) => new Date(l.createdAt).getTime() >= weekAgo);
+      } else if (filters.dateRange === "oy") {
+        const monthAgo = now - 30 * oneDayMs;
+        all = all.filter((l) => new Date(l.createdAt).getTime() >= monthAgo);
+      }
     }
     if (filters.search && filters.search.trim()) {
       const q = filters.search.trim().toLowerCase();
@@ -235,7 +287,8 @@ export async function listLeadsPage(
           l.name.toLowerCase().includes(q) ||
           matchPhone ||
           l.targetInterest.toLowerCase().includes(q) ||
-          (l.notes ? l.notes.toLowerCase().includes(q) : false)
+          (l.notes ? l.notes.toLowerCase().includes(q) : false) ||
+          (l.adminNotes ? l.adminNotes.toLowerCase().includes(q) : false)
         );
       });
     }
@@ -250,6 +303,7 @@ export async function listLeadsPage(
     offset: safeOffset,
     limit: safeLimit,
     hasMore: safeOffset + slice.length < all.length,
+    stats,
   };
 }
 
@@ -461,12 +515,47 @@ export async function updateLead(
   );
 }
 
+export async function updateLeadsBatch(
+  ids: string[],
+  patch: { status?: LeadStatus; adminNotes?: string }
+): Promise<{ updatedCount: number }> {
+  const idSet = new Set(ids);
+  return enqueueWrite(() =>
+    mutate<{ updatedCount: number }>((leads) => {
+      let count = 0;
+      const next = leads.map((l) => {
+        if (idSet.has(l.id)) {
+          count++;
+          return {
+            ...l,
+            status: patch.status ?? l.status,
+            adminNotes: patch.adminNotes !== undefined ? patch.adminNotes : l.adminNotes,
+          };
+        }
+        return l;
+      });
+      return { next, result: { updatedCount: count } };
+    })
+  );
+}
+
 export async function deleteLead(id: string): Promise<boolean> {
   return enqueueWrite(() =>
     mutate<boolean>((leads) => {
       const next = leads.filter((l) => l.id !== id);
       if (next.length === leads.length) return { next: null, result: false };
       return { next, result: true };
+    })
+  );
+}
+
+export async function deleteLeadsBatch(ids: string[]): Promise<{ deletedCount: number }> {
+  const idSet = new Set(ids);
+  return enqueueWrite(() =>
+    mutate<{ deletedCount: number }>((leads) => {
+      const next = leads.filter((l) => !idSet.has(l.id));
+      const count = leads.length - next.length;
+      return { next, result: { deletedCount: count } };
     })
   );
 }

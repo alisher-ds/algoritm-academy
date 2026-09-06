@@ -156,5 +156,42 @@ describe("leadStore (fayl backend)", () => {
     const filterType = await s.listLeadsPage(0, 10, { type: "maktab" });
     expect(filterType.leads).toHaveLength(1);
     expect(filterType.leads[0].name).toBe("Bobur Xaydarov");
+
+    // Statistika xulosasi tekshiruvi
+    const statsResult = await s.listLeadsPage(0, 10);
+    expect(statsResult.stats).toBeDefined();
+    expect(statsResult.stats?.total).toBe(3);
+    expect(statsResult.stats?.boglangan).toBe(1);
+    expect(statsResult.stats?.yangi).toBe(2);
+    expect(statsResult.stats?.todayCount).toBe(3);
+  });
+
+  it("updateLeadsBatch va deleteLeadsBatch arizalarni to'plam tarzida boshqaradi", async () => {
+    const s = await store();
+    const l1 = await s.addLead({ name: "User 1", phone: "+998901110001", type: "kurs", targetInterest: "IELTS" });
+    const l2 = await s.addLead({ name: "User 2", phone: "+998901110002", type: "kurs", targetInterest: "SAT" });
+    const l3 = await s.addLead({ name: "User 3", phone: "+998901110003", type: "maktab", targetInterest: "0-11" });
+
+    // Batch status yangilash
+    const updateRes = await s.updateLeadsBatch([l1.id, l2.id], { status: "qabul_qilindi", adminNotes: "To'plam qaydi" });
+    expect(updateRes.updatedCount).toBe(2);
+
+    const listAfterUpdate = await s.listLeads();
+    const updated1 = listAfterUpdate.find((x) => x.id === l1.id);
+    const updated2 = listAfterUpdate.find((x) => x.id === l2.id);
+    const unchanged = listAfterUpdate.find((x) => x.id === l3.id);
+
+    expect(updated1?.status).toBe("qabul_qilindi");
+    expect(updated1?.adminNotes).toBe("To'plam qaydi");
+    expect(updated2?.status).toBe("qabul_qilindi");
+    expect(unchanged?.status).toBe("yangi");
+
+    // Batch o'chirish
+    const deleteRes = await s.deleteLeadsBatch([l1.id, l3.id]);
+    expect(deleteRes.deletedCount).toBe(2);
+
+    const listAfterDelete = await s.listLeads();
+    expect(listAfterDelete).toHaveLength(1);
+    expect(listAfterDelete[0].id).toBe(l2.id);
   });
 });

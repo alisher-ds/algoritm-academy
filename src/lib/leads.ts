@@ -107,11 +107,60 @@ function prune(items: OutboxItem[]): { keep: OutboxItem[]; dropped: number } {
   return { keep, dropped: items.length - keep.length };
 }
 
+/**
+ * LocalStorage ma'lumotlarini ochiq matn (plaintext) ko'rinishida saqlamaslik
+ * uchun shifrlash / de-shifrlash yordamchisi (XOR + Base64 + Magic Header).
+ * Bu brauzer DevTools yoki skriptlar orqali telefon raqamlar va ismlarni ochiq ko'rishdan himoya qiladi.
+ */
+const STORAGE_PREFIX = "enc:v1:";
+
+export function encryptStorage(data: unknown): string {
+  try {
+    const raw = JSON.stringify(data);
+    const code = 0x5a;
+    const utf8 = encodeURIComponent(raw);
+    let out = "";
+    for (let i = 0; i < utf8.length; i++) {
+      out += String.fromCharCode(utf8.charCodeAt(i) ^ code);
+    }
+    const b64 =
+      typeof window !== "undefined" && typeof window.btoa === "function"
+        ? window.btoa(out)
+        : Buffer.from(out, "binary").toString("base64");
+    return STORAGE_PREFIX + b64;
+  } catch {
+    return JSON.stringify(data);
+  }
+}
+
+export function decryptStorage<T>(cipher: string | null): T | null {
+  if (!cipher) return null;
+  try {
+    if (!cipher.startsWith(STORAGE_PREFIX)) {
+      // Eski (shifrlanmagan) ma'lumotlar bilan orqaga moslik (backward compatibility)
+      return JSON.parse(cipher) as T;
+    }
+    const b64 = cipher.slice(STORAGE_PREFIX.length);
+    const raw =
+      typeof window !== "undefined" && typeof window.atob === "function"
+        ? window.atob(b64)
+        : Buffer.from(b64, "base64").toString("binary");
+    const code = 0x5a;
+    let utf8 = "";
+    for (let i = 0; i < raw.length; i++) {
+      utf8 += String.fromCharCode(raw.charCodeAt(i) ^ code);
+    }
+    return JSON.parse(decodeURIComponent(utf8)) as T;
+  } catch {
+    return null;
+  }
+}
+
 export function getOutbox(): OutboxItem[] {
   if (typeof window === "undefined" || !window.localStorage) return [];
   try {
     const raw = localStorage.getItem(OUTBOX_KEY);
-    return raw ? (JSON.parse(raw) as OutboxItem[]) : [];
+    return decryptStorage<OutboxItem[]>(raw) ?? [];
   } catch {
     return [];
   }
@@ -120,7 +169,7 @@ export function getOutbox(): OutboxItem[] {
 function saveOutbox(items: OutboxItem[]): void {
   if (typeof window === "undefined" || !window.localStorage) return;
   try {
-    localStorage.setItem(OUTBOX_KEY, JSON.stringify(items));
+    localStorage.setItem(OUTBOX_KEY, encryptStorage(items));
   } catch {
     // localStorage to'lgan yoki bloklangan
   }
@@ -296,9 +345,9 @@ export function saveLeadLocally(payload: LeadPayload): Lead {
   };
   try {
     const raw = localStorage.getItem(LEADS_LOCAL_KEY);
-    const list: Lead[] = raw ? JSON.parse(raw) : [];
+    const list: Lead[] = decryptStorage<Lead[]>(raw) ?? [];
     list.unshift(lead);
-    localStorage.setItem(LEADS_LOCAL_KEY, JSON.stringify(list));
+    localStorage.setItem(LEADS_LOCAL_KEY, encryptStorage(list));
   } catch {
     // localStorage mavjud bo'lmasa ham lead obyekti qaytariladi
   }
@@ -308,7 +357,7 @@ export function saveLeadLocally(payload: LeadPayload): Lead {
 export function getLocalLeads(): Lead[] {
   try {
     const raw = localStorage.getItem(LEADS_LOCAL_KEY);
-    return raw ? (JSON.parse(raw) as Lead[]) : [];
+    return decryptStorage<Lead[]>(raw) ?? [];
   } catch {
     return [];
   }

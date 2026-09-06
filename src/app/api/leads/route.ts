@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
 import { sendLeadNotification } from "@/lib/telegram";
-import { createLead, deleteLead, listLeadsPage, updateLead } from "@/lib/leadStore";
+import {
+  createLead,
+  deleteLead,
+  deleteLeadsBatch,
+  listLeadsPage,
+  updateLead,
+  updateLeadsBatch,
+} from "@/lib/leadStore";
 import { normalizeUzPhone } from "@/lib/phone";
 import { isAuthed, isSameOrigin } from "@/lib/adminAuth";
 import { clientIdentity, rateLimit } from "@/lib/rateLimit";
@@ -32,20 +39,10 @@ const ALLOWED_SOURCES = new Set([
 const VALID_STATUSES: LeadStatus[] = ["yangi", "boglangan", "qabul_qilindi", "bekor_qilindi"];
 const MAX_BODY_BYTES = 8 * 1024;
 
-/** Nazorat belgilarini olib tashlash (log/CSV injection va chalkash kiritishlarga qarshi). */
-function clean(value: string, max: number): string {
-  return value
-    .replace(/[\u0000-\u001f\u007f]/g, " ")
-    // Ko'rinmas belgilar (zero-width space va h.k.) — ularsiz "   " kabi bo'sh ism
-    // uzunlik tekshiruvidan o'tib ketardi.
-    .replace(/[\u200b-\u200f\u2028-\u202f\u2060-\u206f\ufeff]/g, "")
-    .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, max);
-}
+import { cleanText } from "@/lib/sanitize";
 
 function normalizeLeadBody(body: Record<string, unknown>) {
-  const str = (v: unknown, max: number) => (typeof v === "string" ? clean(v, max) : "");
+  const str = (v: unknown, max: number) => cleanText(v, max);
 
   const name = str(body.name, 120);
   const rawPhone = str(body.phone, 30);
@@ -101,12 +98,25 @@ async function readJsonBody(req: Request): Promise<Record<string, unknown> | nul
  */
 export async function GET(req: Request) {
   if (!isAuthed(req)) return unauthorized();
+
+  // Admin GET so'rovlariga rate-limit (daqiqasiga 180 ta — DDoS va tajovuzkor skriptlardan himoya)
+  const { key: ip } = clientIdentity(req);
+  const getLimit = await rateLimit(`admin:get:${ip}`, 180, 60);
+  if (!getLimit.allowed) {
+    return json(
+      { success: false, error: "Juda ko'p so'rov yuborildi, birozdan so'ng qayta urinib ko'ring" },
+      429,
+      { "Retry-After": String(getLimit.retryAfter || 60) }
+    );
+  }
+
   const { searchParams } = new URL(req.url);
   const limit = Number(searchParams.get("limit") ?? 200);
   const offset = Number(searchParams.get("offset") ?? 0);
   const search = searchParams.get("search") || undefined;
   const rawStatus = searchParams.get("status") || undefined;
   const rawType = searchParams.get("type") || undefined;
+  const rawDateRange = searchParams.get("dateRange") || undefined;
 
   const status =
     rawStatus && (VALID_STATUSES.includes(rawStatus as LeadStatus) || rawStatus === "hammasi")
@@ -116,14 +126,25 @@ export async function GET(req: Request) {
     rawType && (VALID_TYPES.includes(rawType as LeadType) || rawType === "hammasi")
       ? (rawType as LeadType | "hammasi")
       : undefined;
+  const dateRange =
+    rawDateRange && ["bugun", "hafta", "oy", "hammasi"].includes(rawDateRange)
+      ? (rawDateRange as "bugun" | "hafta" | "oy" | "hammasi")
+      : undefined;
 
   const page = await listLeadsPage(
     Number.isFinite(offset) ? offset : 0,
     Number.isFinite(limit) ? limit : 200,
-    { search, status, type }
+    { search, status, type, dateRange }
   );
   return json(
-    { success: true, leads: page.leads, total: page.total, offset: page.offset, hasMore: page.hasMore },
+    {
+      success: true,
+      leads: page.leads,
+      total: page.total,
+      offset: page.offset,
+      hasMore: page.hasMore,
+      stats: page.stats,
+    },
     200,
     { "Cache-Control": "no-store" }
   );
@@ -208,7 +229,7 @@ export async function POST(req: Request) {
   }
 }
 
-/** PATCH — faqat admin. Status / izoh yangilash. */
+/** PATCH — faqat admin. Status / izoh yangilash (bitta yoki ko'plab arizalar). */
 export async function PATCH(req: Request) {
   if (!isAuthed(req)) return unauthorized();
   if (!isSameOrigin(req)) return forbidden();
@@ -216,12 +237,19 @@ export async function PATCH(req: Request) {
     const body = await readJsonBody(req);
     if (!body) return json({ success: false, error: "Noto'g'ri so'rov formati" }, 400);
 
-    const { id, status, adminNotes } = body as {
+    const { id, ids, status, adminNotes } = body as {
       id?: string;
+      ids?: string[];
       status?: LeadStatus;
       adminNotes?: string;
     };
-    if (!id || typeof id !== "string") return json({ success: false, error: "Ariza ID si kerak" }, 400);
+
+    const hasSingleId = typeof id === "string" && id.trim().length > 0;
+    const hasBatchIds = Array.isArray(ids) && ids.length > 0;
+
+    if (!hasSingleId && !hasBatchIds) {
+      return json({ success: false, error: "Ariza ID si yoki arizalar ro'yxati kerak" }, 400);
+    }
 
     const patch: { status?: LeadStatus; adminNotes?: string } = {};
     if (status !== undefined) {
@@ -231,13 +259,23 @@ export async function PATCH(req: Request) {
       patch.status = status;
     }
     if (adminNotes !== undefined) {
-      patch.adminNotes = clean(String(adminNotes), 600);
+      patch.adminNotes = cleanText(String(adminNotes), 600);
     }
     if (patch.status === undefined && patch.adminNotes === undefined) {
       return json({ success: false, error: "Yangilash uchun maydon berilmadi" }, 400);
     }
 
-    const updated = await updateLead(id, patch);
+    if (hasBatchIds) {
+      const validIds = (ids as string[]).filter((x) => typeof x === "string" && x.trim());
+      const result = await updateLeadsBatch(validIds, patch);
+      return json({
+        success: true,
+        message: `${result.updatedCount} ta ariza holati yangilandi`,
+        count: result.updatedCount,
+      });
+    }
+
+    const updated = await updateLead(id!, patch);
     if (!updated) return json({ success: false, error: "Ariza topilmadi" }, 404);
     return json({ success: true, message: "Ariza holati yangilandi", lead: updated });
   } catch (error) {
@@ -246,15 +284,33 @@ export async function PATCH(req: Request) {
   }
 }
 
-/** DELETE — faqat admin. Ariza o'chirish. */
+/** DELETE — faqat admin. Ariza o'chirish (bitta yoki ko'plab). */
 export async function DELETE(req: Request) {
   if (!isAuthed(req)) return unauthorized();
   if (!isSameOrigin(req)) return forbidden();
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
-    if (!id) return json({ success: false, error: "Ariza ID si kerak" }, 400);
-    const ok = await deleteLead(id);
+    const idsParam = searchParams.get("ids");
+
+    if (!id && !idsParam) {
+      return json({ success: false, error: "Ariza ID si yoki ID lar ro'yxati kerak" }, 400);
+    }
+
+    if (idsParam) {
+      const ids = idsParam.split(",").map((s) => s.trim()).filter(Boolean);
+      if (ids.length === 0) {
+        return json({ success: false, error: "Ariza ID si kerak" }, 400);
+      }
+      const result = await deleteLeadsBatch(ids);
+      return json({
+        success: true,
+        message: `${result.deletedCount} ta ariza o'chirildi`,
+        count: result.deletedCount,
+      });
+    }
+
+    const ok = await deleteLead(id!);
     if (!ok) return json({ success: false, error: "Ariza topilmadi" }, 404);
     return json({ success: true, message: "Ariza o'chirildi" });
   } catch (error) {

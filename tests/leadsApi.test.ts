@@ -181,6 +181,46 @@ describe("/api/leads/auth", () => {
     expect(ok.status).toBe(200);
     expect(ok.headers.get("set-cookie")).toContain("HttpOnly");
   });
+
+  it("rememberMe=false bo'lganda brauzer sessiyasi cookie (Max-Age siz) o'rnatadi", async () => {
+    vi.resetModules();
+    const { POST } = await import("../src/app/api/leads/auth/route");
+    const res = await POST(
+      new Request("http://site.uz/api/leads/auth", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          host: "site.uz",
+          origin: "http://site.uz",
+        },
+        body: JSON.stringify({ password: "test-parol-123", rememberMe: false }),
+      })
+    );
+    expect(res.status).toBe(200);
+    const cookie = res.headers.get("set-cookie") || "";
+    expect(cookie).toContain("HttpOnly");
+    expect(cookie.toLowerCase()).not.toContain("max-age");
+  });
+
+  it("rememberMe=true bo'lganda 7 kunlik doimiy cookie (Max-Age bilan) o'rnatadi", async () => {
+    vi.resetModules();
+    const { POST } = await import("../src/app/api/leads/auth/route");
+    const res = await POST(
+      new Request("http://site.uz/api/leads/auth", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          host: "site.uz",
+          origin: "http://site.uz",
+        },
+        body: JSON.stringify({ password: "test-parol-123", rememberMe: true }),
+      })
+    );
+    expect(res.status).toBe(200);
+    const cookie = res.headers.get("set-cookie") || "";
+    expect(cookie).toContain("HttpOnly");
+    expect(cookie.toLowerCase()).toContain("max-age=604800");
+  });
 });
 
 describe("/api/leads — kirish validatsiyasi", () => {
@@ -310,5 +350,92 @@ describe("/api/leads — kirish validatsiyasi", () => {
     const dataType = await resType.json();
     expect(dataType.leads).toHaveLength(1);
     expect(dataType.leads[0].name).toBe("Jasur Qodirov");
+
+    // Stats tekshiruvi
+    expect(dataType.stats).toBeDefined();
+    expect(dataType.stats.total).toBe(2);
+    expect(dataType.stats.todayCount).toBe(2);
+  });
+
+  it("PATCH /api/leads to'plam (batch) ID lar bilan statusni yangilaydi", async () => {
+    const { POST, PATCH, GET } = await api();
+    const auth = await import("../src/lib/adminAuth");
+    const token = auth.createSessionToken()!;
+
+    const r1 = await POST(post({ name: "Arizachi 1", phone: "901110001" }));
+    const d1 = await r1.json();
+    const r2 = await POST(post({ name: "Arizachi 2", phone: "901110002" }));
+    const d2 = await r2.json();
+
+    const patchReq = new Request("http://site.uz/api/leads", {
+      method: "PATCH",
+      headers: {
+        "content-type": "application/json",
+        host: "site.uz",
+        origin: "http://site.uz",
+        cookie: `${auth.AUTH_COOKIE}=${token}`,
+      },
+      body: JSON.stringify({
+        ids: [d1.lead.id, d2.lead.id],
+        status: "boglangan",
+        adminNotes: "Admin tomonidan tekshirildi",
+      }),
+    });
+
+    const patchRes = await PATCH(patchReq);
+    expect(patchRes.status).toBe(200);
+    const patchData = await patchRes.json();
+    expect(patchData.success).toBe(true);
+    expect(patchData.count).toBe(2);
+
+    const getRes = await GET(
+      new Request("http://site.uz/api/leads", {
+        headers: { host: "site.uz", cookie: `${auth.AUTH_COOKIE}=${token}` },
+      })
+    );
+    const getData = await getRes.json();
+    for (const item of getData.leads) {
+      expect(item.status).toBe("boglangan");
+      expect(item.adminNotes).toBe("Admin tomonidan tekshirildi");
+    }
+  });
+
+  it("DELETE /api/leads to'plam (batch) ID larni o'chiradi", async () => {
+    const { POST, DELETE, GET } = await api();
+    const auth = await import("../src/lib/adminAuth");
+    const token = auth.createSessionToken()!;
+
+    const r1 = await POST(post({ name: "Arizachi 1", phone: "901110001" }));
+    const d1 = await r1.json();
+    const r2 = await POST(post({ name: "Arizachi 2", phone: "901110002" }));
+    const d2 = await r2.json();
+    await POST(post({ name: "Arizachi 3", phone: "901110003" }));
+
+    const deleteReq = new Request(
+      `http://site.uz/api/leads?ids=${d1.lead.id},${d2.lead.id}`,
+      {
+        method: "DELETE",
+        headers: {
+          host: "site.uz",
+          origin: "http://site.uz",
+          cookie: `${auth.AUTH_COOKIE}=${token}`,
+        },
+      }
+    );
+
+    const deleteRes = await DELETE(deleteReq);
+    expect(deleteRes.status).toBe(200);
+    const deleteData = await deleteRes.json();
+    expect(deleteData.success).toBe(true);
+    expect(deleteData.count).toBe(2);
+
+    const getRes = await GET(
+      new Request("http://site.uz/api/leads", {
+        headers: { host: "site.uz", cookie: `${auth.AUTH_COOKIE}=${token}` },
+      })
+    );
+    const getData = await getRes.json();
+    expect(getData.leads).toHaveLength(1);
+    expect(getData.leads[0].name).toBe("Arizachi 3");
   });
 });

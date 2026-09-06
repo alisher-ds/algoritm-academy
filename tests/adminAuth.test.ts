@@ -104,8 +104,25 @@ describe("adminAuth", () => {
     vi.stubEnv("NODE_ENV", "production");
     const a = await freshAuth();
     expect(a.sessionCookieOptions(60).secure).toBe(true);
-    expect(a.sessionCookieOptions(60).sameSite).toBe("strict");
+    expect(a.sessionCookieOptions(60).sameSite).toBe("lax");
     expect(a.sessionCookieOptions(60).httpOnly).toBe(true);
     vi.unstubAllEnvs();
+  });
+
+  it("HTTP so'rovda (lokal IP yoki LAN) cookie secure bo'lmaydi (mobil brauzerlar rad etmasligi uchun)", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    const a = await freshAuth();
+    const req = new Request("http://10.78.193.76:3000/api/leads/auth");
+    expect(a.sessionCookieOptions(60, req).secure).toBe(false);
+    expect(a.sessionCookieOptions(60, req).sameSite).toBe("lax");
+    vi.unstubAllEnvs();
+  });
+
+  it("maxAge ko'rsatilmaganda haqiqiy session cookie (maxAge yo'q) hosil qiladi", async () => {
+    const a = await freshAuth();
+    const opts = a.sessionCookieOptions();
+    expect(opts.maxAge).toBeUndefined();
+    expect(opts.httpOnly).toBe(true);
+    expect(opts.sameSite).toBe("lax");
   });
 });

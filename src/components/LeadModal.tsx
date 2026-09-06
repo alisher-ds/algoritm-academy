@@ -67,20 +67,14 @@ export default function LeadModal({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [honeypot, setHoneypot] = useState("");
 
-  // React tavsiya etgan prop o'zgarishini render vaqtida sozlash (zero-cascade renders):
-  const [prevOpen, setPrevOpen] = useState(isOpen);
-  const [prevCourse, setPrevCourse] = useState(initialCourse);
-
-  if (prevOpen !== isOpen || prevCourse !== initialCourse) {
-    setPrevOpen(isOpen);
-    setPrevCourse(initialCourse);
+  useEffect(() => {
     if (isOpen) {
       setCourseValue(matchInitialCourse(initialCourse));
       setSubmitNote(null);
       setErrorMessage(null);
       setSubmitted(false);
     }
-  }
+  }, [isOpen, initialCourse]);
 
   const handleClose = useCallback(() => {
     setSubmitted(false);

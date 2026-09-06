@@ -48,6 +48,8 @@ export async function POST(req: Request) {
     body && typeof body === "object" && typeof (body as { password?: unknown }).password === "string"
       ? (body as { password: string }).password
       : "";
+  const rememberMe =
+    body && typeof body === "object" && Boolean((body as { rememberMe?: unknown }).rememberMe);
 
   if (!verifyPassword(password)) {
     // Faqat noto'g'ri urinishlar global hisobga tushadi — to'g'ri parol bilan kirgan
@@ -62,17 +64,29 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: false, error: "Parol noto'g'ri" }, { status: 401 });
   }
 
-  const token = createSessionToken();
+  // rememberMe: true bo'lsa 7 kunlik persistent cookie, false bo'lsa brauzer yopilganda o'chadigan session cookie
+  const tokenTtl = rememberMe ? 7 * 24 * 60 * 60 : SESSION_TTL_SECONDS;
+  const cookieMaxAge = rememberMe ? tokenTtl : undefined;
+
+  const token = createSessionToken(tokenTtl);
   if (!token) {
     return NextResponse.json({ success: false, error: "Sessiya yaratib bo'lmadi" }, { status: 500 });
   }
 
-  const res = NextResponse.json({ success: true, expiresIn: SESSION_TTL_SECONDS });
-  res.cookies.set(AUTH_COOKIE, token, sessionCookieOptions(SESSION_TTL_SECONDS));
+  const res = NextResponse.json({ success: true, expiresIn: tokenTtl, sessionOnly: !rememberMe });
+  res.cookies.set(AUTH_COOKIE, token, sessionCookieOptions(cookieMaxAge, req));
   return res;
 }
 
-/** GET — adminlik holatini tekshirish. */
+/** GET — adminlik holatini tekshirish (daqiqasiga 120 ta so'rov rate limit). */
 export async function GET(req: Request) {
+  const { key: ip } = clientIdentity(req);
+  const limit = await rateLimit(`auth:check:${ip}`, 120, 60);
+  if (!limit.allowed) {
+    return NextResponse.json(
+      { success: false, error: "Juda ko'p so'rov yuborildi. Birozdan so'ng qayta urinib ko'ring." },
+      { status: 429, headers: { "Retry-After": String(limit.retryAfter || 60) } }
+    );
+  }
   return NextResponse.json({ success: isAuthed(req), configured: isAdminConfigured() });
 }

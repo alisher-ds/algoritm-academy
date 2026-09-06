@@ -16,10 +16,17 @@ describe('phone utility', () => {
 
   it("noto'g'ri raqamlarni rad etadi", () => {
     expect(normalizeUzPhone("")).toBeNull();
+    expect(normalizeUzPhone("   ")).toBeNull();
     expect(normalizeUzPhone("12345")).toBeNull();
     expect(normalizeUzPhone("abcdefgh")).toBeNull();
     expect(normalizeUzPhone("+79012345678")).toBeNull();
     expect(normalizeUzPhone("+99890123456789")).toBeNull();
+    // Boshqa agent ta'kidlagan ++998 edge case:
+    expect(normalizeUzPhone("++998901234567")).toBeNull();
+    expect(normalizeUzPhone("+++998901234567")).toBeNull();
+    expect(normalizeUzPhone("+998(90)1234567#")).toBeNull();
+    expect(normalizeUzPhone(null as unknown as string)).toBeNull();
+    expect(normalizeUzPhone(undefined as unknown as string)).toBeNull();
   });
 
   it("formatUzPhone chiroyli ko'rinish beradi", () => {

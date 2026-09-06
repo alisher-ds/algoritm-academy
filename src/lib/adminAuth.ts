@@ -60,10 +60,11 @@ function safeEqual(a: string, b: string): boolean {
 /** Parollarni doimiy vaqtda solishtirish (timing attack'ga qarshi). */
 export function verifyPassword(candidate: string): boolean {
   const expected = getAdminPassword();
-  if (!expected) return false;
-  // Uzunlik farqini ham yashirish uchun hash'lab solishtiramiz.
+  // Uzunlik va mavjudlik farqini yashirish uchun doimiy vaqtda solishtiramiz.
   const h = (v: string) => createHmac("sha256", "pwd-compare").update(v).digest("hex");
-  return safeEqual(h(candidate), h(expected));
+  const target = expected ?? "dummy-placeholder-for-constant-timing";
+  const matches = safeEqual(h(candidate), h(target));
+  return Boolean(expected && matches);
 }
 
 export interface SessionPayload {
@@ -119,15 +120,38 @@ export function isAuthed(req: Request): boolean {
   return verifySessionToken(readCookie(req.headers.get("cookie"), AUTH_COOKIE));
 }
 
-/** Cookie parametrlari (production'da Secure). */
-export function sessionCookieOptions(maxAge: number) {
-  return {
+/** Cookie parametrlari (HTTPS da Secure, lokal tarmoq/HTTP da esa qabul qilinishi uchun secure: false). 
+ * maxAge berilmasa — brauzer yopilganda o'chadigan haqiqiy Session Cookie bo'ladi. */
+export function sessionCookieOptions(maxAge?: number, req?: Request) {
+  let isSecure = isProduction();
+
+  if (req) {
+    const proto = req.headers.get("x-forwarded-proto");
+    if (proto) {
+      isSecure = proto === "https";
+    } else {
+      isSecure = req.url.startsWith("https://");
+    }
+  }
+
+  const opts: {
+    httpOnly: true;
+    sameSite: "lax";
+    secure: boolean;
+    path: string;
+    maxAge?: number;
+  } = {
     httpOnly: true as const,
-    sameSite: "strict" as const,
-    secure: isProduction(),
+    sameSite: "lax" as const,
+    secure: isSecure,
     path: "/",
-    maxAge,
   };
+
+  if (typeof maxAge === "number") {
+    opts.maxAge = maxAge;
+  }
+
+  return opts;
 }
 
 /**
