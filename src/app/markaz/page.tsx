@@ -13,13 +13,11 @@ import ResultsSection from "@/components/ResultsSection";
 import LeadBannerSection from "@/components/LeadBannerSection";
 import LeadModal from "@/components/LeadModal";
 import VideoModal from "@/components/VideoModal";
-import DiagnosticQuizModal from "@/components/DiagnosticQuizModal";
 
 export default function MarkazPage() {
   const [leadModalOpen, setLeadModalOpen] = useState(false);
   const [leadTarget, setLeadTarget] = useState("Prezident Maktabiga Tayyorlov (PMT)");
   const [videoModalOpen, setVideoModalOpen] = useState(false);
-  const [quizModalOpen, setQuizModalOpen] = useState(false);
 
   const handleOpenLeadModal = (courseName: string = "Prezident Maktabiga Tayyorlov (PMT)") => {
     setLeadTarget(courseName);
@@ -36,7 +34,6 @@ export default function MarkazPage() {
         <Hero
           onOpenLeadModal={handleOpenLeadModal}
           onOpenVideoModal={() => setVideoModalOpen(true)}
-          onOpenQuizModal={() => setQuizModalOpen(true)}
         />
 
         {/* 3. Stats Bar */}
@@ -78,12 +75,6 @@ export default function MarkazPage() {
       <VideoModal
         isOpen={videoModalOpen}
         onClose={() => setVideoModalOpen(false)}
-      />
-
-      <DiagnosticQuizModal
-        isOpen={quizModalOpen}
-        onClose={() => setQuizModalOpen(false)}
-        onSelectCourse={(course) => handleOpenLeadModal(course)}
       />
     </div>
   );

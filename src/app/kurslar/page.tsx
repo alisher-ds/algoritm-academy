@@ -5,7 +5,6 @@ import Link from "next/link";
 import { 
   MapPin, 
   ArrowRight, 
-  Sparkles, 
   BookOpen, 
   ShieldCheck,
   ChevronRight,
@@ -16,12 +15,10 @@ import Footer from "@/components/Footer";
 import CourseCatalog from "@/components/CourseCatalog";
 import LeadBannerSection from "@/components/LeadBannerSection";
 import LeadModal from "@/components/LeadModal";
-import DiagnosticQuizModal from "@/components/DiagnosticQuizModal";
 
 export default function KurslarPage() {
   const [leadModalOpen, setLeadModalOpen] = useState(false);
   const [leadTarget, setLeadTarget] = useState("Prezident Maktabiga Tayyorlov (PMT)");
-  const [quizModalOpen, setQuizModalOpen] = useState(false);
 
   const handleOpenLeadModal = (courseName: string = "Prezident Maktabiga Tayyorlov (PMT)") => {
     setLeadTarget(courseName);
@@ -71,14 +68,6 @@ export default function KurslarPage() {
                   <span>Kurslarni Ko'rish</span>
                   <ArrowRight className="w-4 h-4" />
                 </a>
-
-                <button
-                  onClick={() => setQuizModalOpen(true)}
-                  className="px-7 py-4 rounded-full bg-white/[0.05] hover:bg-white/10 text-white border border-white/15 hover:border-brand-400/50 text-xs font-bold uppercase tracking-wider transition flex items-center gap-2 cursor-pointer"
-                >
-                  <Sparkles className="w-4 h-4 text-brand-400" />
-                  <span>Darajani Aniqlash (Test)</span>
-                </button>
               </div>
             </div>
 
@@ -142,12 +131,6 @@ export default function KurslarPage() {
         isOpen={leadModalOpen}
         onClose={() => setLeadModalOpen(false)}
         initialCourse={leadTarget}
-      />
-
-      <DiagnosticQuizModal
-        isOpen={quizModalOpen}
-        onClose={() => setQuizModalOpen(false)}
-        onSelectCourse={(course) => handleOpenLeadModal(course)}
       />
     </div>
   );

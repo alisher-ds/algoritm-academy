@@ -6,7 +6,6 @@ import {
   Play,
   Sparkles,
   MapPin,
-  HelpCircle,
   GraduationCap,
   CalendarCheck,
 } from "lucide-react";
@@ -15,7 +14,6 @@ import { ECOSYSTEM_DATA } from "@/data/ecosystemData";
 interface HeroProps {
   onOpenLeadModal: (target?: string) => void;
   onOpenVideoModal: () => void;
-  onOpenQuizModal: () => void;
 }
 
 const heroStats = [
@@ -24,7 +22,7 @@ const heroStats = [
   { value: "189", label: "OTM kirishda maksimal ball" },
 ];
 
-export default function Hero({ onOpenLeadModal, onOpenVideoModal, onOpenQuizModal }: HeroProps) {
+export default function Hero({ onOpenLeadModal, onOpenVideoModal }: HeroProps) {
   return (
     <section className="relative overflow-hidden border-b border-slate-200/70 bg-gradient-to-b from-brand-50/40 via-white to-white pt-28 sm:pt-32">
       {/* Orqa fon aksenti */}
@@ -66,14 +64,6 @@ export default function Hero({ onOpenLeadModal, onOpenVideoModal, onOpenQuizModa
               >
                 Bepul sinov darsiga yozilish
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-              </button>
-
-              <button
-                onClick={onOpenQuizModal}
-                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-6 py-4 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-brand-300 hover:text-brand-700"
-              >
-                <HelpCircle className="h-4 w-4 text-brand-500" />
-                Yo&apos;nalish tanlash testi
               </button>
             </div>
 
