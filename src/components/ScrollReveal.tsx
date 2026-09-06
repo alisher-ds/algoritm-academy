@@ -26,10 +26,10 @@ export default function ScrollReveal({
   variant = "fade-up",
   delay = 0,
   duration = 750,
-  threshold = 0.15,
-  distance = 32,
+  threshold = 0.1,
+  distance = 24,
   className = "",
-  once = false,
+  once = true,
   style,
   ...rest
 }: ScrollRevealProps) {
@@ -75,7 +75,7 @@ export default function ScrollReveal({
       },
       {
         threshold,
-        rootMargin: "0px 0px -40px 0px",
+        rootMargin: "0px 0px 50px 0px",
       }
     );
 

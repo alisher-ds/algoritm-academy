@@ -19,7 +19,7 @@ export default function AnimatedCounter({
   prefix = "",
   suffix = "",
   className = "",
-  once = false,
+  once = true,
 }: AnimatedCounterProps) {
   const [count, setCount] = useState<number>(() => {
     if (
