@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { Play, Video, Send, ArrowUpRight } from "lucide-react";
+import { Play, Video, ArrowUpRight } from "lucide-react";
+import { TelegramIcon } from "@/components/SocialIcons";
 import VideoModal from "@/components/VideoModal";
 import { ECOSYSTEM_DATA } from "@/data/ecosystemData";
 
@@ -113,7 +114,7 @@ export default function ReelsShowcase() {
             rel="noreferrer"
             className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-white/10 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white transition hover:bg-brand-500"
           >
-            <Send className="h-4 w-4" />
+            <TelegramIcon className="h-4 w-4" />
             Telegram kanal
             <ArrowUpRight className="h-3.5 w-3.5" />
           </a>

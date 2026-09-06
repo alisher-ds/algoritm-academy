@@ -2,7 +2,8 @@
 
 import React from "react";
 import Link from "next/link";
-import { MapPin, Send, Globe, School, GraduationCap, Phone, ExternalLink } from "lucide-react";
+import { MapPin, School, GraduationCap, Phone, ExternalLink } from "lucide-react";
+import { TelegramIcon, InstagramIcon } from "@/components/SocialIcons";
 import { ECOSYSTEM_DATA } from "@/data/ecosystemData";
 import ScrollReveal from "@/components/ScrollReveal";
 
@@ -25,24 +26,26 @@ export default function Footer() {
                   </span>
                 </Link>
 
-                <div className="flex items-center gap-1.5 ml-1">
+                <div className="flex items-center gap-2 ml-1">
                   <a
                     href={ECOSYSTEM_DATA.contact.telegram}
                     target="_blank"
                     rel="noreferrer"
-                    className="flex h-6 w-6 items-center justify-center rounded-md bg-white/5 text-slate-400 ring-1 ring-white/10 hover:bg-brand-500 hover:text-slate-950 transition"
+                    className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/5 ring-1 ring-white/10 hover:ring-[#229ED9]/50 hover:scale-110 transition-all duration-200"
                     aria-label="Telegram"
+                    title="Telegram kanalimiz"
                   >
-                    <Send className="h-3 w-3" />
+                    <TelegramIcon className="h-4.5 w-4.5" />
                   </a>
                   <a
                     href={ECOSYSTEM_DATA.contact.instagram}
                     target="_blank"
                     rel="noreferrer"
-                    className="flex h-6 w-6 items-center justify-center rounded-md bg-white/5 text-slate-400 ring-1 ring-white/10 hover:bg-brand-500 hover:text-slate-950 transition"
+                    className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/5 ring-1 ring-white/10 hover:ring-[#e1306c]/50 hover:scale-110 transition-all duration-200"
                     aria-label="Instagram"
+                    title="Instagram sahifamiz"
                   >
-                    <Globe className="h-3 w-3" />
+                    <InstagramIcon className="h-4.5 w-4.5" />
                   </a>
                 </div>
               </div>
