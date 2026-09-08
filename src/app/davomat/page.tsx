@@ -25,12 +25,15 @@ import {
   Send,
   KeyRound,
   ShieldCheck,
+  WifiOff,
+  CloudUpload,
 } from "lucide-react";
-import type {
-  Group,
-  Student,
-  AttendanceStatus,
-  AttendanceRecord,
+import {
+  type Group,
+  type Student,
+  type AttendanceStatus,
+  type AttendanceRecord,
+  isLessonToday,
 } from "@/lib/attendanceTypes";
 
 const TEACHERS = [
@@ -56,6 +59,8 @@ export default function DavomatTeacherPage() {
     ...TEACHERS,
   ]);
   const [selectedTeacherId, setSelectedTeacherId] = useState<string>("tm-aziz");
+  const [isTeacherLocked, setIsTeacherLocked] = useState(false);
+
   const [groups, setGroups] = useState<Group[]>([]);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
@@ -64,6 +69,8 @@ export default function DavomatTeacherPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [isOfflineSaved, setIsOfflineSaved] = useState(false);
+  const [isOnline, setIsOnline] = useState(true);
   const [errorNotice, setErrorNotice] = useState<string | null>(null);
 
   // Yangi o'quvchi qo'shish modali
@@ -90,7 +97,47 @@ export default function DavomatTeacherPage() {
     });
   }, []);
 
-  // 1. Telegram WebApp Tekshiruvi
+  // 1. Oflayn navbatni serverga sinxronizatsiya qilish
+  const syncOfflineQueue = useCallback(async () => {
+    if (typeof window === "undefined") return;
+    try {
+      const rawQueue = localStorage.getItem("algoritm_offline_queue");
+      if (!rawQueue) return;
+      const queue: Array<{ records: any[] }> = JSON.parse(rawQueue);
+      if (queue.length === 0) return;
+
+      for (const item of queue) {
+        await fetch("/api/attendance", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ records: item.records }),
+        });
+      }
+      localStorage.removeItem("algoritm_offline_queue");
+      setIsOfflineSaved(false);
+    } catch {}
+  }, []);
+
+  // 2. Tarmoq holatini kuzatish (Online/Offline listener)
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setIsOnline(navigator.onLine);
+      const handleOnline = () => {
+        setIsOnline(true);
+        syncOfflineQueue();
+      };
+      const handleOffline = () => setIsOnline(false);
+
+      window.addEventListener("online", handleOnline);
+      window.addEventListener("offline", handleOffline);
+      return () => {
+        window.removeEventListener("online", handleOnline);
+        window.removeEventListener("offline", handleOffline);
+      };
+    }
+  }, [syncOfflineQueue]);
+
+  // 3. Telegram WebApp Tekshiruvi va Ustozni aniqlash
   useEffect(() => {
     if (typeof window !== "undefined") {
       const tg = (window as any).Telegram?.WebApp;
@@ -103,12 +150,13 @@ export default function DavomatTeacherPage() {
         const user = tg.initDataUnsafe?.user;
         setTelegramUser(user);
 
-        // Telegram foydalanuvchi ismi bo'yicha ustozni avtomatik topish
+        // Telegram profil nomi bo'yicha ustozni aniqlash va qulflash
         if (user?.first_name) {
           const fn = user.first_name.toLowerCase();
           const match = TEACHERS.find((t) => t.name.toLowerCase().includes(fn));
           if (match) {
             setSelectedTeacherId(match.id);
+            setIsTeacherLocked(true); // O'zga ustoz guruhlariga adashib o'tmasligi uchun
           }
         }
       } else {
@@ -121,7 +169,7 @@ export default function DavomatTeacherPage() {
     }
   }, []);
 
-  // 2. Dinamik ustozlar ro'yxatini yuklash
+  // 4. Dinamik ustozlar ro'yxatini yuklash
   useEffect(() => {
     fetch("/api/groups?activeOnly=true")
       .then((res) => res.json())
@@ -149,7 +197,7 @@ export default function DavomatTeacherPage() {
       .catch(() => {});
   }, []);
 
-  // 3. Guruhlarni yuklash
+  // 5. Guruhlarni yuklash va Bugungi kun bo'yicha aqlli saralash
   const fetchGroups = useCallback(async (teacherId: string) => {
     setLoading(true);
     try {
@@ -157,15 +205,24 @@ export default function DavomatTeacherPage() {
       const res = await fetch(url);
       const data = await res.json();
       if (data.success && Array.isArray(data.groups)) {
-        setGroups(data.groups);
-        if (data.groups.length > 0) {
-          setSelectedGroupId(data.groups[0].id);
+        // Aqlli saralash: Bugun darsi bor guruhlar eng yuqorida turadi!
+        const sorted = [...data.groups].sort((a: Group, b: Group) => {
+          const aToday = isLessonToday(a.days);
+          const bToday = isLessonToday(b.days);
+          if (aToday && !bToday) return -1;
+          if (!aToday && bToday) return 1;
+          return 0;
+        });
+
+        setGroups(sorted);
+        if (sorted.length > 0) {
+          setSelectedGroupId(sorted[0].id);
         } else {
           setSelectedGroupId(null);
         }
       }
     } catch {
-      setErrorNotice("Guruhlarni yuklab bo'lmadi. Internetni tekshiring.");
+      setErrorNotice("Guruhlarni yuklab bo'lmadi.");
     } finally {
       setLoading(false);
     }
@@ -177,7 +234,7 @@ export default function DavomatTeacherPage() {
     }
   }, [selectedTeacherId, fetchGroups, isTelegram, pinAuth]);
 
-  // 4. Tanlangan guruh o'quvchilarini va bugungi davomatini yuklash
+  // 6. Tanlangan guruh o'quvchilarini va bugungi davomatini yuklash
   const fetchGroupData = useCallback(async (groupId: string) => {
     try {
       const [stdRes, attRes] = await Promise.all([
@@ -211,7 +268,19 @@ export default function DavomatTeacherPage() {
         setNotes(initialNotes);
       }
     } catch {
-      setErrorNotice("O'quvchilar ma'lumotini yuklab bo'lmadi");
+      // Oflayn holatda bo'lsa, lokal keshdan tiklash
+      const cached = localStorage.getItem(`cached_std_${groupId}`);
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          setStudents(parsed);
+          const initialMap: Record<string, AttendanceStatus> = {};
+          parsed.forEach((s: Student) => {
+            initialMap[s.id] = "keldi";
+          });
+          setAttendance(initialMap);
+        } catch {}
+      }
     }
   }, [todayStr]);
 
@@ -223,7 +292,7 @@ export default function DavomatTeacherPage() {
     }
   }, [selectedGroupId, fetchGroupData, isTelegram, pinAuth]);
 
-  // Barchasini keldi deb belgilash (1-bosish)
+  // 7. Barchasini keldi deb belgilash (1-bosish)
   const markAllPresent = () => {
     const updated: Record<string, AttendanceStatus> = {};
     students.forEach((s) => {
@@ -243,11 +312,12 @@ export default function DavomatTeacherPage() {
     } catch {}
   };
 
-  // Davomatni saqlash
+  // 8. Davomatni saqlash (Oflayn rejim va Kriptografik imzo bilan)
   const handleSaveAttendance = async () => {
     if (!selectedGroupId || students.length === 0) return;
     setSaving(true);
     setSaveSuccess(false);
+    setIsOfflineSaved(false);
     setErrorNotice(null);
 
     const teacher = teacherList.find((t) => t.id === selectedTeacherId);
@@ -260,13 +330,21 @@ export default function DavomatTeacherPage() {
       markedBy: teacher?.name || "Ustoz",
     }));
 
+    // Doimiy xavfsizlik: Har ehtimolga qarshi avval lokal keshga yozib olamiz
+    try {
+      localStorage.setItem(`draft_att_${selectedGroupId}_${todayStr}`, JSON.stringify(records));
+    } catch {}
+
+    const rawInitData = typeof window !== "undefined" ? (window as any).Telegram?.WebApp?.initData : undefined;
+
     try {
       const res = await fetch("/api/attendance", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ records }),
+        body: JSON.stringify({ records, initData: rawInitData }),
       });
       const data = await res.json();
+
       if (res.ok && data.success) {
         setSaveSuccess(true);
         try {
@@ -274,10 +352,18 @@ export default function DavomatTeacherPage() {
         } catch {}
         setTimeout(() => setSaveSuccess(false), 3500);
       } else {
-        setErrorNotice(data.error || "Saqlashda xatolik yuz berdi");
+        throw new Error(data.error || "Server xatosi");
       }
-    } catch {
-      setErrorNotice("Internet bilan aloqa yo'q. Qayta urinib ko'ring.");
+    } catch (err) {
+      // Internet uzilgan bo'lsa: Oflayn navbatga yozish
+      try {
+        const rawQueue = localStorage.getItem("algoritm_offline_queue") || "[]";
+        const queue: Array<{ records: any[] }> = JSON.parse(rawQueue);
+        queue.push({ records });
+        localStorage.setItem("algoritm_offline_queue", JSON.stringify(queue));
+        setIsOfflineSaved(true);
+        setTimeout(() => setIsOfflineSaved(false), 4500);
+      } catch {}
     } finally {
       setSaving(false);
     }
@@ -346,7 +432,7 @@ export default function DavomatTeacherPage() {
             </span>
             <h2 className="text-xl font-extrabold text-white">Algoritm Ustoz Davomat Portali</h2>
             <p className="text-xs text-slate-400 leading-relaxed">
-              Xavfsizlik talablariga ko'ra ushbu sahifa ochiq brauzerlar uchun yopiq. Davomat qilish uchun rasmiy <b>Algoritm Telegram Boti (@algoritm_ustoz_bot)</b> orqali kiring.
+              Xavfsizlik talablariga ko'ra ushbu sahifa ochiq brauzerlar uchun yopiq. Davomat qilish uchun rasmiy <b>Algoritm Telegram Boti</b> orqali kiring.
             </p>
           </div>
 
@@ -427,6 +513,14 @@ export default function DavomatTeacherPage() {
     <div className="min-h-screen bg-slate-950 text-slate-100 pb-28">
       <Script src="https://telegram.org/js/telegram-web-app.js" strategy="beforeInteractive" />
 
+      {/* Tarmoq uzilganda ogohlantirish */}
+      {!isOnline && (
+        <div className="bg-amber-500/90 text-slate-950 px-4 py-1.5 text-xs font-bold flex items-center justify-center gap-1.5 sticky top-0 z-40">
+          <WifiOff className="w-3.5 h-3.5" />
+          <span>Internet bilan aloqa yo'q. Oflayn rejim faol — ma'lumotlar qurilmada saqlanadi.</span>
+        </div>
+      )}
+
       {/* Yuqori qism (Telegram Header) */}
       <header className="sticky top-0 z-30 bg-slate-900/95 backdrop-blur-md border-b border-white/10 px-4 py-3">
         <div className="max-w-xl mx-auto flex items-center justify-between">
@@ -464,41 +558,43 @@ export default function DavomatTeacherPage() {
       </header>
 
       <main className="max-w-xl mx-auto px-3.5 py-3 space-y-3.5">
-        {/* Ustozni tanlash (Kompakt) */}
-        <div className="bg-slate-900/80 border border-white/10 rounded-2xl p-3 shadow-sm">
-          <div className="flex items-center justify-between mb-2">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              Ustoz profili:
-            </label>
-            <span className="text-[10px] text-brand-400 font-mono">
-              {teacherList.find((t) => t.id === selectedTeacherId)?.name}
-            </span>
-          </div>
+        {/* Ustozni tanlash (Faqat qulflanmagan bo'lsa ko'rinadi) */}
+        {!isTeacherLocked && (
+          <div className="bg-slate-900/80 border border-white/10 rounded-2xl p-3 shadow-sm">
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                Ustoz profili:
+              </label>
+              <span className="text-[10px] text-brand-400 font-mono">
+                {teacherList.find((t) => t.id === selectedTeacherId)?.name}
+              </span>
+            </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
-            {teacherList.map((t) => {
-              const isSelected = selectedTeacherId === t.id;
-              return (
-                <button
-                  key={t.id}
-                  onClick={() => setSelectedTeacherId(t.id)}
-                  className={`p-2 rounded-xl text-left transition border cursor-pointer flex flex-col justify-between ${
-                    isSelected
-                      ? "bg-brand-500 text-slate-950 border-brand-400 shadow-sm font-bold"
-                      : "bg-white/5 text-slate-300 border-white/5 hover:bg-white/10"
-                  }`}
-                >
-                  <span className="text-xs truncate">{t.name}</span>
-                  <span className={`text-[9px] truncate mt-0.5 ${isSelected ? "text-slate-900/80" : "text-slate-500"}`}>
-                    {t.subject}
-                  </span>
-                </button>
-              );
-            })}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+              {teacherList.map((t) => {
+                const isSelected = selectedTeacherId === t.id;
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => setSelectedTeacherId(t.id)}
+                    className={`p-2 rounded-xl text-left transition border cursor-pointer flex flex-col justify-between ${
+                      isSelected
+                        ? "bg-brand-500 text-slate-950 border-brand-400 shadow-sm font-bold"
+                        : "bg-white/5 text-slate-300 border-white/5 hover:bg-white/10"
+                    }`}
+                  >
+                    <span className="text-xs truncate">{t.name}</span>
+                    <span className={`text-[9px] truncate mt-0.5 ${isSelected ? "text-slate-900/80" : "text-slate-500"}`}>
+                      {t.subject}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* Guruhlar ro'yxati (Karusel) */}
+        {/* Guruhlar ro'yxati (Bugungi darslar birinchi o'rinda!) */}
         {loading ? (
           <div className="py-8 text-center text-slate-400 flex items-center justify-center gap-2">
             <Loader2 className="w-5 h-5 animate-spin text-brand-400" />
@@ -506,29 +602,39 @@ export default function DavomatTeacherPage() {
           </div>
         ) : groups.length === 0 ? (
           <div className="p-6 text-center bg-slate-900 border border-white/10 rounded-2xl space-y-2">
-            <p className="text-xs text-slate-400">Ushbu ustozga biriktirilgan faol guruhlar topilmadi.</p>
-            <p className="text-[11px] text-slate-500">Admin panel orqali yangi guruh qo'shishingiz mumkin.</p>
+            <p className="text-xs text-slate-400">Sizga biriktirilgan faol guruhlar topilmadi.</p>
           </div>
         ) : (
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <div className="flex items-center justify-between text-[11px] text-slate-400 px-1 font-bold">
-              <span>GURUHLAR:</span>
+              <span>GURUHLARINGIZ:</span>
               <span className="font-mono text-brand-400">{groups.length} ta guruh</span>
             </div>
             <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
               {groups.map((g) => {
                 const isSelected = selectedGroupId === g.id;
+                const hasClassToday = isLessonToday(g.days);
+
                 return (
                   <button
                     key={g.id}
                     onClick={() => setSelectedGroupId(g.id)}
-                    className={`px-3.5 py-2.5 rounded-xl text-left shrink-0 transition border cursor-pointer space-y-0.5 ${
+                    className={`px-3.5 py-2.5 rounded-xl text-left shrink-0 transition border cursor-pointer space-y-1 relative overflow-hidden ${
                       isSelected
                         ? "bg-slate-800 border-brand-500 ring-1 ring-brand-500/50 shadow-md"
                         : "bg-slate-900/90 border-white/10 hover:border-white/20"
                     }`}
                   >
-                    <div className="font-bold text-xs text-white">{g.name}</div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-xs text-white">{g.name}</span>
+                      {hasClassToday ? (
+                        <span className="px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-400 text-[9px] font-bold border border-emerald-500/30 flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Bugun
+                        </span>
+                      ) : (
+                        <span className="text-[9px] text-slate-500 font-normal">Boshqa kun</span>
+                      )}
+                    </div>
                     <div className="text-[10px] text-slate-400 flex items-center gap-1.5 font-mono">
                       <span>{g.time}</span>
                       <span>·</span>
@@ -547,7 +653,14 @@ export default function DavomatTeacherPage() {
             {/* Guruh kartasi va tezkor amallar */}
             <div className="bg-slate-900 border border-white/10 rounded-2xl p-3.5 flex items-center justify-between gap-3 shadow-sm">
               <div>
-                <h3 className="font-bold text-sm text-white">{selectedGroup.name}</h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-bold text-sm text-white">{selectedGroup.name}</h3>
+                  {isLessonToday(selectedGroup.days) && (
+                    <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 text-[10px] font-bold">
+                      Bugungi Dars
+                    </span>
+                  )}
+                </div>
                 <p className="text-[11px] text-slate-400 flex items-center gap-1.5 mt-0.5">
                   <Clock className="w-3 h-3 text-slate-500" />
                   <span>{selectedGroup.time} ({selectedGroup.room})</span>
@@ -696,6 +809,11 @@ export default function DavomatTeacherPage() {
                 <>
                   <Check className="w-4 h-4 text-emerald-950" />
                   <span>Davomat Saqlandi!</span>
+                </>
+              ) : isOfflineSaved ? (
+                <>
+                  <CloudUpload className="w-4 h-4 text-amber-950" />
+                  <span>Oflayn Saqlandi!</span>
                 </>
               ) : (
                 <>
