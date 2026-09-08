@@ -1,4 +1,4 @@
-import { createHmac, randomBytes, timingSafeEqual } from "crypto";
+import { createHmac, randomBytes, timingSafeEqual, scryptSync } from "crypto";
 import { promises as fs } from "fs";
 import path from "path";
 import os from "os";
@@ -203,9 +203,19 @@ export async function resetTeachers(): Promise<Teacher[]> {
   return fresh;
 }
 
-/** Parolni xavfsiz HMAC-SHA256 xesh qilish */
+/** Password hashing using Node's built-in memory-hard scrypt. */
 export function hashPassword(password: string, salt: string): string {
-  return createHmac("sha256", salt).update(password).digest("hex");
+  return scryptSync(password, salt, 64).toString("hex");
+}
+
+/** Verify legacy HMAC-SHA256 hashes and transparently upgrade them to scrypt. */
+function verifyPasswordHash(password: string, salt: string, storedHash: string): { valid: boolean; needsUpgrade: boolean } {
+  const legacy = createHmac("sha256", salt).update(password).digest("hex");
+  if (storedHash.length === legacy.length) {
+    return { valid: safeEqual(legacy, storedHash), needsUpgrade: true };
+  }
+  const computed = hashPassword(password, salt);
+  return { valid: safeEqual(computed, storedHash), needsUpgrade: false };
 }
 
 /** Timing-safe solishtirish */
@@ -318,9 +328,17 @@ export async function verifyTeacherCredentials(
     return null;
   }
 
-  const computedHash = hashPassword(plainPassword, teacher.salt);
-  if (!safeEqual(computedHash, teacher.passwordHash)) {
-    return null;
+  const verification = verifyPasswordHash(plainPassword, teacher.salt, teacher.passwordHash);
+  if (!verification.valid) return null;
+
+  if (verification.needsUpgrade) {
+    const index = teachers.findIndex((t) => t.id === teacher.id);
+    if (index !== -1) {
+      const newSalt = randomBytes(16).toString("hex");
+      teachers[index] = { ...teachers[index], passwordHash: hashPassword(plainPassword, newSalt), salt: newSalt };
+      await saveTeachers(teachers);
+      return sanitizeTeacher(teachers[index]);
+    }
   }
 
   return sanitizeTeacher(teacher);
@@ -373,8 +391,13 @@ export function sanitizeTeacher(teacher: Teacher): Teacher {
 // ─────────────────────── Sessiya Tokenlari (HMAC Imzo) ───────────────────────
 
 function getSessionSecret(): string {
-  const secret = process.env.ADMIN_SESSION_SECRET || process.env.TELEGRAM_BOT_TOKEN || "algoritm-teacher-secret-salt-2026";
-  return createHmac("sha256", "teacher-token-salt").update(secret).digest("hex");
+  const explicit = process.env.TEACHER_SESSION_SECRET?.trim();
+  if (explicit) return explicit;
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("TEACHER_SESSION_SECRET must be configured in production");
+  }
+  const fallback = process.env.ADMIN_SESSION_SECRET || process.env.TELEGRAM_BOT_TOKEN || "local-development-only-teacher-secret";
+  return createHmac("sha256", "teacher-token-salt").update(fallback).digest("hex");
 }
 
 export interface TeacherSessionPayload {
