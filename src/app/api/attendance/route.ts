@@ -5,7 +5,8 @@ import {
   calculateMonthlyBilling,
   getGroup,
 } from "@/lib/attendanceStore";
-import { isSameOrigin } from "@/lib/adminAuth";
+import { isSameOrigin, isAuthed } from "@/lib/adminAuth";
+import { verifyTelegramWebAppData } from "@/lib/telegramAuth";
 import { sendAttendanceReportNotification } from "@/lib/attendanceTelegram";
 import { clientIdentity, rateLimit } from "@/lib/rateLimit";
 
@@ -44,6 +45,18 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
+
+    // Xavfsizlik: Telegram WebApp initData kriptografik tekshiruvi
+    const token = process.env.TELEGRAM_BOT_TOKEN;
+    if (body.initData && token) {
+      const authResult = verifyTelegramWebAppData(body.initData, token);
+      if (!authResult.valid) {
+        return NextResponse.json(
+          { success: false, error: "Xavfsizlik xatosi: Soxtalashtirilgan Telegram sessiyasi." },
+          { status: 401 }
+        );
+      }
+    }
     const records = Array.isArray(body.records) ? body.records : [];
     if (records.length === 0) {
       return NextResponse.json({ success: false, error: "Davomat yozuvlari kiritilmadi" }, { status: 400 });

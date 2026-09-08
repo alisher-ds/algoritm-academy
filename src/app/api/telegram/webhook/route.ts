@@ -92,6 +92,14 @@ async function sendTelegramReply(chatId: number | string, text: string, replyMar
 }
 
 export async function POST(req: Request) {
+  // Webhook secret token tekshiruvi (agar sozlagan bo'lsa)
+  const expectedSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
+  if (expectedSecret) {
+    const receivedSecret = req.headers.get("x-telegram-bot-api-secret-token");
+    if (receivedSecret !== expectedSecret) {
+      return NextResponse.json({ error: "Ruxsat yo'q" }, { status: 401 });
+    }
+  }
   try {
     const update = await req.json();
     const message = update?.message;

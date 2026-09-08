@@ -16,6 +16,8 @@ export interface Group {
   monthlyPrice: number; // Masalan 450000 so'm
   lessonsPerMonth: number; // Standart 12 ta dars
   active: boolean;
+  telegramId?: string; // Ustozning Telegram ID raqami
+  telegramUsername?: string; // Ustozning @username'i
   createdAt: string;
 }
 
@@ -55,4 +57,18 @@ export interface StudentMonthlyBilling {
   perLessonPrice: number; // 33 333
   excusedDeduction: number; // 4 * 33 333 = 133 332
   finalPayable: number; // 400 000 - 133 332 = 266 668
+}
+
+/**
+ * Bugungi kunga dars to'g'ri kelishini hisoblovchi aqlli yordamchi.
+ * 1: Dushanba, 2: Seshanba, 3: Chorshanba, 4: Payshanba, 5: Juma, 6: Shanba, 0: Yakshanba
+ */
+export function isLessonToday(days: DaySchedule, dateStr?: string): boolean {
+  const d = dateStr ? new Date(dateStr) : new Date();
+  const day = d.getDay();
+  if (days === "har-kuni") return true;
+  if (days === "dush-chor-juma") return day === 1 || day === 3 || day === 5;
+  if (days === "sesh-pay-shanba") return day === 2 || day === 4 || day === 6;
+  if (days === "dam-olish") return day === 0 || day === 6;
+  return false;
 }
