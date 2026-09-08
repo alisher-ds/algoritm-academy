@@ -57,6 +57,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: false, error: "Avtorizatsiyadan o'tilmagan" }, { status: 401 });
   }
 
+  if (!auth.isAdmin && auth.teacher?.status && auth.teacher.status !== "active") {
+    return NextResponse.json({ success: false, error: "Hisobingiz hali tasdiqlanmagan yoki faol emas" }, { status: 403 });
+  }
+
   const { key: ip } = clientIdentity(req);
   const limit = await rateLimit("group:create:" + ip, 30, 60);
   if (!limit.allowed) {

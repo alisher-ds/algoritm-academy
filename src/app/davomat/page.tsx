@@ -85,6 +85,7 @@ export default function DavomatTeacherPage() {
   const [loginInput, setLoginInput] = useState("");
   const [passwordInput, setPasswordInput] = useState("");
   const [authError, setAuthError] = useState("");
+  const [pendingNotice, setPendingNotice] = useState<string | null>(null);
   const [authSubmitting, setAuthSubmitting] = useState(false);
 
   // Yangi hisob yaratish / Ro'yxatdan o'tish holati
@@ -187,6 +188,13 @@ export default function DavomatTeacherPage() {
     try {
       const res = await authFetch("/api/teachers/auth");
       const data = await res.json();
+
+      if (data.isPending) {
+        setCurrentTeacher(data.teacher);
+        setPendingNotice(data.message || "Hisobingiz administrator tomonidan ko'rib chiqilmoqda. Tasdiqlangach darslaringiz ochiladi.");
+        setGroups([]);
+        return;
+      }
 
       if (data.success && data.authenticated && data.teacher) {
         setCurrentTeacher(data.teacher);
@@ -433,7 +441,11 @@ export default function DavomatTeacherPage() {
         setPasswordInput("");
         await checkSession();
       } else {
-        setAuthError(data.error || "Login yoki parol noto'g'ri");
+        if (data.pending) {
+          setAuthError("⏳ Hisobingiz ma'muriyat tomonidan ko'rib chiqilmoqda. Administrator tasdiqlaganidan so'ng darslaringiz ochiladi.");
+        } else {
+          setAuthError(data.error || "Login yoki parol noto'g'ri");
+        }
       }
     } catch {
       setAuthError("Serverga ulanishda xatolik");
@@ -478,6 +490,16 @@ export default function DavomatTeacherPage() {
       });
       const data = await res.json();
       if (res.ok && data.success) {
+        if (data.isPending) {
+          setRegName("");
+          setRegSubject("");
+          setRegLogin("");
+          setRegPassword("");
+          setRegConfirmPassword("");
+          setAuthTab("login");
+          setPendingNotice("✅ Ro'yxatdan o'tish arizangiz qabul qilindi! Administrator tasdiqlaganidan so'ng shaxsiy kabinetingiz ochiladi.");
+          return;
+        }
         if (data.token && typeof window !== "undefined") {
           localStorage.setItem("algoritm_teacher_token", data.token);
         }
@@ -728,6 +750,13 @@ export default function DavomatTeacherPage() {
             </button>
           </div>
 
+          {pendingNotice && (
+            <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs flex items-start gap-2.5">
+              <Clock className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+              <div className="leading-relaxed">{pendingNotice}</div>
+            </div>
+          )}
+
           {authError && (
             <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs flex items-start gap-2.5">
               <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
@@ -917,6 +946,89 @@ export default function DavomatTeacherPage() {
               <Send className="w-3 h-3" />
               <span>@algoritm_ustoz_bot</span>
             </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ═════════════════════════════════════════════════════════════════════════
+  // EKRAN 2.5: TASDIQLANMAGAN (PENDING YOKI BLOCKED) USTOZ XABARNOMASI
+  // ═════════════════════════════════════════════════════════════════════════
+  if (currentTeacher && (currentTeacher.status === "pending" || currentTeacher.status === "blocked")) {
+    const isBlocked = currentTeacher.status === "blocked";
+    return (
+      <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-4">
+        <Script src="https://telegram.org/js/telegram-web-app.js" strategy="beforeInteractive" />
+
+        <div className="w-full max-w-md bg-slate-900 border border-white/10 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-md space-y-6 text-center">
+          <div
+            className={`w-16 h-16 rounded-3xl flex items-center justify-center mx-auto shadow-lg ${
+              isBlocked
+                ? "bg-rose-500/20 border border-rose-500/30 text-rose-400 shadow-rose-500/10"
+                : "bg-amber-500/20 border border-amber-500/30 text-amber-400 shadow-amber-500/10"
+            }`}
+          >
+            {isBlocked ? <XCircle className="w-8 h-8" /> : <Clock className="w-8 h-8 animate-pulse" />}
+          </div>
+
+          <div className="space-y-2">
+            <h2 className="text-xl font-extrabold tracking-tight text-white">
+              {isBlocked ? "Hisobingiz Cheklangan" : "Arizangiz Ko'rib Chiqilmoqda"}
+            </h2>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              {isBlocked
+                ? "Sizning o'qituvchi hisobingiz administrator tomonidan vaqtincha to'xtatilgan. Ma'lumot olish uchun markaz ma'muriyatiga murojaat qiling."
+                : (pendingNotice || `Hurmatli ${currentTeacher.name}, sizning ro'yxatdan o'tish arizangiz markaz ma'muriyatiga yuborildi. Administrator tasdiqlagach, shaxsiy kabinetingiz va guruhlaringiz faollashadi.`)}
+            </p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-slate-950/80 border border-white/5 text-left text-xs space-y-2">
+            <div className="flex items-center justify-between text-slate-400">
+              <span>Ustoz:</span>
+              <span className="font-semibold text-white">{currentTeacher.name}</span>
+            </div>
+            <div className="flex items-center justify-between text-slate-400">
+              <span>Mutaxassislik:</span>
+              <span className="font-semibold text-brand-400">{currentTeacher.subject}</span>
+            </div>
+            <div className="flex items-center justify-between text-slate-400">
+              <span>Login:</span>
+              <span className="font-mono text-slate-300">@{currentTeacher.login}</span>
+            </div>
+            <div className="flex items-center justify-between text-slate-400">
+              <span>Holat:</span>
+              <span
+                className={`font-semibold px-2 py-0.5 rounded-md text-[10px] ${
+                  isBlocked
+                    ? "bg-rose-500/20 text-rose-400 border border-rose-500/30"
+                    : "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                }`}
+              >
+                {isBlocked ? "Bloklangan" : "Kutilmoqda"}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2.5 pt-2">
+            {!isBlocked && (
+              <button
+                type="button"
+                onClick={() => void checkSession()}
+                className="w-full py-3 rounded-2xl bg-brand-500 hover:bg-brand-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-brand-500/20 transition cursor-pointer"
+              >
+                <span>Holatni Qayta Tekshirish</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="w-full py-2.5 rounded-2xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white text-xs font-semibold flex items-center justify-center gap-2 transition cursor-pointer"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Chiqish</span>
+            </button>
           </div>
         </div>
       </div>

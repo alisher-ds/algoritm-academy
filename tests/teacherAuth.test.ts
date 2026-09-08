@@ -8,6 +8,9 @@ import {
   verifyTeacherCredentials,
   createTeacherToken,
   verifyTeacherToken,
+  createTeacherByAdmin,
+  updateTeacherStatus,
+  adminResetTeacherPassword,
 } from "../src/lib/teacherAuth";
 
 describe("Teacher Authentication & Role Isolation", () => {
@@ -98,11 +101,75 @@ describe("Teacher Authentication & Role Isolation", () => {
     expect(regResult.error).toBeUndefined();
     expect(regResult.teacher).toBeDefined();
     expect(regResult.teacher?.name).toBe("Dilshod Mahmudov");
+    expect(regResult.teacher?.status).toBe("pending");
 
-    // Login va parol orqali kirishni tekshirish
+    // Login va parol orqali hisob topilishini tekshirish
     const auth = await verifyTeacherCredentials(testLogin, "dilshod_parol_2026");
     expect(auth).not.toBeNull();
     expect(auth?.name).toBe("Dilshod Mahmudov");
+    expect(auth?.status).toBe("pending");
+  });
+
+  it("admin to'g'ridan-to'g'ri faol ustoz yarata oladi", async () => {
+    const adminLogin = `admin_created_${Date.now()}`;
+    const result = await createTeacherByAdmin({
+      name: "Sardor Aliyev",
+      login: adminLogin,
+      subject: "Informatika",
+      phone: "+998 90 777-11-22",
+      password: "sardor_super_pass",
+    });
+
+    expect(result.error).toBeUndefined();
+    expect(result.teacher).toBeDefined();
+    expect(result.teacher?.status).toBe("active");
+
+    const auth = await verifyTeacherCredentials(adminLogin, "sardor_super_pass");
+    expect(auth).not.toBeNull();
+    expect(auth?.status).toBe("active");
+  });
+
+  it("admin ustoz statusini tasdiqlashi (active) yoki bloklashi (blocked) mumkin", async () => {
+    const userLogin = `status_test_${Date.now()}`;
+    const reg = await registerTeacher({
+      name: "Sinov Ustoz",
+      login: userLogin,
+      subject: "Tarix",
+      password: "sinov_pass_123",
+    });
+    expect(reg.teacher?.status).toBe("pending");
+    const teacherId = reg.teacher!.id;
+
+    // Admin tasdiqlaydi (active)
+    const approved = await updateTeacherStatus(teacherId, "active");
+    expect(approved?.status).toBe("active");
+
+    // Admin bloklaydi (blocked)
+    const blocked = await updateTeacherStatus(teacherId, "blocked");
+    expect(blocked?.status).toBe("blocked");
+  });
+
+  it("admin ustoz parolini to'g'ridan-to'g'ri reset qila oladi", async () => {
+    const resetLogin = `reset_test_${Date.now()}`;
+    const reg = await registerTeacher({
+      name: "Reset Ustoz",
+      login: resetLogin,
+      subject: "Biologiya",
+      password: "eski_parol_999",
+    });
+    const teacherId = reg.teacher!.id;
+
+    // Admin parolni yangilaydi
+    const updated = await adminResetTeacherPassword(teacherId, "yangi_parol_000");
+    expect(updated).not.toBeNull();
+
+    // Eski parol ishlamasligi kerak
+    const authOld = await verifyTeacherCredentials(resetLogin, "eski_parol_999");
+    expect(authOld).toBeNull();
+
+    // Yangi parol ishlashi kerak
+    const authNew = await verifyTeacherCredentials(resetLogin, "yangi_parol_000");
+    expect(authNew).not.toBeNull();
   });
 
   it("takroriy login bilan ro'yxatdan o'tishni rad etadi", async () => {

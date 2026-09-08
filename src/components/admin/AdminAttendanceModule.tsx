@@ -15,6 +15,14 @@ import {
   Loader2,
   ExternalLink,
   ChevronRight,
+  GraduationCap,
+  Key,
+  ShieldCheck,
+  ShieldAlert,
+  UserPlus,
+  Trash2,
+  Ban,
+  RefreshCw,
 } from "lucide-react";
 import type {
   Group,
@@ -22,8 +30,24 @@ import type {
   StudentMonthlyBilling,
 } from "@/lib/attendanceTypes";
 
+export interface AdminTeacherItem {
+  id: string;
+  name: string;
+  login: string;
+  subject: string;
+  phone: string;
+  status: "active" | "pending" | "blocked";
+  createdAt: string;
+  hasPassword?: boolean;
+  hasTelegram?: boolean;
+  telegramId?: string | null;
+  telegramUsername?: string | null;
+  groupsCount?: number;
+  groupNames?: string[];
+}
+
 export default function AdminAttendanceModule() {
-  const [activeSubTab, setActiveSubTab] = useState<"guruhlar" | "oquvchilar" | "hisob">("hisob");
+  const [activeSubTab, setActiveSubTab] = useState<"guruhlar" | "oquvchilar" | "hisob" | "ustozlar">("hisob");
   const [groups, setGroups] = useState<Group[]>([]);
   const [selectedGroupId, setSelectedGroupId] = useState<string>("");
   const [students, setStudents] = useState<Student[]>([]);
@@ -47,7 +71,24 @@ export default function AdminAttendanceModule() {
   const [newGroupTeacher, setNewGroupTeacher] = useState("");
   const [newGroupTeacherId, setNewGroupTeacherId] = useState("");
   const [newGroupBranch, setNewGroupBranch] = useState("Algoritm Academy (O'quv markazi)");
-  const [teacherList, setTeacherList] = useState<Array<{ id: string; name: string; subject: string }>>([]);
+  const [teacherList, setTeacherList] = useState<AdminTeacherItem[]>([]);
+  const [searchTeacher, setSearchTeacher] = useState("");
+  const [teacherActionLoading, setTeacherActionLoading] = useState<string | null>(null);
+
+  // Yangi ustoz modal
+  const [showAddTeacherModal, setShowAddTeacherModal] = useState(false);
+  const [addTeacherName, setAddTeacherName] = useState("");
+  const [addTeacherSubject, setAddTeacherSubject] = useState("");
+  const [addTeacherPhone, setAddTeacherPhone] = useState("+998 ");
+  const [addTeacherLogin, setAddTeacherLogin] = useState("");
+  const [addTeacherPassword, setAddTeacherPassword] = useState("");
+  const [addTeacherStatus, setAddTeacherStatus] = useState<"active" | "pending">("active");
+
+  // Ustoz parolini yangilash modal
+  const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
+  const [resetTeacherTarget, setResetTeacherTarget] = useState<AdminTeacherItem | null>(null);
+  const [newTeacherPassword, setNewTeacherPassword] = useState("");
+
   const [newGroupDays, setNewGroupDays] = useState<string>("dush-chor-juma");
   const [newGroupTime, setNewGroupTime] = useState("14:00 - 15:30");
   const [newGroupRoom, setNewGroupRoom] = useState("201-xona");
@@ -59,6 +100,23 @@ export default function AdminAttendanceModule() {
   const [newStudentPhone, setNewStudentPhone] = useState("+998 ");
   const [newStudentParent, setNewStudentParent] = useState("+998 ");
   const [newStudentGroupId, setNewStudentGroupId] = useState("");
+
+  // Ustozlarni yuklash
+  const fetchTeachers = useCallback(async () => {
+    try {
+      const res = await fetch("/api/teachers/auth?scope=admin");
+      const data = await res.json();
+      if (data.teachers && Array.isArray(data.teachers)) {
+        setTeacherList(data.teachers);
+        if (data.teachers.length > 0) {
+          setNewGroupTeacherId((prev) => prev || data.teachers[0].id);
+          setNewGroupTeacher((prev) => prev || data.teachers[0].name);
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }, []);
 
   // Guruhlarni yuklash
   const fetchGroups = useCallback(async () => {
@@ -115,7 +173,7 @@ export default function AdminAttendanceModule() {
         const [gRes, sRes, tRes] = await Promise.all([
           fetch("/api/groups?activeOnly=false").then((r) => r.json()).catch(() => ({})),
           fetch("/api/students").then((r) => r.json()).catch(() => ({})),
-          fetch("/api/teachers/auth").then((r) => r.json()).catch(() => ({})),
+          fetch("/api/teachers/auth?scope=admin").then((r) => r.json()).catch(() => ({})),
         ]);
         if (ignore) return;
         if (gRes?.success && Array.isArray(gRes.groups)) {
@@ -144,6 +202,156 @@ export default function AdminAttendanceModule() {
       ignore = true;
     };
   }, []);
+
+  // Ustozni tasdiqlash
+  const handleApproveTeacher = async (teacherId: string) => {
+    setTeacherActionLoading(teacherId);
+    try {
+      const res = await fetch("/api/teachers/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "admin-update-status",
+          teacherId,
+          status: "active",
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        void fetchTeachers();
+      } else {
+        alert(data.error || "Xatolik yuz berdi");
+      }
+    } catch {
+      alert("Aloqa xatosi");
+    } finally {
+      setTeacherActionLoading(null);
+    }
+  };
+
+  // Ustozni bloklash yoki qayta faollashtirish
+  const handleToggleTeacherStatus = async (teacher: AdminTeacherItem) => {
+    const nextStatus = teacher.status === "active" ? "blocked" : "active";
+    const confirmMsg =
+      nextStatus === "blocked"
+        ? `${teacher.name} ustozni bloklamoqchimisiz? U tizimga kira olmaydi.`
+        : `${teacher.name} ustozni qayta faollashtirmoqchimisiz?`;
+    if (!window.confirm(confirmMsg)) return;
+
+    setTeacherActionLoading(teacher.id);
+    try {
+      const res = await fetch("/api/teachers/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "admin-update-status",
+          teacherId: teacher.id,
+          status: nextStatus,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        void fetchTeachers();
+      } else {
+        alert(data.error || "Xatolik yuz berdi");
+      }
+    } catch {
+      alert("Aloqa xatosi");
+    } finally {
+      setTeacherActionLoading(null);
+    }
+  };
+
+  // Ustozni o'chirish
+  const handleDeleteTeacher = async (teacher: AdminTeacherItem) => {
+    if (!window.confirm(`⚠️ DIQQAT: ${teacher.name} ustozni butunlay o'chirib tashlamoqchimisiz?`)) return;
+
+    setTeacherActionLoading(teacher.id);
+    try {
+      const res = await fetch("/api/teachers/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "delete-teacher",
+          teacherId: teacher.id,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        void fetchTeachers();
+        void fetchGroups();
+      } else {
+        alert(data.error || "O'chirishda xatolik");
+      }
+    } catch {
+      alert("Aloqa xatosi");
+    } finally {
+      setTeacherActionLoading(null);
+    }
+  };
+
+  // Yangi ustoz yaratish
+  const handleCreateTeacher = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const res = await fetch("/api/teachers/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "admin-create-teacher",
+          name: addTeacherName,
+          subject: addTeacherSubject,
+          phone: addTeacherPhone,
+          login: addTeacherLogin,
+          password: addTeacherPassword,
+          status: addTeacherStatus,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setShowAddTeacherModal(false);
+        setAddTeacherName("");
+        setAddTeacherSubject("");
+        setAddTeacherPhone("+998 ");
+        setAddTeacherLogin("");
+        setAddTeacherPassword("");
+        void fetchTeachers();
+      } else {
+        alert(data.error || "Yaratishda xatolik yuz berdi");
+      }
+    } catch {
+      alert("Server bilan aloqa xatosi");
+    }
+  };
+
+  // Ustoz parolini yangilash (reset)
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetTeacherTarget) return;
+    try {
+      const res = await fetch("/api/teachers/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "admin-reset-password",
+          teacherId: resetTeacherTarget.id,
+          newPassword: newTeacherPassword,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setShowResetPasswordModal(false);
+        setResetTeacherTarget(null);
+        setNewTeacherPassword("");
+        alert("Ustoz paroli muvaffaqiyatli yangilandi!");
+        void fetchTeachers();
+      } else {
+        alert(data.error || "Parolni yangilashda xato");
+      }
+    } catch {
+      alert("Aloqa xatosi");
+    }
+  };
 
   useEffect(() => {
     if (!selectedGroupId || !selectedMonth) return;
@@ -279,6 +487,23 @@ export default function AdminAttendanceModule() {
     });
   }, [students, searchStudent]);
 
+  const pendingTeachersCount = useMemo(() => {
+    return teacherList.filter((t) => t.status === "pending").length;
+  }, [teacherList]);
+
+  const filteredTeachers = useMemo(() => {
+    return teacherList.filter((t) => {
+      const q = searchTeacher.toLowerCase().trim();
+      if (!q) return true;
+      return (
+        t.name.toLowerCase().includes(q) ||
+        t.login.toLowerCase().includes(q) ||
+        t.subject.toLowerCase().includes(q) ||
+        t.phone.includes(q)
+      );
+    });
+  }, [teacherList, searchTeacher]);
+
   const activeGrp = groups.find((g) => g.id === selectedGroupId);
 
   return (
@@ -320,6 +545,23 @@ export default function AdminAttendanceModule() {
           >
             <Users className="w-3.5 h-3.5" />
             <span>O'quvchilar Bazasi ({students.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveSubTab("ustozlar")}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer relative ${
+              activeSubTab === "ustozlar"
+                ? "bg-brand-500 text-slate-950 shadow-md font-extrabold"
+                : "bg-white/5 text-slate-300 hover:bg-white/10"
+            }`}
+          >
+            <GraduationCap className="w-3.5 h-3.5" />
+            <span>Ustozlar Jamoasi ({teacherList.length})</span>
+            {pendingTeachersCount > 0 && (
+              <span className="ml-1 px-1.5 py-0.5 text-[10px] rounded-full bg-amber-400 text-slate-950 font-black animate-pulse">
+                {pendingTeachersCount}
+              </span>
+            )}
           </button>
         </div>
 
@@ -645,6 +887,250 @@ export default function AdminAttendanceModule() {
         </div>
       )}
 
+      {/* ──────────────── 4. USTOZLAR BO'LIMI ──────────────── */}
+      {activeSubTab === "ustozlar" && (
+        <div className="space-y-4">
+          {/* Status hisoblagichlari */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center justify-between">
+              <div>
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Jami Ustozlar</p>
+                <p className="text-2xl font-black text-white font-mono mt-0.5">{teacherList.length}</p>
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center">
+                <GraduationCap className="w-5 h-5" />
+              </div>
+            </div>
+
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center justify-between">
+              <div>
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Faol Ustozlar</p>
+                <p className="text-2xl font-black text-emerald-400 font-mono mt-0.5">
+                  {teacherList.filter((t) => t.status === "active").length}
+                </p>
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+            </div>
+
+            <div
+              className={`border rounded-2xl p-4 flex items-center justify-between transition ${
+                pendingTeachersCount > 0 ? "bg-amber-500/15 border-amber-500/30" : "bg-white/5 border-white/10"
+              }`}
+            >
+              <div>
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                  Tasdiqlash Kutilmoqda
+                </p>
+                <p
+                  className={`text-2xl font-black font-mono mt-0.5 ${
+                    pendingTeachersCount > 0 ? "text-amber-400 animate-pulse" : "text-slate-400"
+                  }`}
+                >
+                  {pendingTeachersCount}
+                </p>
+              </div>
+              <div
+                className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                  pendingTeachersCount > 0 ? "bg-amber-500/30 text-amber-300" : "bg-white/5 text-slate-500"
+                }`}
+              >
+                <ShieldAlert className="w-5 h-5" />
+              </div>
+            </div>
+          </div>
+
+          {/* Qidiruv va Yangi qo'shish paneli */}
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3">
+            <div className="relative flex-1 min-w-[240px] max-w-md">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Ustoz ismi, fani, telefoni yoki login bo'yicha qidirish..."
+                value={searchTeacher}
+                onChange={(e) => setSearchTeacher(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-900 border border-white/15 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-brand-400"
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => void fetchTeachers()}
+                className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 transition cursor-pointer"
+                title="Yangilash"
+              >
+                <RefreshCw className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setShowAddTeacherModal(true)}
+                className="px-4 py-2 rounded-xl bg-brand-500 hover:bg-brand-400 text-slate-950 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-md"
+              >
+                <UserPlus className="w-3.5 h-3.5" />
+                <span>+ Yangi Ustoz Qo'shish</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Ustozlar jadvali */}
+          <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-white/10 bg-white/5 text-slate-400 font-bold uppercase text-[10px] tracking-wider">
+                    <th className="py-3 px-4">Ustoz F.I.Sh & Mutaxassislik</th>
+                    <th className="py-3 px-4">Login & Telefon</th>
+                    <th className="py-3 px-4">Telegram Holati</th>
+                    <th className="py-3 px-4">Biriktirilgan Guruhlar</th>
+                    <th className="py-3 px-4 text-center">Holati</th>
+                    <th className="py-3 px-4 text-right">Boshqaruv</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5 text-slate-200">
+                  {filteredTeachers.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="py-8 text-center text-slate-400">
+                        Ustozlar topilmadi
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredTeachers.map((t) => {
+                      const isPending = t.status === "pending";
+                      const isBlocked = t.status === "blocked";
+                      const isActive = t.status === "active";
+                      const isLoading = teacherActionLoading === t.id;
+
+                      return (
+                        <tr key={t.id} className="hover:bg-white/[0.02] transition">
+                          <td className="py-3.5 px-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500/20 to-teal-500/20 text-brand-300 font-bold flex items-center justify-center border border-brand-500/30 text-xs">
+                                {t.name.charAt(0)}
+                              </div>
+                              <div>
+                                <p className="font-bold text-white text-xs">{t.name}</p>
+                                <p className="text-[11px] text-slate-400">{t.subject}</p>
+                              </div>
+                            </div>
+                          </td>
+
+                          <td className="py-3.5 px-4 font-mono text-[11px]">
+                            <p className="text-brand-300 font-semibold">@{t.login}</p>
+                            <p className="text-slate-400">{t.phone || "—"}</p>
+                          </td>
+
+                          <td className="py-3.5 px-4">
+                            {t.hasTelegram ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-sky-500/15 text-sky-300 border border-sky-500/20 text-[11px] font-medium">
+                                <span>📱 Ulangan</span>
+                                {t.telegramUsername && <span>(@{t.telegramUsername})</span>}
+                              </span>
+                            ) : (
+                              <span className="text-slate-500 text-[11px]">Ulanmagan</span>
+                            )}
+                          </td>
+
+                          <td className="py-3.5 px-4">
+                            <span className="px-2 py-0.5 rounded-md bg-white/5 text-slate-300 text-[11px] font-semibold">
+                              {t.groupsCount ?? 0} ta guruh
+                            </span>
+                            {t.groupNames && t.groupNames.length > 0 && (
+                              <p className="text-[10px] text-slate-400 mt-1 truncate max-w-[200px]" title={t.groupNames.join(", ")}>
+                                {t.groupNames.join(", ")}
+                              </p>
+                            )}
+                          </td>
+
+                          <td className="py-3.5 px-4 text-center">
+                            {isPending && (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-black uppercase tracking-wider animate-pulse">
+                                <span>Kutilmoqda</span>
+                              </span>
+                            )}
+                            {isActive && (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold uppercase tracking-wider">
+                                <span>Faol</span>
+                              </span>
+                            )}
+                            {isBlocked && (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[10px] font-bold uppercase tracking-wider">
+                                <span>Bloklangan</span>
+                              </span>
+                            )}
+                          </td>
+
+                          <td className="py-3.5 px-4 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              {/* Tasdiqlash (Pending bo'lsa) */}
+                              {isPending && (
+                                <button
+                                  onClick={() => handleApproveTeacher(t.id)}
+                                  disabled={isLoading}
+                                  className="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-[11px] transition flex items-center gap-1 shadow-md cursor-pointer"
+                                  title="Arizani tasdiqlash va faollashtirish"
+                                >
+                                  <CheckCircle2 className="w-3.5 h-3.5" />
+                                  <span>Tasdiqlash</span>
+                                </button>
+                              )}
+
+                              {/* Bloklash / Qayta ochish */}
+                              {isActive && (
+                                <button
+                                  onClick={() => handleToggleTeacherStatus(t)}
+                                  disabled={isLoading}
+                                  className="p-1.5 rounded-lg bg-white/5 hover:bg-amber-500/20 text-slate-400 hover:text-amber-300 transition cursor-pointer"
+                                  title="Ustozni vaqtincha bloklash"
+                                >
+                                  <Ban className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                              {isBlocked && (
+                                <button
+                                  onClick={() => handleToggleTeacherStatus(t)}
+                                  disabled={isLoading}
+                                  className="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 text-[11px] font-bold transition cursor-pointer"
+                                  title="Blokdan chiqarish"
+                                >
+                                  Faollashtirish
+                                </button>
+                              )}
+
+                              {/* Parolni tiklash / yangilash */}
+                              <button
+                                onClick={() => {
+                                  setResetTeacherTarget(t);
+                                  setNewTeacherPassword("");
+                                  setShowResetPasswordModal(true);
+                                }}
+                                className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition cursor-pointer"
+                                title="Yangi parol berish"
+                              >
+                                <Key className="w-3.5 h-3.5" />
+                              </button>
+
+                              {/* O'chirish */}
+                              <button
+                                onClick={() => handleDeleteTeacher(t)}
+                                disabled={isLoading}
+                                className="p-1.5 rounded-lg bg-white/5 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition cursor-pointer"
+                                title="Ustozni butunlay o'chirish"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ──────────────── MODAL: YANGI GURUH OCHISH ──────────────── */}
       {showGroupModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
@@ -847,6 +1333,184 @@ export default function AdminAttendanceModule() {
                   className="px-5 py-2 rounded-xl bg-brand-500 hover:bg-brand-400 text-slate-950 font-bold"
                 >
                   O'quvchini Saqlash
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ──────────────── MODAL: YANGI USTOZ QO'SHISH ──────────────── */}
+      {showAddTeacherModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="w-full max-w-md bg-slate-900 border border-white/15 rounded-3xl p-6 shadow-2xl text-white space-y-4">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-brand-500/20 text-brand-400 flex items-center justify-center">
+                  <UserPlus className="w-4 h-4" />
+                </div>
+                <h3 className="text-sm font-bold">Yangi Ustoz Qo'shish</h3>
+              </div>
+              <button
+                onClick={() => setShowAddTeacherModal(false)}
+                className="text-slate-400 hover:text-white cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateTeacher} className="space-y-3 text-xs">
+              <div>
+                <label className="block font-bold text-slate-400 mb-1">Ustoz Ism-Familiyasi *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Masalan: Sardor Komilov"
+                  value={addTeacherName}
+                  onChange={(e) => setAddTeacherName(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/15 text-white focus:outline-none focus:border-brand-400"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-400 mb-1">Fan / Mutaxassislik *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Masalan: Fizika & Milliy Sertifikat"
+                  value={addTeacherSubject}
+                  onChange={(e) => setAddTeacherSubject(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/15 text-white focus:outline-none focus:border-brand-400"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block font-bold text-slate-400 mb-1">Login (kirish uchun) *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="sardor_fizika"
+                    value={addTeacherLogin}
+                    onChange={(e) => setAddTeacherLogin(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/15 text-white font-mono focus:outline-none focus:border-brand-400"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-400 mb-1">Telefon Raqami</label>
+                  <input
+                    type="tel"
+                    value={addTeacherPhone}
+                    onChange={(e) => setAddTeacherPhone(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/15 text-white font-mono focus:outline-none focus:border-brand-400"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block font-bold text-slate-400 mb-1">Boshlang'ich Parol *</label>
+                  <input
+                    type="password"
+                    required
+                    placeholder="Kamida 4 ta belgi"
+                    value={addTeacherPassword}
+                    onChange={(e) => setAddTeacherPassword(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/15 text-white font-mono focus:outline-none focus:border-brand-400"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-400 mb-1">Boshlang'ich Holati</label>
+                  <select
+                    value={addTeacherStatus}
+                    onChange={(e) => setAddTeacherStatus(e.target.value as "active" | "pending")}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/15 text-white focus:outline-none focus:border-brand-400"
+                  >
+                    <option value="active">🟢 Faol (Active)</option>
+                    <option value="pending">🟡 Kutilmoqda (Pending)</option>
+                  </select>
+                </div>
+              </div>
+
+              <p className="text-[11px] text-slate-400 bg-white/5 p-2.5 rounded-xl border border-white/5">
+                💡 Ustoz ushbu login va parol orqali saytdagi <b>/davomat</b> portaliga yoki Telegram botdagi <b>/login</b> orqali tizimga kira oladi.
+              </p>
+
+              <div className="pt-3 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddTeacherModal(false)}
+                  className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 font-bold cursor-pointer"
+                >
+                  Bekor qilish
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-brand-500 hover:bg-brand-400 text-slate-950 font-bold shadow-md cursor-pointer"
+                >
+                  Ustozni Saqlash
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ──────────────── MODAL: USTOZ PAROLINI YANGILASH ──────────────── */}
+      {showResetPasswordModal && resetTeacherTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="w-full max-w-sm bg-slate-900 border border-white/15 rounded-3xl p-6 shadow-2xl text-white space-y-4">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center">
+                  <Key className="w-4 h-4" />
+                </div>
+                <h3 className="text-sm font-bold">Parolni Yangilash</h3>
+              </div>
+              <button
+                onClick={() => setShowResetPasswordModal(false)}
+                className="text-slate-400 hover:text-white cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleResetPassword} className="space-y-3 text-xs">
+              <div>
+                <p className="text-slate-400 mb-1">Ustoz:</p>
+                <p className="font-bold text-white text-sm">{resetTeacherTarget.name}</p>
+                <p className="text-brand-300 font-mono text-[11px]">Login: @{resetTeacherTarget.login}</p>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-400 mb-1">Yangi Parol *</label>
+                <input
+                  type="password"
+                  required
+                  placeholder="Yangi parolni kiriting (min 4 ta belgi)"
+                  value={newTeacherPassword}
+                  onChange={(e) => setNewTeacherPassword(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/15 text-white font-mono focus:outline-none focus:border-brand-400"
+                />
+              </div>
+
+              <p className="text-[11px] text-slate-400 bg-white/5 p-2.5 rounded-xl border border-white/5">
+                🔒 Yangi parol o'rnatilgach, ustoz darhol yangi parol bilan kirishi mumkin bo'ladi.
+              </p>
+
+              <div className="pt-3 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowResetPasswordModal(false)}
+                  className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 font-bold cursor-pointer"
+                >
+                  Bekor qilish
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold shadow-md cursor-pointer"
+                >
+                  Parolni Yangilash
                 </button>
               </div>
             </form>

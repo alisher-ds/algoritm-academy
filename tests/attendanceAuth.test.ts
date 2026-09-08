@@ -218,4 +218,103 @@ describe("Security Hardening & RBAC Tests", () => {
     const resWrong = await postTeacherAuth(reqWrong);
     expect(resWrong.status).toBe(401);
   });
+
+  it("Statusi pending yoki blocked bo'lgan ustoz guruh yaratolmaydi (403)", async () => {
+    const pendingTeacher = {
+      id: "tm-pending-user",
+      name: "Pending Ustoz",
+      login: "pending_user",
+      subject: "Biologiya",
+      createdAt: "2026-09-01T00:00:00.000Z",
+      status: "pending" as const,
+    };
+
+    const tokenPending = createTeacherToken(pendingTeacher);
+
+    // Guruh yaratishga urinish rad etilishi kerak (403)
+    const reqCreate = new Request("http://localhost:3000/api/groups", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${tokenPending}`,
+        "Content-Type": "application/json",
+        Origin: "http://localhost:3000",
+      },
+      body: JSON.stringify({ name: "Ruxsatsiz Guruh", subject: "Biologiya" }),
+    });
+
+    const resCreate = await postGroups(reqCreate);
+    expect(resCreate.status).toBe(403);
+  });
+
+  it("Admin /api/teachers/auth orqali yangi ustoz qo'sha oladi va holatini o'zgartira oladi", async () => {
+    const adminToken = createSessionToken();
+    expect(adminToken).not.toBeNull();
+
+    // 1. Yangi ustoz qo'shish
+    const createReq = new Request("http://localhost:3000/api/teachers/auth", {
+      method: "POST",
+      headers: {
+        Cookie: `${AUTH_COOKIE}=${adminToken}`,
+        "Content-Type": "application/json",
+        Origin: "http://localhost:3000",
+      },
+      body: JSON.stringify({
+        action: "admin-create-teacher",
+        name: "Admin Qo'shgan Ustoz",
+        login: `crm_teacher_${Date.now()}`,
+        subject: "Fizika",
+        password: "crm_parol_1234",
+      }),
+    });
+
+    const createRes = await postTeacherAuth(createReq);
+    expect(createRes.status).toBe(200);
+    const createData = await createRes.json();
+    expect(createData.success).toBe(true);
+    expect(createData.teacher?.status).toBe("active");
+    const teacherId = createData.teacher.id;
+
+    // 2. Ustoz holatini 'blocked' ga o'tkazish
+    const updateReq = new Request("http://localhost:3000/api/teachers/auth", {
+      method: "POST",
+      headers: {
+        Cookie: `${AUTH_COOKIE}=${adminToken}`,
+        "Content-Type": "application/json",
+        Origin: "http://localhost:3000",
+      },
+      body: JSON.stringify({
+        action: "admin-update-status",
+        teacherId,
+        status: "blocked",
+      }),
+    });
+
+    const updateRes = await postTeacherAuth(updateReq);
+    expect(updateRes.status).toBe(200);
+    const updateData = await updateRes.json();
+    expect(updateData.teacher?.status).toBe("blocked");
+  });
+
+  it("Oddiy ustoz admin-amallarni (/api/teachers/auth) bajara olmaydi (403)", async () => {
+    const teacherToken = createTeacherToken(mockTeacher1);
+
+    const reqForbidden = new Request("http://localhost:3000/api/teachers/auth", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${teacherToken}`,
+        "Content-Type": "application/json",
+        Origin: "http://localhost:3000",
+      },
+      body: JSON.stringify({
+        action: "admin-create-teacher",
+        name: "Hacker Ustoz",
+        login: "hacker_login",
+        subject: "Hacking",
+        password: "hacker_password",
+      }),
+    });
+
+    const resForbidden = await postTeacherAuth(reqForbidden);
+    expect(resForbidden.status).toBe(403);
+  });
 });

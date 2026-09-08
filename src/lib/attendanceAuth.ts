@@ -44,6 +44,11 @@ export function canAccessGroup(
   if (auth.isAdmin) return true;
   if (!auth.teacher || !group) return false;
 
+  // Agar ustozning holati faol bo'lmasa (pending yoki blocked), ruxsat yo'q
+  if (auth.teacher.status && auth.teacher.status !== "active") {
+    return false;
+  }
+
   if (group.teacherId && group.teacherId === auth.teacher.id) {
     return true;
   }

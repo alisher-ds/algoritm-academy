@@ -5,6 +5,10 @@ import {
   verifyPasswordHash,
   setTeacherPassword,
   registerTeacher,
+  createTeacherByAdmin,
+  updateTeacherStatus,
+  adminResetTeacherPassword,
+  updateTeacherDetails,
   deleteTeacher,
   resetTeachers,
   createTeacherToken,
@@ -14,7 +18,7 @@ import {
   TEACHER_AUTH_COOKIE,
   TEACHER_SESSION_TTL,
 } from "@/lib/teacherAuth";
-import { listGroups, listStudents, createGroup, createStudent } from "@/lib/attendanceStore";
+import { listGroups, listStudents } from "@/lib/attendanceStore";
 import { verifyTelegramWebAppData } from "@/lib/telegramAuth";
 import { isAuthed, isSameOrigin } from "@/lib/adminAuth";
 import { clientIdentity, rateLimit } from "@/lib/rateLimit";
@@ -23,56 +27,83 @@ export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
   try {
+    const url = new URL(req.url);
+    const admin = isAuthed(req);
+    const wantsAdminScope = url.searchParams.get("scope") === "admin" || url.searchParams.get("admin") === "true";
+
+    // 1. Agar admin chaqirayotgan bo'lsa (yoki admin scope so'ralsa),
+    // brauzerdagi har qanday ustoz sessiyasidan qat'i nazar barcha ustozlar ro'yxatini qaytaramiz!
+    if (admin || wantsAdminScope) {
+      if (!admin) {
+        return NextResponse.json({ success: false, error: "Admin huquqi talab etiladi" }, { status: 401 });
+      }
+      const teachers = await loadTeachers();
+      const allGroups = await listGroups({ activeOnly: false });
+
+      const adminList = teachers.map((t) => {
+        const assignedGroups = allGroups.filter(
+          (g) => g.teacherId === t.id || (g.teacherName && g.teacherName.toLowerCase() === t.name.toLowerCase())
+        );
+        return {
+          id: t.id,
+          name: t.name,
+          login: t.login,
+          subject: t.subject,
+          phone: t.phone || "",
+          status: t.status || "active",
+          createdAt: t.createdAt,
+          hasPassword: Boolean(t.passwordHash),
+          hasTelegram: Boolean(t.telegramId),
+          telegramId: t.telegramId || null,
+          telegramUsername: t.telegramUsername || null,
+          groupsCount: assignedGroups.length,
+          groupNames: assignedGroups.map((g) => g.name),
+        };
+      });
+
+      return NextResponse.json({
+        success: true,
+        authenticated: false,
+        isAdmin: true,
+        teachers: adminList,
+      });
+    }
+
+    // 2. Ustoz sessiyasi tekshiruvi
     const currentTeacher = await getAuthenticatedTeacher(req);
 
     if (currentTeacher) {
-      // Faqat shu ustozning guruhlari va o'quvchilari!
+      // Agar ustoz pending holatida bo'lsa
+      if (currentTeacher.status === "pending") {
+        return NextResponse.json({
+          success: true,
+          authenticated: true,
+          isPending: true,
+          teacher: currentTeacher,
+          message: "Hisobingiz administrator tomonidan ko'rib chiqilmoqda. Tasdiqlangach darslaringiz ochiladi.",
+          groups: [],
+          students: [],
+        });
+      }
+
+      // Agar ustoz bloklangan bo'lsa
+      if (currentTeacher.status === "blocked") {
+        return NextResponse.json(
+          {
+            success: false,
+            authenticated: false,
+            isBlocked: true,
+            error: "Hisobingiz administrator tomonidan bloklangan.",
+          },
+          { status: 403 }
+        );
+      }
+
+      // Faqat shu ustozning o'ziga tegishli guruhlari va o'quvchilari
       const allGroups = await listGroups({ activeOnly: true });
-      let teacherGroups = allGroups.filter(
+      const teacherGroups = allGroups.filter(
         (g) => g.teacherId === currentTeacher.id || (g.teacherName && g.teacherName.toLowerCase() === currentTeacher.name.toLowerCase())
       );
-
-      // Agar ustozga hali guruh biriktirilmagan bo'lsa, namunaviy guruh va o'quvchilarni taqdim etamiz
-      if (teacherGroups.length === 0) {
-        try {
-          const starterGroup = await createGroup({
-            name: `${currentTeacher.subject || "Matematika"} — ${currentTeacher.name}`,
-            subject: currentTeacher.subject || "Matematika",
-            teacherId: currentTeacher.id,
-            teacherName: currentTeacher.name,
-            days: "dush-chor-juma",
-            time: "15:00 - 16:30",
-            room: "201-xona",
-            monthlyPrice: 450000,
-            lessonsPerMonth: 12,
-            active: true,
-          });
-          await createStudent({
-            name: "Jahongir Rustamov",
-            phone: "+998 90 123 77 88",
-            parentPhone: "+998 90 987 66 55",
-            groupId: starterGroup.id,
-            status: "faol",
-          });
-          await createStudent({
-            name: "Mohinur Karimova",
-            phone: "+998 91 234 88 99",
-            parentPhone: "+998 91 876 55 44",
-            groupId: starterGroup.id,
-            status: "faol",
-          });
-          await createStudent({
-            name: "Boburmirzo Aliyev",
-            phone: "+998 93 345 99 00",
-            parentPhone: "+998 93 765 44 33",
-            groupId: starterGroup.id,
-            status: "faol",
-          });
-          teacherGroups = [starterGroup];
-        } catch (e) {
-          console.error("Failed to seed starter group:", e);
-        }
-      }
 
       const groupIds = new Set(teacherGroups.map((g) => g.id));
       const allStudents = await listStudents({ status: "faol" });
@@ -84,27 +115,6 @@ export async function GET(req: Request) {
         teacher: currentTeacher,
         groups: teacherGroups,
         students: teacherStudents,
-      });
-    }
-
-    // Tizimga kirmagan bo'lsa:
-    const admin = isAuthed(req);
-    if (admin) {
-      const teachers = await loadTeachers();
-      const adminList = teachers.map((t) => ({
-        id: t.id,
-        name: t.name,
-        login: t.login,
-        subject: t.subject,
-        phone: t.phone,
-        hasPassword: Boolean(t.passwordHash),
-        hasTelegram: Boolean(t.telegramId),
-      }));
-      return NextResponse.json({
-        success: true,
-        authenticated: false,
-        isAdmin: true,
-        teachers: adminList,
       });
     }
 
@@ -150,6 +160,29 @@ export async function POST(req: Request) {
             error: "Login yoki parol noto'g'ri. Agar birinchi marta kirayotgan bo'lsangiz, 'Yangi hisob ochish' bo'limidan ro'yxatdan o'ting.",
           },
           { status: 401 }
+        );
+      }
+
+      // Agar hisob hali tasdiqlanmagan yoki bloklangan bo'lsa
+      if (teacher.status === "pending") {
+        return NextResponse.json(
+          {
+            success: false,
+            pending: true,
+            error: "Hisobingiz ma'muriyat tomonidan ko'rib chiqilmoqda. Administrator tasdiqlaganidan so'ng darslaringiz ochiladi.",
+          },
+          { status: 403 }
+        );
+      }
+
+      if (teacher.status === "blocked") {
+        return NextResponse.json(
+          {
+            success: false,
+            blocked: true,
+            error: "Ushbu hisob administrator tomonidan bloklangan.",
+          },
+          { status: 403 }
         );
       }
 
@@ -321,62 +354,40 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: false, error: regResult.error || "Ro'yxatdan o'tishda xatolik" }, { status: 400 });
       }
 
-      // Yangi ustoz uchun avtomatik tarzda starter guruh va o'quvchilarni yaratamiz
-      try {
-        const starterGroup = await createGroup({
-          name: `${regResult.teacher.subject} — Asosiy Guruh`,
-          subject: regResult.teacher.subject,
-          teacherId: regResult.teacher.id,
-          teacherName: regResult.teacher.name,
-          days: "dush-chor-juma",
-          time: "15:00 - 16:30",
-          room: "201-xona",
-          monthlyPrice: 450000,
-          lessonsPerMonth: 12,
-          active: true,
-        });
-        await createStudent({
-          name: "Jahongir Rustamov",
-          phone: "+998 90 123 77 88",
-          parentPhone: "+998 90 987 66 55",
-          groupId: starterGroup.id,
-          status: "faol",
-        });
-        await createStudent({
-          name: "Mohinur Karimova",
-          phone: "+998 91 234 88 99",
-          parentPhone: "+998 91 876 55 44",
-          groupId: starterGroup.id,
-          status: "faol",
-        });
-        await createStudent({
-          name: "Boburmirzo Aliyev",
-          phone: "+998 93 345 99 00",
-          parentPhone: "+998 93 765 44 33",
-          groupId: starterGroup.id,
-          status: "faol",
-        });
-      } catch (e) {
-        console.error("Auto-seed on register error:", e);
+      // Telegram orqali Adminga yangi ustoz ro'yxatdan o'tgani haqida bildirishnoma yuboramiz
+      const botToken = process.env.TELEGRAM_BOT_TOKEN;
+      const chatId = process.env.TELEGRAM_CHAT_ID;
+      if (botToken && chatId) {
+        const alertMsg = [
+          "🔔 <b>Yangi ustoz ro'yxatdan o'tdi!</b>",
+          "━━━━━━━━━━━━━━━━━━━━",
+          `👤 F.I.Sh: <b>${regResult.teacher.name}</b>`,
+          `📚 Fan / Mutaxassislik: <b>${regResult.teacher.subject}</b>`,
+          `📱 Telefon: <b>${regResult.teacher.phone || "Kiritilmagan"}</b>`,
+          `🔑 Login: <code>${regResult.teacher.login}</code>`,
+          `⏳ Holati: <b>Tasdiqlash kutilmoqda (pending)</b>`,
+          "",
+          "👉 <i>Admin panel (/admin) — 'Ustozlar' bo'limi orqali ushbu hisobni tasdiqlashingiz yoki rad etishingiz mumkin.</i>",
+        ].join("\n");
+
+        void fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: alertMsg,
+            parse_mode: "HTML",
+          }),
+        }).catch(() => {});
       }
 
-      const token = createTeacherToken(regResult.teacher);
-      const res = NextResponse.json({
+      return NextResponse.json({
         success: true,
+        authenticated: true,
+        isPending: true,
         teacher: regResult.teacher,
-        token,
-        message: `Tabriklaymiz, ${regResult.teacher.name}! Siz muvaffaqiyatli ro'yxatdan o'tdingiz.`,
+        message: "Ro'yxatdan o'tish arizangiz qabul qilindi! Administrator tasdiqlaganidan so'ng shaxsiy kabinetingiz ochiladi.",
       });
-
-      res.cookies.set(TEACHER_AUTH_COOKIE, token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        path: "/",
-        maxAge: TEACHER_SESSION_TTL,
-      });
-
-      return res;
     }
 
     // 3. Telegram WebApp orqali bir lahzada kirish
@@ -396,15 +407,29 @@ export async function POST(req: Request) {
       const tgUser = authResult.user;
       const teacher = await findTeacherByTelegram(tgUser.id, tgUser.username);
 
-      // Telegram ID/username must already be explicitly bound to a teacher.
-      // Never infer account ownership from a display name.
       if (!teacher) {
         return NextResponse.json({
           success: false,
           needsBinding: true,
           telegramUser: tgUser,
-          error: "Sizning Telegram profilingiz tizimdagi ustozlarga hali biriktirilmagan. Iltimos, o'z ismingizni tanlab parolingizni kiriting.",
+          error: "Sizning Telegram profilingiz tizimdagi ustozlarga hali biriktirilmagan. Iltimos, login va parolingiz orqali kiring.",
         }, { status: 404 });
+      }
+
+      if (teacher.status === "pending") {
+        return NextResponse.json({
+          success: false,
+          pending: true,
+          error: `Hurmatli ${teacher.name}, hisobingiz administrator tasdig'ini kutmoqda.`,
+        }, { status: 403 });
+      }
+
+      if (teacher.status === "blocked") {
+        return NextResponse.json({
+          success: false,
+          blocked: true,
+          error: "Ushbu profil administrator tomonidan bloklangan.",
+        }, { status: 403 });
       }
 
       const token = createTeacherToken(teacher);
@@ -439,7 +464,72 @@ export async function POST(req: Request) {
       return res;
     }
 
-    // 5. Ustozni o'chirish — faqat admin.
+    // 5. Admin harakatlari (Faqat Administrator uchun)
+    if (action === "admin-create-teacher") {
+      if (!isSameOrigin(req) || !isAuthed(req)) {
+        return NextResponse.json({ success: false, error: "Faqat administrator uchun" }, { status: 403 });
+      }
+      const { name, subject, phone, login, password, status } = body;
+      const resCreate = await createTeacherByAdmin({
+        name: String(name || ""),
+        subject: String(subject || ""),
+        phone: phone ? String(phone) : undefined,
+        login: String(login || ""),
+        password: String(password || ""),
+        status: status || "active",
+      });
+      if (resCreate.error || !resCreate.teacher) {
+        return NextResponse.json({ success: false, error: resCreate.error || "Ustozni yaratishda xato" }, { status: 400 });
+      }
+      return NextResponse.json({ success: true, teacher: resCreate.teacher, message: "Yangi ustoz muvaffaqiyatli qo'shildi!" });
+    }
+
+    if (action === "admin-update-status") {
+      if (!isSameOrigin(req) || !isAuthed(req)) {
+        return NextResponse.json({ success: false, error: "Faqat administrator uchun" }, { status: 403 });
+      }
+      const { teacherId, status } = body;
+      if (!teacherId || !status || !["active", "pending", "blocked"].includes(status)) {
+        return NextResponse.json({ success: false, error: "Ustoz va yangi statusni to'g'ri ko'rsating" }, { status: 400 });
+      }
+      const updated = await updateTeacherStatus(String(teacherId), status);
+      if (!updated) {
+        return NextResponse.json({ success: false, error: "Ustoz topilmadi" }, { status: 404 });
+      }
+      return NextResponse.json({ success: true, teacher: updated, message: `Ustoz holati yangilandi: ${status}` });
+    }
+
+    if (action === "admin-reset-password") {
+      if (!isSameOrigin(req) || !isAuthed(req)) {
+        return NextResponse.json({ success: false, error: "Faqat administrator uchun" }, { status: 403 });
+      }
+      const { teacherId, newPassword } = body;
+      if (!teacherId || !newPassword || String(newPassword).length < 4) {
+        return NextResponse.json({ success: false, error: "Yangi parol kamida 4 ta belgidan iborat bo'lishi kerak" }, { status: 400 });
+      }
+      const updated = await adminResetTeacherPassword(String(teacherId), String(newPassword));
+      if (!updated) {
+        return NextResponse.json({ success: false, error: "Ustoz topilmadi" }, { status: 404 });
+      }
+      return NextResponse.json({ success: true, teacher: updated, message: "Ustoz paroli muvaffaqiyatli yangilandi!" });
+    }
+
+    if (action === "admin-update-teacher") {
+      if (!isSameOrigin(req) || !isAuthed(req)) {
+        return NextResponse.json({ success: false, error: "Faqat administrator uchun" }, { status: 403 });
+      }
+      const { teacherId, name, subject, phone, login } = body;
+      if (!teacherId) {
+        return NextResponse.json({ success: false, error: "Ustoz tanlanmadi" }, { status: 400 });
+      }
+      const resUpdate = await updateTeacherDetails(String(teacherId), { name, subject, phone, login });
+      if (resUpdate.error || !resUpdate.teacher) {
+        return NextResponse.json({ success: false, error: resUpdate.error || "Tahrirlashda xato" }, { status: 400 });
+      }
+      return NextResponse.json({ success: true, teacher: resUpdate.teacher, message: "Ustoz ma'lumotlari yangilandi" });
+    }
+
+    // 6. Ustozni o'chirish — faqat admin.
     if (action === "delete-teacher" || action === "delete") {
       if (!isSameOrigin(req) || !isAuthed(req)) {
         return NextResponse.json({ success: false, error: "Bu amal faqat administrator uchun" }, { status: 403 });
@@ -453,7 +543,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: ok, message: ok ? "Ustoz muvaffaqiyatli o'chirildi" : "Ustoz topilmadi" });
     }
 
-    // 6. Barcha ustozlarni tozalash / qayta o'rnatish — faqat admin.
+    // 7. Barcha ustozlarni tozalash / qayta o'rnatish — faqat admin.
     if (action === "reset-teachers" || action === "reset") {
       if (!isSameOrigin(req) || !isAuthed(req)) {
         return NextResponse.json({ success: false, error: "Bu amal faqat administrator uchun" }, { status: 403 });

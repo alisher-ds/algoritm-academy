@@ -126,6 +126,7 @@ export async function POST(req: Request) {
     // Qat'iy Xavfsizlik: Ushbu Telegram foydalanuvchisi Algoritm o'qituvchisimi?
     const teacher = await findTeacherByTelegram(chatId, message.from?.username);
     const isAdmin = Boolean(process.env.TELEGRAM_CHAT_ID && String(process.env.TELEGRAM_CHAT_ID) === String(chatId));
+    const isTeacherActive = Boolean(teacher && (!teacher.status || teacher.status === "active"));
 
     // ─── 1. Bot orqali Login va Telegram hisobni ulash ───
     if (text.startsWith("/login") || text.startsWith("/kirish")) {
@@ -161,6 +162,22 @@ export async function POST(req: Request) {
         return NextResponse.json({ ok: true });
       }
 
+      if (authedTeacher.status === "pending") {
+        await sendTelegramReply(
+          chatId,
+          `⏳ <b>Arizangiz ko'rib chiqilmoqda!</b>\n\nHurmatli <b>${authedTeacher.name}</b>, sizning ro'yxatdan o'tish arizangiz hozirda ma'muriyat tasdig'ini kutmoqda. Administrator tasdiqlaganidan so'ng shaxsiy kabinetingiz ochiladi.`
+        );
+        return NextResponse.json({ ok: true });
+      }
+
+      if (authedTeacher.status === "blocked") {
+        await sendTelegramReply(
+          chatId,
+          "⛔️ <b>Ushbu hisob administrator tomonidan bloklangan.</b>"
+        );
+        return NextResponse.json({ ok: true });
+      }
+
       // Telegram akkauntini ustozga biriktiramiz
       const bound = await bindTeacherTelegram(authedTeacher.id, chatId, message.from?.username);
       const teacherName = bound?.name || authedTeacher.name;
@@ -188,6 +205,24 @@ export async function POST(req: Request) {
 
     if (text === "/start") {
       if (teacher) {
+        if (teacher.status === "pending") {
+          const pendingMsg = [
+            `👋 <b>Assalomu alaykum, ${teacher.name}!</b>`,
+            "",
+            "⏳ <b>Arizangiz ko'rib chiqilmoqda</b>",
+            `Mutaxassislik: <b>${teacher.subject}</b>`,
+            "",
+            "Sizning arizangiz ma'muriyatga qabul qilingan. Administrator tasdiqlaganidan so'ng barcha guruhlar va davomat ochiladi.",
+          ].join("\n");
+          await sendTelegramReply(chatId, pendingMsg);
+          return NextResponse.json({ ok: true });
+        }
+
+        if (teacher.status === "blocked") {
+          await sendTelegramReply(chatId, "⛔️ <b>Ushbu hisob administrator tomonidan bloklangan.</b>");
+          return NextResponse.json({ ok: true });
+        }
+
         // Tizimda tasdiqlangan ustoz uchun shaxsiy xush kelibsiz xabari
         const replyText = [
           `👋 <b>Assalomu alaykum, ${teacher.name}!</b>`,
@@ -282,7 +317,14 @@ export async function POST(req: Request) {
     }
 
     if (text === "/guruhlar") {
-      if (!teacher && !isAdmin) {
+      if (!isTeacherActive && !isAdmin) {
+        if (teacher && teacher.status === "pending") {
+          await sendTelegramReply(
+            chatId,
+            `⏳ <b>Arizangiz ko'rib chiqilmoqda</b>\n\nHurmatli <b>${teacher.name}</b>, sizning hisobingiz administrator tomonidan tasdiqlanish jarayonida. Tasdiqlangach guruhlaringiz ochiladi.`
+          );
+          return NextResponse.json({ ok: true });
+        }
         await sendTelegramReply(
           chatId,
           "⛔️ <b>Ruxsat cheklangan</b>\n\nGuruhlar ro'yxati va dars jadvali faqat Algoritm xodimlari va tasdiqlangan ustozlari uchun ochiq.\n\nAgar siz markaz ustozi bo'lsangiz, avval portaldan ro'yxatdan o'ting:",
@@ -331,10 +373,10 @@ export async function POST(req: Request) {
     }
 
     if (text === "/hisobot") {
-      if (!teacher && !isAdmin) {
+      if (!isTeacherActive && !isAdmin) {
         await sendTelegramReply(
           chatId,
-          "⛔️ <b>Ruxsat cheklangan</b>\n\nDavomat statistikasi faqat Algoritm xodimlari va ustozlari uchun ochiq."
+          "⛔️ <b>Ruxsat cheklangan</b>\n\nDavomat statistikasi faqat Algoritm xodimlari va tasdiqlangan ustozlari uchun ochiq."
         );
         return NextResponse.json({ ok: true });
       }

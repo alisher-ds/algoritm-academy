@@ -3,6 +3,8 @@ import { promises as fs } from "fs";
 import path from "path";
 import os from "os";
 
+export type TeacherStatus = "active" | "pending" | "blocked";
+
 export interface Teacher {
   id: string;
   name: string;
@@ -14,6 +16,7 @@ export interface Teacher {
   telegramId?: string;
   telegramUsername?: string;
   createdAt: string;
+  status?: TeacherStatus;
 }
 
 export const TEACHER_AUTH_COOKIE = "algoritm_teacher_session";
@@ -28,6 +31,7 @@ export const INITIAL_TEACHERS: Teacher[] = [
     subject: "Matematika & SAT Math",
     phone: "+998901234501",
     createdAt: "2026-09-01T00:00:00.000Z",
+    status: "active",
   },
   {
     id: "tm-jasur",
@@ -36,6 +40,7 @@ export const INITIAL_TEACHERS: Teacher[] = [
     subject: "Ingliz Tili · IELTS",
     phone: "+998901234502",
     createdAt: "2026-09-01T00:00:00.000Z",
+    status: "active",
   },
   {
     id: "tm-oxunjon",
@@ -44,6 +49,7 @@ export const INITIAL_TEACHERS: Teacher[] = [
     subject: "Digital SAT",
     phone: "+998901234503",
     createdAt: "2026-09-01T00:00:00.000Z",
+    status: "active",
   },
   {
     id: "tm-adham",
@@ -52,6 +58,7 @@ export const INITIAL_TEACHERS: Teacher[] = [
     subject: "Prezident Maktabi & Mantiq",
     phone: "+998901234504",
     createdAt: "2026-09-01T00:00:00.000Z",
+    status: "active",
   },
   {
     id: "tm-shohista",
@@ -60,6 +67,7 @@ export const INITIAL_TEACHERS: Teacher[] = [
     subject: "Boshlang'ich Rus Sinf",
     phone: "+998901234505",
     createdAt: "2026-09-01T00:00:00.000Z",
+    status: "active",
   },
   {
     id: "tm-bobur",
@@ -68,6 +76,7 @@ export const INITIAL_TEACHERS: Teacher[] = [
     subject: "Asoschi & SAT Math",
     phone: "+998901234506",
     createdAt: "2026-09-01T00:00:00.000Z",
+    status: "active",
   },
 ];
 
@@ -136,6 +145,7 @@ function setGlobalTeachers(teachers: Teacher[]): void {
 }
 
 function getStoragePath(): string {
+  if (process.env.TEACHERS_FILE) return process.env.TEACHERS_FILE;
   const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
   return isServerless
     ? path.join(os.tmpdir(), "algoritm_teachers.json")
@@ -302,12 +312,117 @@ export async function registerTeacher(input: RegisterTeacherInput): Promise<{ te
     telegramId: input.telegramId ? String(input.telegramId) : undefined,
     telegramUsername: input.telegramUsername ? input.telegramUsername.replace(/^@/, "") : undefined,
     createdAt: new Date().toISOString(),
+    status: "pending", // Mustaqil ro'yxatdan o'tgan ustoz admin tasdiqlashi kutilmoqda holatida bo'ladi
   };
 
   teachers.push(newTeacher);
   await saveTeachers(teachers);
 
   return { teacher: sanitizeTeacher(newTeacher) };
+}
+
+export interface AdminCreateTeacherInput {
+  name: string;
+  login: string;
+  subject: string;
+  phone?: string;
+  password: string;
+  telegramId?: string | number;
+  telegramUsername?: string;
+  status?: TeacherStatus;
+}
+
+/** Admin tomonidan yangi ustoz qo'shish (darhol faol holatda) */
+export async function createTeacherByAdmin(input: AdminCreateTeacherInput): Promise<{ teacher?: Teacher; error?: string }> {
+  const teachers = await loadTeachers();
+  const name = input.name?.trim();
+  const login = input.login?.trim().toLowerCase();
+  const subject = input.subject?.trim();
+  const password = input.password;
+  const phone = input.phone?.trim();
+
+  if (!name || name.length < 3) {
+    return { error: "Ism va familiyani to'liq kiriting (kamida 3 ta harf)" };
+  }
+  if (!login || login.length < 3 || !/^[a-z0-9_.-]+$/.test(login)) {
+    return { error: "Login kamida 3 ta lotin harfi yoki raqamdan iborat bo'lishi kerak" };
+  }
+  if (!subject || subject.length < 2) {
+    return { error: "Fanni kiriting" };
+  }
+  if (!password || password.length < 4) {
+    return { error: "Parol kamida 4 ta belgidan iborat bo'lishi kerak" };
+  }
+
+  const exists = teachers.some((t) => t.login.toLowerCase() === login);
+  if (exists) {
+    return { error: "Ushbu login band. Boshqa login tanlang." };
+  }
+
+  const salt = randomBytes(16).toString("hex");
+  const passwordHash = hashPassword(password, salt);
+  const id = `tm_${Date.now()}_${randomBytes(3).toString("hex")}`;
+
+  const newTeacher: Teacher = {
+    id,
+    name,
+    login,
+    subject,
+    phone,
+    passwordHash,
+    salt,
+    telegramId: input.telegramId ? String(input.telegramId) : undefined,
+    telegramUsername: input.telegramUsername ? input.telegramUsername.replace(/^@/, "") : undefined,
+    createdAt: new Date().toISOString(),
+    status: input.status || "active",
+  };
+
+  teachers.push(newTeacher);
+  await saveTeachers(teachers);
+  return { teacher: sanitizeTeacher(newTeacher) };
+}
+
+/** Admin tomonidan ustoz holatini o'zgartirish (active / pending / blocked) */
+export async function updateTeacherStatus(teacherId: string, status: TeacherStatus): Promise<Teacher | null> {
+  const teachers = await loadTeachers();
+  const index = teachers.findIndex((t) => t.id === teacherId);
+  if (index === -1) return null;
+
+  teachers[index] = {
+    ...teachers[index],
+    status,
+  };
+
+  await saveTeachers(teachers);
+  return sanitizeTeacher(teachers[index]);
+}
+
+/** Admin tomonidan ustoz parolini bevosita yangilash (reset) */
+export async function adminResetTeacherPassword(teacherId: string, plainPassword: string): Promise<Teacher | null> {
+  return setTeacherPassword(teacherId, plainPassword);
+}
+
+/** Admin tomonidan ustoz ma'lumotlarini tahrirlash */
+export async function updateTeacherDetails(
+  teacherId: string,
+  details: { name?: string; subject?: string; phone?: string; login?: string }
+): Promise<{ teacher?: Teacher; error?: string }> {
+  const teachers = await loadTeachers();
+  const index = teachers.findIndex((t) => t.id === teacherId);
+  if (index === -1) return { error: "Ustoz topilmadi" };
+
+  if (details.login) {
+    const cleanLogin = details.login.trim().toLowerCase();
+    const exists = teachers.some((t) => t.id !== teacherId && t.login.toLowerCase() === cleanLogin);
+    if (exists) return { error: "Ushbu login boshqa ustoz tomonidan band qilingan" };
+    teachers[index].login = cleanLogin;
+  }
+  if (details.name) teachers[index].name = details.name.trim();
+  if (details.subject) teachers[index].subject = details.subject.trim();
+  if (details.phone !== undefined) teachers[index].phone = details.phone.trim();
+
+  await saveTeachers(teachers);
+  return { teacher: sanitizeTeacher(teachers[index]) };
 }
 
 /** Login yoki telefon hamda parol bilan tekshirish */
@@ -429,6 +544,7 @@ export interface TeacherSessionPayload {
   phone?: string;
   telegramId?: string;
   telegramUsername?: string;
+  status?: TeacherStatus;
   iat: number;
   exp: number;
 }
@@ -443,6 +559,7 @@ export function createTeacherToken(teacher: Teacher, ttlSeconds = TEACHER_SESSIO
     phone: teacher.phone,
     telegramId: teacher.telegramId,
     telegramUsername: teacher.telegramUsername,
+    status: teacher.status,
     iat: now,
     exp: now + ttlSeconds,
   };
@@ -506,6 +623,7 @@ export async function getAuthenticatedTeacher(req: Request): Promise<Teacher | n
       telegramId: payload.telegramId,
       telegramUsername: payload.telegramUsername,
       createdAt: new Date(payload.iat * 1000).toISOString(),
+      status: payload.status || "active",
     };
     teachers.push(recovered);
     await saveTeachers(teachers).catch(() => {});
