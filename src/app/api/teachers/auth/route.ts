@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import {
   loadTeachers,
   verifyTeacherCredentials,
+  verifyPasswordHash,
   setTeacherPassword,
   registerTeacher,
   deleteTeacher,
@@ -10,13 +11,13 @@ import {
   getAuthenticatedTeacher,
   findTeacherByTelegram,
   bindTeacherTelegram,
-  sanitizeTeacher,
   TEACHER_AUTH_COOKIE,
   TEACHER_SESSION_TTL,
 } from "@/lib/teacherAuth";
 import { listGroups, listStudents, createGroup, createStudent } from "@/lib/attendanceStore";
 import { verifyTelegramWebAppData } from "@/lib/telegramAuth";
 import { isAuthed, isSameOrigin } from "@/lib/adminAuth";
+import { clientIdentity, rateLimit } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 
@@ -86,21 +87,30 @@ export async function GET(req: Request) {
       });
     }
 
-    // Tizimga kirmagan bo'lsa: Ustozlar ro'yxati (parol o'rnatish yoki tanlash uchun)
-    const teachers = await loadTeachers();
-    const publicList = teachers.map((t) => ({
-      id: t.id,
-      name: t.name,
-      login: t.login,
-      subject: t.subject,
-      hasPassword: Boolean(t.passwordHash),
-      hasTelegram: Boolean(t.telegramId),
-    }));
+    // Tizimga kirmagan bo'lsa:
+    const admin = isAuthed(req);
+    if (admin) {
+      const teachers = await loadTeachers();
+      const adminList = teachers.map((t) => ({
+        id: t.id,
+        name: t.name,
+        login: t.login,
+        subject: t.subject,
+        phone: t.phone,
+        hasPassword: Boolean(t.passwordHash),
+        hasTelegram: Boolean(t.telegramId),
+      }));
+      return NextResponse.json({
+        success: true,
+        authenticated: false,
+        isAdmin: true,
+        teachers: adminList,
+      });
+    }
 
     return NextResponse.json({
       success: true,
       authenticated: false,
-      teachers: publicList,
     });
   } catch (error) {
     console.error("[Teacher Auth API GET Error]:", error);
@@ -115,6 +125,15 @@ export async function POST(req: Request) {
 
     // 1. Shaxsiy Login va Parol orqali kirish
     if (action === "login") {
+      const ip = clientIdentity(req).key;
+      const limitCheck = await rateLimit("teacher:login:" + ip, 20, 60);
+      if (!limitCheck.allowed) {
+        return NextResponse.json(
+          { success: false, error: "Juda ko'p urinish qilindi. Birozdan so'ng qayta urinib ko'ring." },
+          { status: 429 }
+        );
+      }
+
       const { login, password, bindTelegramId, bindTelegramUsername } = body;
       if (!login || !password) {
         return NextResponse.json(
@@ -158,12 +177,22 @@ export async function POST(req: Request) {
       return res;
     }
 
-    // 2. Ustoz o'zi uchun yangi shaxsiy parol yaratishi
+    // 2. Ustoz o'zi uchun yangi shaxsiy parol yaratishi yoki parolni o'zgartirish
     if (action === "set-password") {
       if (!isSameOrigin(req)) {
         return NextResponse.json({ success: false, error: "Noto'g'ri manba" }, { status: 403 });
       }
-      const { teacherId, password, confirmPassword, phone, bindTelegramId, bindTelegramUsername } = body;
+
+      const ip = clientIdentity(req).key;
+      const limitCheck = await rateLimit("teacher:setpw:" + ip, 10, 300);
+      if (!limitCheck.allowed) {
+        return NextResponse.json(
+          { success: false, error: "Juda ko'p urinish qilindi. Birozdan so'ng qayta urinib ko'ring." },
+          { status: 429 }
+        );
+      }
+
+      const { teacherId, password, confirmPassword, oldPassword, phone, bindTelegramId, bindTelegramUsername } = body;
       if (!teacherId || !password) {
         return NextResponse.json(
           { success: false, error: "Ustoz va yangi parolni kiriting" },
@@ -195,8 +224,17 @@ export async function POST(req: Request) {
       const isSelf = currentTeacher?.id === targetTeacher.id;
 
       if (targetTeacher.passwordHash) {
-        if (!admin && !isSelf) {
-          return NextResponse.json({ success: false, error: "Bu amal uchun ruxsat yo'q" }, { status: 403 });
+        if (!admin) {
+          if (!isSelf) {
+            return NextResponse.json({ success: false, error: "Bu amal uchun ruxsat yo'q" }, { status: 403 });
+          }
+          if (
+            !oldPassword ||
+            !targetTeacher.salt ||
+            !verifyPasswordHash(String(oldPassword), targetTeacher.salt, targetTeacher.passwordHash).valid
+          ) {
+            return NextResponse.json({ success: false, error: "Eski parol noto'g'ri kiritildi" }, { status: 401 });
+          }
         }
       } else {
         const suppliedPhone = String(phone || "").replace(/\D/g, "");
@@ -240,6 +278,19 @@ export async function POST(req: Request) {
 
     // 2.1. Yangi ustozning mustaqil ro'yxatdan o'tishi (Ism-familiya, fan, telefon, login, parol)
     if (action === "register") {
+      if (!isSameOrigin(req)) {
+        return NextResponse.json({ success: false, error: "Noto'g'ri manba" }, { status: 403 });
+      }
+
+      const ip = clientIdentity(req).key;
+      const limitCheck = await rateLimit("teacher:register:" + ip, 10, 300);
+      if (!limitCheck.allowed) {
+        return NextResponse.json(
+          { success: false, error: "Juda ko'p ro'yxatdan o'tish so'rovi yuborildi. Birozdan so'ng qayta urinib ko'ring." },
+          { status: 429 }
+        );
+      }
+
       const { name, subject, phone, login, password, confirmPassword, bindTelegramId, bindTelegramUsername } = body;
 
       if (!name || !subject || !login || !password) {
@@ -343,7 +394,7 @@ export async function POST(req: Request) {
       }
 
       const tgUser = authResult.user;
-      let teacher = await findTeacherByTelegram(tgUser.id, tgUser.username);
+      const teacher = await findTeacherByTelegram(tgUser.id, tgUser.username);
 
       // Telegram ID/username must already be explicitly bound to a teacher.
       // Never infer account ownership from a display name.

@@ -30,19 +30,25 @@ Boshqa skriptlar:
 | `npm run test:watch` | Vitest kuzatuv rejimida |
 | `npm run test:e2e` | Playwright (avval `npm run build` kerak) |
 
-## Sahifalar
+## Sahifalar va API Route'lar
 
-| Route | Mazmuni |
-|---|---|
-| `/` | Bosh sahifa: maktab + kurslar ekotizimi |
-| `/markaz` | O'quv markazi kurslari (PMT, SAT, IELTS, DTM) |
-| `/aloqa` | Manzillar, telefonlar, Telegram |
-| `/galereya` | Foto lavhalar |
-| `/admin` | **CRM** — arizalar boshqaruvi (parol bilan) |
-| `/kurslar` | Barcha kurslar katalogi va dars jadvallari |
-| `/maktab` | `/` ga qayta yo'naltiradi |
-| `/api/leads` | Arizalar API si (GET/POST/PATCH/DELETE) |
-| `/api/leads/auth`, `/api/leads/logout` | Admin kirish/chiqish |
+| Route | Mazmuni | Ruxsat / Himoya |
+|---|---|---|
+| `/` | Bosh sahifa: maktab + kurslar ekotizimi | Ochiq |
+| `/markaz` | O'quv markazi kurslari (PMT, SAT, IELTS, DTM) | Ochiq |
+| `/aloqa` | Manzillar, telefonlar, Telegram | Ochiq |
+| `/galereya` | Foto lavhalar | Ochiq |
+| `/admin` | **CRM & Boshqaruv** — arizalar, guruhlar, o'quvchilar va davomat | Faqat Admin (cookie sessiya) |
+| `/davomat` | **Ustozlar Portali** — guruhlar va dars davomati (Telegram Mini App yoki veb) | Ustoz / Admin (Bearer token yoki cookie) |
+| `/kurslar` | Barcha kurslar katalogi va dars jadvallari | Ochiq |
+| `/maktab` | `/` ga qayta yo'naltiradi | 307 Redirect |
+| `/api/leads` | Arizalar API si (GET/POST/PATCH/DELETE) | POST ochiq (rate-limit), qolgani Admin |
+| `/api/leads/auth`, `/api/leads/logout` | Admin kirish/chiqish | Rate-limit (8 ta/15m) |
+| `/api/teachers/auth` | Ustoz autentifikatsiyasi (login, register, set-password) | Rate-limit, timing-safe, RBAC |
+| `/api/groups` | Guruhlar boshqaruvi (CRUD) | Admin (barchasi), Ustoz (faqat o'ziniki) |
+| `/api/students` | O'quvchilar boshqaruvi (CRUD) | Admin (barchasi), Ustoz (faqat o'ziniki) |
+| `/api/attendance` | Davomat qaydnomalari | Admin (barchasi), Ustoz (faqat o'ziniki) |
+| `/api/telegram/webhook` | Telegram bot buyruqlari va Mini App webhook | `X-Telegram-Bot-Api-Secret-Token` |
 
 ## Ariza (lead) tizimi qanday ishlaydi
 
@@ -76,12 +82,23 @@ Boshqa skriptlar:
 
 > **Muhim:** production'da `ADMIN_PASSWORD` **majburiy**. O'rnatilmasa `/api/leads/auth` `503` qaytaradi va admin paneliga kirib bo'lmaydi (default parol faqat `NODE_ENV=development` da ishlaydi).
 
+### Xavfsizlik va RBAC (Davomat va Ustozlar tizimi)
+
+| Himoya / Qoida | Tafsilot |
+|---|---|
+| Rolga asoslangan kirish (RBAC) | **Admin**: barcha guruhlar, o'quvchilar va davomat jurnallariga to'liq huquq (CRUD).<br>**Ustoz**: faqat o'ziga biriktirilgan guruhlar, ularning o'quvchilari va davomatiga ruxsat. Boshqa ustozning ma'lumotlariga so'rov yuborilsa `403 Forbidden` qaytadi. |
+| Ochiq ro'yxatni yashirish (Enumeration Protection) | `GET /api/teachers/auth` anonim foydalanuvchilarga ustozlar ro'yxatini yoki telefon raqamlarini bermaydi (faqat autentifikatsiya qilingan admin yoki ustoz o'z ma'lumotlarini oladi). |
+| Hisobni egallashdan himoya (Account Takeover) | `action: "set-password"` da eski parol (`oldPassword`) kiritilishi va HMAC/PBKDF2 hash bilan tekshirilishi majburiy (faqat tizim administratori boshqa ustoz parolini to'g'ridan-to'g'ri yangilay oladi). |
+| Ustoz Sessiyasi & Token | HMAC-SHA256 bilan imzolangan token (`Bearer <token>` sarlavhasi yoki HttpOnly cookie). Telegram WebApp muhitida ham `window.Telegram.WebApp.initData` orqali xavfsiz tasdiqlanadi. |
+| Telegram Webhook Himoyasi | Telegram'dan kelayotgan barcha webhook so'rovlari `X-Telegram-Bot-Api-Secret-Token` headeri bilan tekshiriladi (`TELEGRAM_WEBHOOK_SECRET`). |
+| Rate Limiting | `login`, `register` va `set-password` harakatlari uchun IP-ga asoslangan asinxron rate-limit qo'llangan. |
+
 ## Testlar va CI
 
 ```bash
-npm test          # vitest (auth, leadStore, rate-limit, telefon, API route'lar)
+npm test          # vitest (auth, attendanceAuth, leadStore, rate-limit, telefon, API route'lar — 110 ta test)
 npm run typecheck # tsc --noEmit
-npm run lint      # eslint
+npm run lint      # eslint (0 xato, 0 ogohlantirish)
 ```
 
 GitHub Actions (`.github/workflows/ci.yml`): lint → typecheck → test → build → e2e.
@@ -96,19 +113,25 @@ GitHub Actions (`.github/workflows/ci.yml`): lint → typecheck → test → bui
 ```bash
 TELEGRAM_BOT_TOKEN=...           # @BotFather orqali olinadi
 TELEGRAM_CHAT_ID=...             # xabar boradigan chat/guruh ID si
+TELEGRAM_WEBHOOK_SECRET=...      # Telegram webhook xavfsizlik tokeni
 ADMIN_PASSWORD=...               # /admin paroli — production'da MAJBURIY
-ADMIN_SESSION_SECRET=...         # sessiya imzosi (openssl rand -hex 32) — tavsiya etiladi
+ADMIN_SESSION_SECRET=...         # admin sessiya imzosi (openssl rand -hex 32)
+TEACHER_SESSION_SECRET=...       # ustoz sessiya imzosi (openssl rand -hex 32)
 TRUSTED_IP_HEADER=...            # proksi orqasida: x-real-ip yoki cf-connecting-ip
 NEXT_PUBLIC_SITE_URL=...         # https://sizning-domen.uz (SEO metadataBase uchun)
 
 # Saqlash — variant A (serverless/Vercel uchun tavsiya):
 UPSTASH_REDIS_REST_URL=...
 UPSTASH_REDIS_REST_TOKEN=...
-LEADS_REDIS_KEY=algoritm:leads   # ixtiyoriy
+LEADS_REDIS_KEY=algoritm:leads       # ixtiyoriy
+TEACHERS_REDIS_KEY=algoritm:teachers # ixtiyoriy
 
 # Saqlash — variant B (lokal/VPS):
-LEADS_FILE=...                   # ixtiyoriy — arizalar fayli manzili
+LEADS_FILE=...                       # ixtiyoriy — arizalar fayli manzili
+TEACHERS_FILE=...                    # ixtiyoriy — ustozlar fayli manzili
+ATTENDANCE_FILE=...                  # ixtiyoriy — davomat fayli manzili
 ```
+
 
 To'liq ro'yxat va izohlar: [`.env.example`](.env.example).
 

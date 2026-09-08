@@ -107,8 +107,21 @@ Maqsad: funksional kod tuzatilgach, frontendni zamonaviy ta'lim saytlari darajas
 | 3.7 | **SEO** — JSON-LD (EducationalOrganization), to'liq OG/Twitter metadata + `og-cover.jpg` (1200×630), `sitemap.xml`, `robots.txt`, canonical | |
 | 3.8 | **UX detallari** — focus-visible ring, `prefers-reduced-motion`, `video` modalda soxta "HD 1080p · Algoritm Media" yorlig'i olib tashlandi | Klaviatura va maxsus ehtiyojli foydalanuvchilar uchun qulaylik |
 
-Tekshiruv: `npm run lint` 0/0 · `tsc` toza · `npm run build` ✅ (13 route + robots + sitemap).
-Commit: `a9ad79a`
-
 ---
 
+## 6. Davomat va Ustozlar Tizimi Xavfsizlik Auditini Yopish va RBAC (2026-09-08)
+
+Ustozlar va davomat portali (`/davomat`, `/api/students`, `/api/groups`, `/api/attendance`, `/api/teachers/auth`) to'liq tekshirilib, RBAC va axborot xavfsizligi kafolatlandi:
+
+| № | Xavfsizlik / Audit bandi | Yechim va Natija |
+|---|---|---|
+| 6.1 | **O'quvchilar va guruhlar ma'lumotlari sizib chiqishi (Zero Data Leaks)** | `/api/students`, `/api/groups`, `/api/attendance` marshrutlariga anonim kirish bloklandi (`401 Unauthorized`). Guruh va talabalar ro'yxati faqat vakolatli foydalanuvchiga beriladi. |
+| 6.2 | **Rolga asoslangan izolyatsiya (Strict RBAC)** | `src/lib/attendanceAuth.ts` moduli joriy etildi: Admin barcha guruh va talabalarni ko'radi/boshqaradi; Ustoz faqat o'ziga biriktirilgan guruhlar va o'quvchilarga kirish huquqiga ega. Boshqa ustoz ma'lumotlariga ruxsatsiz murojaat qilsa `403 Forbidden` qaytadi. |
+| 6.3 | **Hisobni tortib olishdan himoya (Account Takeover)** | `POST /api/teachers/auth` dagi `action: "set-password"` da `oldPassword` kiritilishi va PBKDF2/HMAC xesh bilan tekshirilishi majburiy qilindi (faqat admin boshqa ustoz parolini bevosita almashtira oladi). |
+| 6.4 | **Ustozlar ro'yxati sizib chiqishini yopish (Anti-Enumeration)** | Anonim `GET /api/teachers/auth` so'rovi orqali ustozlar loginlari va telefonlarini olish yopildi. Faqat tizimga kirgan ustoz o'z profilini oladi. |
+| 6.5 | **Rate-limit asinxronligi va IP izolyatsiyasi** | `rateLimit()` `await` bilan xatosiz chaqirilishi va `clientIdentity(req).key` orqali to'g'ri IP kalitlanishi ta'minlandi. |
+| 6.6 | **Telegram WebHook va Mini App xavfsizligi** | Webhook `X-Telegram-Bot-Api-Secret-Token` sarlavhasi bilan tekshiriladi; `/davomat` sahifasida Telegram WebApp `initData` tekshiruvi va `authFetch` bilan xavfsiz Bearer token yuborilishi o'rnatildi. |
+| 6.7 | **Kod sifati va tozaligi** | 61 ta ESLint muammosi 0 xato va 0 ogohlantirishgacha to'liq bartaraf qilindi; `tsc --noEmit` toza. |
+| 6.8 | **Avtomatlashtirilgan testlar** | `tests/attendanceAuth.test.ts` qo'shildi. Barcha 15 ta test fayli va 110 ta test to'liq muvaffaqiyatli o'tdi (`npm test`). |
+
+Tekshiruv: `npm run lint` 0/0 · `npx tsc --noEmit` toza · `npm test` 110/110 ✅ · `npm run build` ✅.

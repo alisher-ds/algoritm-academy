@@ -223,6 +223,7 @@ export async function createGroup(
   const id = input.id || "grp_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6);
   const newGroup: Group = {
     ...input,
+    active: input.active !== false,
     id,
     createdAt: new Date().toISOString(),
   };

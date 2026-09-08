@@ -121,13 +121,17 @@ async function redisSaveTeachers(teachers: Teacher[]): Promise<boolean> {
 }
 
 // Xotirada va faylda ustozlarni saqlash kesh
+interface GlobalTeacherScope {
+  __algoritm_teachers__?: Teacher[];
+}
+
 function getGlobalTeachers(): Teacher[] | null {
-  const g = globalThis as any;
+  const g = globalThis as unknown as GlobalTeacherScope;
   return g.__algoritm_teachers__ || null;
 }
 
 function setGlobalTeachers(teachers: Teacher[]): void {
-  const g = globalThis as any;
+  const g = globalThis as unknown as GlobalTeacherScope;
   g.__algoritm_teachers__ = teachers;
 }
 
@@ -209,7 +213,7 @@ export function hashPassword(password: string, salt: string): string {
 }
 
 /** Verify legacy HMAC-SHA256 hashes and transparently upgrade them to scrypt. */
-function verifyPasswordHash(password: string, salt: string, storedHash: string): { valid: boolean; needsUpgrade: boolean } {
+export function verifyPasswordHash(password: string, salt: string, storedHash: string): { valid: boolean; needsUpgrade: boolean } {
   const legacy = createHmac("sha256", salt).update(password).digest("hex");
   if (storedHash.length === legacy.length) {
     return { valid: safeEqual(legacy, storedHash), needsUpgrade: true };
@@ -391,7 +395,9 @@ export async function bindTeacherTelegram(
 
 /** Shaxsiy xavfsizlik: Parol xeshi va tuzini yashirish */
 export function sanitizeTeacher(teacher: Teacher): Teacher {
-  const { passwordHash, salt, ...safe } = teacher;
+  const safe: Partial<Teacher> = { ...teacher };
+  delete safe.passwordHash;
+  delete safe.salt;
   return safe as Teacher;
 }
 
@@ -401,17 +407,16 @@ let sessionSecretWarned = false;
 function getSessionSecret(): string {
   const explicit = process.env.TEACHER_SESSION_SECRET?.trim();
   if (explicit) return explicit;
-  const fallback = process.env.ADMIN_SESSION_SECRET || process.env.TELEGRAM_BOT_TOKEN;
+  const fallback = process.env.ADMIN_SESSION_SECRET || process.env.ADMIN_PASSWORD || process.env.TELEGRAM_BOT_TOKEN;
   if (fallback) {
     if (!sessionSecretWarned && process.env.NODE_ENV === "production") {
       sessionSecretWarned = true;
-      console.warn("[teacherAuth] DIQQAT: TEACHER_SESSION_SECRET o'rnatilmagan. ADMIN_SESSION_SECRET dan zaxira kalit ishlatilmoqda.");
+      console.warn("[teacherAuth] DIQQAT: TEACHER_SESSION_SECRET o'rnatilmagan. ADMIN kalitidan kriptografik ajratilgan xavfsiz kalit ishlatilmoqda.");
     }
-    return createHmac("sha256", "teacher-token-salt").update(fallback).digest("hex");
+    return createHmac("sha256", "algoritm-teacher-isolated-secret-v1").update(fallback).digest("hex");
   }
   if (process.env.NODE_ENV === "production") {
-    const fallbackPass = process.env.ADMIN_PASSWORD || "algoritm-production-fallback-salt";
-    return createHmac("sha256", "teacher-token-salt").update(fallbackPass).digest("hex");
+    throw new Error("TEACHER_SESSION_SECRET yoki ADMIN_PASSWORD production muhitida o'rnatilishi shart");
   }
   return createHmac("sha256", "teacher-token-salt").update("local-development-only-teacher-secret").digest("hex");
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import {
@@ -53,7 +53,7 @@ export default function AdminPage() {
   const [rememberMe, setRememberMe] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
   const [idleSecondsLeft, setIdleSecondsLeft] = useState<number | null>(null);
-  const lastActivityRef = useRef<number>(Date.now());
+  const lastActivityRef = useRef<number>(0);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [stats, setStats] = useState<LeadStatsSummary | null>(null);
   const [search, setSearch] = useState("");
@@ -250,7 +250,6 @@ export default function AdminPage() {
   // Harakatsizlikni (inactivity) kuzatuvchi va avtomatik chiquvchi taymer (15 daqiqa)
   useEffect(() => {
     if (authState !== "tayyor") {
-      setIdleSecondsLeft(null);
       return;
     }
 
@@ -492,25 +491,23 @@ export default function AdminPage() {
   };
 
   // Mijozlar ro'yxatini filtrlash
-  const filteredLeads = useMemo(() => {
-    return leads.filter((l) => {
-      const q = search.trim().toLowerCase();
-      const searchDigits = search.replace(/\D/g, "");
-      const matchPhone =
-        searchDigits.length > 0 && l.phone.replace(/\D/g, "").includes(searchDigits);
-      const matchSearch =
-        !q ||
-        l.name.toLowerCase().includes(q) ||
-        matchPhone ||
-        l.targetInterest.toLowerCase().includes(q) ||
-        (l.notes ? l.notes.toLowerCase().includes(q) : false) ||
-        (l.adminNotes ? l.adminNotes.toLowerCase().includes(q) : false);
+  const filteredLeads = leads.filter((l) => {
+    const q = search.trim().toLowerCase();
+    const searchDigits = search.replace(/\D/g, "");
+    const matchPhone =
+      searchDigits.length > 0 && l.phone.replace(/\D/g, "").includes(searchDigits);
+    const matchSearch =
+      !q ||
+      l.name.toLowerCase().includes(q) ||
+      matchPhone ||
+      l.targetInterest.toLowerCase().includes(q) ||
+      (l.notes ? l.notes.toLowerCase().includes(q) : false) ||
+      (l.adminNotes ? l.adminNotes.toLowerCase().includes(q) : false);
 
-      const matchStatus = statusFilter === "hammasi" || l.status === statusFilter;
-      const matchType = typeFilter === "hammasi" || l.type === typeFilter;
-      return matchSearch && matchStatus && matchType;
-    });
-  }, [leads, search, statusFilter, typeFilter]);
+    const matchStatus = statusFilter === "hammasi" || l.status === statusFilter;
+    const matchType = typeFilter === "hammasi" || l.type === typeFilter;
+    return matchSearch && matchStatus && matchType;
+  });
 
   const exportCSV = () => {
     const headers =

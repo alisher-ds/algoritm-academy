@@ -67,14 +67,19 @@ export default function LeadModal({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [honeypot, setHoneypot] = useState("");
 
-  useEffect(() => {
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
+  const [prevInitialCourse, setPrevInitialCourse] = useState(initialCourse);
+
+  if (isOpen !== prevIsOpen || initialCourse !== prevInitialCourse) {
+    setPrevIsOpen(isOpen);
+    setPrevInitialCourse(initialCourse);
     if (isOpen) {
       setCourseValue(matchInitialCourse(initialCourse));
       setSubmitNote(null);
       setErrorMessage(null);
       setSubmitted(false);
     }
-  }, [isOpen, initialCourse]);
+  }
 
   const handleClose = useCallback(() => {
     setSubmitted(false);

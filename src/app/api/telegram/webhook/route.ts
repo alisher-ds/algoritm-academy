@@ -82,7 +82,7 @@ export async function GET() {
   }
 }
 
-async function sendTelegramReply(chatId: number | string, text: string, replyMarkup?: any) {
+async function sendTelegramReply(chatId: number | string, text: string, replyMarkup?: Record<string, unknown>) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   if (!token) return;
   try {

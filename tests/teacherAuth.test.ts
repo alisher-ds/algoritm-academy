@@ -8,9 +8,6 @@ import {
   verifyTeacherCredentials,
   createTeacherToken,
   verifyTeacherToken,
-  bindTeacherTelegram,
-  findTeacherByTelegram,
-  hashPassword,
 } from "../src/lib/teacherAuth";
 
 describe("Teacher Authentication & Role Isolation", () => {
@@ -32,7 +29,7 @@ describe("Teacher Authentication & Role Isolation", () => {
     expect(updated).toBeDefined();
     expect(updated?.id).toBe("tm-aziz");
     // Sanitize qilingani uchun tashqi ob'ektda parol xeshi chiqmasligi kerak
-    expect((updated as any).passwordHash).toBeUndefined();
+    expect((updated as unknown as Record<string, unknown>).passwordHash).toBeUndefined();
 
     // To'g'ri parol bilan kirish
     const auth1 = await verifyTeacherCredentials("aziz", "maxfiy_parol_2026");

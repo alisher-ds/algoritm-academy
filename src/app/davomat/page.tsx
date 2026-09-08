@@ -10,25 +10,19 @@ import {
   Calendar,
   Clock,
   MapPin,
-  ChevronRight,
   UserPlus,
   Save,
   Loader2,
   Check,
   Phone,
   Sparkles,
-  RefreshCw,
-  Lock,
   LogOut,
   KeyRound,
-  ShieldCheck,
   WifiOff,
-  UserCheck,
   GraduationCap,
   BookOpen,
   ArrowRight,
   Send,
-  History,
 } from "lucide-react";
 import {
   type Group,
@@ -38,12 +32,53 @@ import {
 } from "@/lib/attendanceTypes";
 import type { Teacher } from "@/lib/teacherAuth";
 
+interface TelegramUser {
+  id: number;
+  first_name?: string;
+  last_name?: string;
+  username?: string;
+}
+
+interface TelegramWebApp {
+  initData?: string;
+  initDataUnsafe?: {
+    user?: TelegramUser;
+  };
+  ready?: () => void;
+  expand?: () => void;
+  HapticFeedback?: {
+    impactOccurred?: (style: string) => void;
+    selectionChanged?: () => void;
+    notificationOccurred?: (type: string) => void;
+  };
+}
+
+declare global {
+  interface Window {
+    Telegram?: {
+      WebApp?: TelegramWebApp;
+    };
+  }
+}
+
+async function authFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const token = typeof window !== "undefined" ? localStorage.getItem("algoritm_teacher_token") : null;
+  const headers = new Headers(init?.headers);
+  if (token && !headers.has("Authorization")) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+  return fetch(input, {
+    ...init,
+    headers,
+  });
+}
+
 export default function DavomatTeacherPage() {
   // ─── 1. Autentifikatsiya va Ustoz Holati ───
   const [currentTeacher, setCurrentTeacher] = useState<Teacher | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [isTelegram, setIsTelegram] = useState<boolean | null>(null);
-  const [telegramUser, setTelegramUser] = useState<any>(null);
+  const [telegramUser, setTelegramUser] = useState<TelegramUser | null>(null);
 
   // Login formasi holati
   const [authTab, setAuthTab] = useState<"login" | "register">("login");
@@ -66,14 +101,15 @@ export default function DavomatTeacherPage() {
   const [students, setStudents] = useState<Student[]>([]);
   const [attendance, setAttendance] = useState<Record<string, AttendanceStatus>>({});
   const [notes, setNotes] = useState<Record<string, string>>({});
-  const [activeTab, setActiveTab] = useState<"attendance" | "students" | "history">("attendance");
 
   // UX va Tarmoq
   const [loadingGroup, setLoadingGroup] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [isOfflineSaved, setIsOfflineSaved] = useState(false);
-  const [isOnline, setIsOnline] = useState(true);
+  const [isOnline, setIsOnline] = useState<boolean>(() =>
+    typeof navigator !== "undefined" ? navigator.onLine : true
+  );
   const [errorNotice, setErrorNotice] = useState<string | null>(null);
 
   // Yangi o'quvchi qo'shish modali
@@ -115,11 +151,11 @@ export default function DavomatTeacherPage() {
     try {
       const rawQueue = localStorage.getItem("algoritm_offline_queue");
       if (!rawQueue) return;
-      const queue: Array<{ records: any[] }> = JSON.parse(rawQueue);
+      const queue: Array<{ records: Array<Record<string, unknown>> }> = JSON.parse(rawQueue);
       if (queue.length === 0) return;
 
       for (const item of queue) {
-        await fetch("/api/attendance", {
+        await authFetch("/api/attendance", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(item),
@@ -130,33 +166,26 @@ export default function DavomatTeacherPage() {
   }, []);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      setIsOnline(navigator.onLine);
-      const handleOnline = () => {
-        setIsOnline(true);
-        syncOfflineQueue();
-      };
-      const handleOffline = () => setIsOnline(false);
+    if (typeof window === "undefined") return;
+    const handleOnline = () => {
+      setIsOnline(true);
+      void syncOfflineQueue();
+    };
+    const handleOffline = () => setIsOnline(false);
 
-      window.addEventListener("online", handleOnline);
-      window.addEventListener("offline", handleOffline);
-      return () => {
-        window.removeEventListener("online", handleOnline);
-        window.removeEventListener("offline", handleOffline);
-      };
-    }
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
   }, [syncOfflineQueue]);
 
   // ─── 4. Sessiya va Ustoz Ma'lumotlarini Tekshirish ───
   const checkSession = useCallback(async () => {
     setAuthLoading(true);
     try {
-      const savedToken = typeof window !== "undefined" ? localStorage.getItem("algoritm_teacher_token") : null;
-      const headers: Record<string, string> = {};
-      if (savedToken) {
-        headers["Authorization"] = `Bearer ${savedToken}`;
-      }
-      const res = await fetch("/api/teachers/auth", { headers });
+      const res = await authFetch("/api/teachers/auth");
       const data = await res.json();
 
       if (data.success && data.authenticated && data.teacher) {
@@ -200,64 +229,78 @@ export default function DavomatTeacherPage() {
 
   // Telegram WebApp muhitini tekshirish
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const tg = (window as any).Telegram?.WebApp;
+    let ignore = false;
+    const initTgAndSession = async () => {
+      if (typeof window === "undefined") return;
+      const tg = window.Telegram?.WebApp;
       if (tg && (tg.initData || tg.initDataUnsafe?.user)) {
         try {
-          tg.ready();
-          tg.expand();
+          tg.ready?.();
+          tg.expand?.();
         } catch {}
-        setIsTelegram(true);
-        const user = tg.initDataUnsafe?.user;
-        setTelegramUser(user);
-
-        // Telegram WebApp orqali avtomatik kirish urinishi
+        const user = tg.initDataUnsafe?.user || null;
         if (tg.initData) {
-          fetch("/api/teachers/auth", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ action: "telegram-auth", initData: tg.initData }),
-          })
-            .then((r) => r.json())
-            .then((data) => {
-              if (data.success && data.token && typeof window !== "undefined") {
-                localStorage.setItem("algoritm_teacher_token", data.token);
-                if (data.teacher) {
-                  localStorage.setItem("algoritm_teacher_profile", JSON.stringify(data.teacher));
-                  setCurrentTeacher(data.teacher);
-                }
+          try {
+            const r = await fetch("/api/teachers/auth", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ action: "telegram-auth", initData: tg.initData }),
+            });
+            const data = await r.json();
+            if (ignore) return;
+            setIsTelegram(true);
+            if (user) setTelegramUser(user);
+            if (data.success && data.token) {
+              localStorage.setItem("algoritm_teacher_token", data.token);
+              if (data.teacher) {
+                localStorage.setItem("algoritm_teacher_profile", JSON.stringify(data.teacher));
+                setCurrentTeacher(data.teacher);
               }
-              checkSession();
-            })
-            .catch(() => checkSession());
-          return;
+            }
+            await checkSession();
+            return;
+          } catch {
+            if (ignore) return;
+            setIsTelegram(true);
+            if (user) setTelegramUser(user);
+            await checkSession();
+            return;
+          }
         }
+        if (ignore) return;
+        setIsTelegram(true);
+        if (user) setTelegramUser(user);
       } else {
+        if (ignore) return;
         setIsTelegram(false);
       }
-    }
-    checkSession();
+      await checkSession();
+    };
+    void initTgAndSession();
+    return () => {
+      ignore = true;
+    };
   }, [checkSession]);
 
   // ─── 5. Guruh Tanlanganda O'quvchilar va Davomatni Yuklash ───
-  const fetchGroupData = useCallback(
+  const reloadGroupData = useCallback(
     async (groupId: string) => {
-      setLoadingGroup(true);
-      setErrorNotice(null);
       try {
-        const studRes = await fetch(`/api/students?groupId=${groupId}`);
+        const [studRes, attRes] = await Promise.all([
+          authFetch(`/api/students?groupId=${groupId}`),
+          authFetch(`/api/attendance?groupId=${groupId}&date=${todayStr}`),
+        ]);
         const studData = await studRes.json();
+        const attData = await attRes.json();
+
         const studentList: Student[] = studData.success && Array.isArray(studData.students) ? studData.students : [];
         setStudents(studentList);
-
-        const attRes = await fetch(`/api/attendance?groupId=${groupId}&date=${todayStr}`);
-        const attData = await attRes.json();
 
         const initialStatus: Record<string, AttendanceStatus> = {};
         const initialNotes: Record<string, string> = {};
 
         if (attData.success && Array.isArray(attData.records) && attData.records.length > 0) {
-          attData.records.forEach((r: any) => {
+          attData.records.forEach((r: { studentId: string; status: AttendanceStatus; note?: string }) => {
             initialStatus[r.studentId] = r.status;
             if (r.note) initialNotes[r.studentId] = r.note;
           });
@@ -267,7 +310,7 @@ export default function DavomatTeacherPage() {
             const draft = localStorage.getItem(`draft_att_${groupId}_${todayStr}`);
             if (draft) {
               const records = JSON.parse(draft);
-              records.forEach((r: any) => {
+              records.forEach((r: { studentId: string; status: AttendanceStatus; note?: string }) => {
                 initialStatus[r.studentId] = r.status;
                 if (r.note) initialNotes[r.studentId] = r.note;
               });
@@ -285,7 +328,8 @@ export default function DavomatTeacherPage() {
 
         setAttendance(initialStatus);
         setNotes(initialNotes);
-      } catch (err) {
+        setErrorNotice(null);
+      } catch {
         setErrorNotice("Guruh ma'lumotlarini yuklashda xatolik yuz berdi");
       } finally {
         setLoadingGroup(false);
@@ -295,10 +339,64 @@ export default function DavomatTeacherPage() {
   );
 
   useEffect(() => {
-    if (selectedGroupId && currentTeacher) {
-      fetchGroupData(selectedGroupId);
-    }
-  }, [selectedGroupId, currentTeacher, fetchGroupData]);
+    if (!selectedGroupId || !currentTeacher) return;
+    let ignore = false;
+    const loadData = async () => {
+      try {
+        const [studRes, attRes] = await Promise.all([
+          authFetch(`/api/students?groupId=${selectedGroupId}`),
+          authFetch(`/api/attendance?groupId=${selectedGroupId}&date=${todayStr}`),
+        ]);
+        const studData = await studRes.json();
+        const attData = await attRes.json();
+        if (ignore) return;
+
+        const studentList: Student[] = studData.success && Array.isArray(studData.students) ? studData.students : [];
+        setStudents(studentList);
+
+        const initialStatus: Record<string, AttendanceStatus> = {};
+        const initialNotes: Record<string, string> = {};
+
+        if (attData.success && Array.isArray(attData.records) && attData.records.length > 0) {
+          attData.records.forEach((r: { studentId: string; status: AttendanceStatus; note?: string }) => {
+            initialStatus[r.studentId] = r.status;
+            if (r.note) initialNotes[r.studentId] = r.note;
+          });
+        } else {
+          try {
+            const draft = localStorage.getItem(`draft_att_${selectedGroupId}_${todayStr}`);
+            if (draft) {
+              const records = JSON.parse(draft);
+              records.forEach((r: { studentId: string; status: AttendanceStatus; note?: string }) => {
+                initialStatus[r.studentId] = r.status;
+                if (r.note) initialNotes[r.studentId] = r.note;
+              });
+            } else {
+              studentList.forEach((s) => {
+                initialStatus[s.id] = "keldi";
+              });
+            }
+          } catch {
+            studentList.forEach((s) => {
+              initialStatus[s.id] = "keldi";
+            });
+          }
+        }
+
+        setAttendance(initialStatus);
+        setNotes(initialNotes);
+        setErrorNotice(null);
+      } catch {
+        if (!ignore) setErrorNotice("Guruh ma'lumotlarini yuklashda xatolik yuz berdi");
+      } finally {
+        if (!ignore) setLoadingGroup(false);
+      }
+    };
+    void loadData();
+    return () => {
+      ignore = true;
+    };
+  }, [selectedGroupId, currentTeacher, todayStr]);
 
   // ─── 6. Autentifikatsiya Amallari (Login, Parol o'rnatish, Chiqish) ───
 
@@ -311,7 +409,7 @@ export default function DavomatTeacherPage() {
     setAuthSubmitting(true);
     setAuthError("");
     try {
-      const tgUser = (window as any).Telegram?.WebApp?.initDataUnsafe?.user || telegramUser;
+      const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user || telegramUser;
       const res = await fetch("/api/teachers/auth", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -362,7 +460,7 @@ export default function DavomatTeacherPage() {
     setAuthSubmitting(true);
     setAuthError("");
     try {
-      const tgUser = (window as any).Telegram?.WebApp?.initDataUnsafe?.user || telegramUser;
+      const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user || telegramUser;
       const res = await fetch("/api/teachers/auth", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -408,7 +506,7 @@ export default function DavomatTeacherPage() {
     if (!newGroupName.trim() || !currentTeacher) return;
     setAddingGroup(true);
     try {
-      const res = await fetch("/api/groups", {
+      const res = await authFetch("/api/groups", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -443,7 +541,7 @@ export default function DavomatTeacherPage() {
       if (typeof window !== "undefined") {
         localStorage.removeItem("algoritm_teacher_token");
       }
-      await fetch("/api/teachers/auth", {
+      await authFetch("/api/teachers/auth", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "logout" }),
@@ -464,14 +562,14 @@ export default function DavomatTeacherPage() {
     });
     setAttendance(updated);
     try {
-      (window as any).Telegram?.WebApp?.HapticFeedback?.impactOccurred("light");
+      window.Telegram?.WebApp?.HapticFeedback?.impactOccurred?.("light");
     } catch {}
   };
 
   const setStudentStatus = (studentId: string, status: AttendanceStatus) => {
     setAttendance((prev) => ({ ...prev, [studentId]: status }));
     try {
-      (window as any).Telegram?.WebApp?.HapticFeedback?.selectionChanged();
+      window.Telegram?.WebApp?.HapticFeedback?.selectionChanged?.();
     } catch {}
   };
 
@@ -496,10 +594,10 @@ export default function DavomatTeacherPage() {
       localStorage.setItem(`draft_att_${selectedGroupId}_${todayStr}`, JSON.stringify(records));
     } catch {}
 
-    const rawInitData = typeof window !== "undefined" ? (window as any).Telegram?.WebApp?.initData : undefined;
+    const rawInitData = typeof window !== "undefined" ? window.Telegram?.WebApp?.initData : undefined;
 
     try {
-      const res = await fetch("/api/attendance", {
+      const res = await authFetch("/api/attendance", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ records, initData: rawInitData }),
@@ -509,13 +607,13 @@ export default function DavomatTeacherPage() {
       if (res.ok && data.success) {
         setSaveSuccess(true);
         try {
-          (window as any).Telegram?.WebApp?.HapticFeedback?.notificationOccurred("success");
+          window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred?.("success");
         } catch {}
         setTimeout(() => setSaveSuccess(false), 3500);
       } else {
         throw new Error(data.error || "Server xatosi");
       }
-    } catch (err) {
+    } catch {
       try {
         const rawQueue = localStorage.getItem("algoritm_offline_queue") || "[]";
         const queue = JSON.parse(rawQueue);
@@ -537,7 +635,7 @@ export default function DavomatTeacherPage() {
     if (!newStudentName.trim() || !selectedGroupId) return;
     setAddingStudent(true);
     try {
-      const res = await fetch("/api/students", {
+      const res = await authFetch("/api/students", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -552,7 +650,7 @@ export default function DavomatTeacherPage() {
         setShowAddModal(false);
         setNewStudentName("");
         setNewStudentPhone("+998 ");
-        fetchGroupData(selectedGroupId);
+        void reloadGroupData(selectedGroupId);
       } else {
         alert(data.error || "O'quvchini qo'shib bo'lmadi");
       }
@@ -837,6 +935,17 @@ export default function DavomatTeacherPage() {
         <div className="bg-amber-500/90 text-slate-950 px-4 py-1.5 text-xs font-bold flex items-center justify-center gap-1.5 sticky top-0 z-40">
           <WifiOff className="w-3.5 h-3.5" />
           <span>Internet yo'q. Oflayn rejim faol — davomat qurilmada xavfsiz saqlanadi.</span>
+        </div>
+      )}
+
+      {/* Xatolik ogohlantirishi */}
+      {errorNotice && (
+        <div className="bg-rose-500/90 text-white px-4 py-1.5 text-xs font-bold flex items-center justify-between gap-1.5 sticky top-0 z-40">
+          <div className="flex items-center gap-1.5">
+            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+            <span>{errorNotice}</span>
+          </div>
+          <button onClick={() => setErrorNotice(null)} className="text-white/80 hover:text-white text-xs">✕</button>
         </div>
       )}
 

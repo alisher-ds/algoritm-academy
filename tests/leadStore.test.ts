@@ -125,9 +125,9 @@ describe("leadStore (fayl backend)", () => {
 
   it("listLeadsPage qidiruv va filtrlar bo'yicha to'g'ri filtrlaydi", async () => {
     const s = await store();
-    const l1 = await s.addLead({ name: "Bobur Xaydarov", phone: "+998901112233", type: "maktab", targetInterest: "0–11 Sinf" });
+    await s.addLead({ name: "Bobur Xaydarov", phone: "+998901112233", type: "maktab", targetInterest: "0–11 Sinf" });
     const l2 = await s.addLead({ name: "Aziz Qodirov", phone: "+998909998877", type: "kurs", targetInterest: "Digital SAT", notes: "Azamat Qodirov bilan suhbat" });
-    const l3 = await s.addLead({ name: "Malika Rahimova", phone: "+998935554433", type: "kurs", targetInterest: "IELTS 7+" });
+    await s.addLead({ name: "Malika Rahimova", phone: "+998935554433", type: "kurs", targetInterest: "IELTS 7+" });
 
     await s.updateLead(l2.id, { status: "boglangan" });
 

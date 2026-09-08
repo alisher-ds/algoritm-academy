@@ -5,7 +5,6 @@ import {
   Users,
   Calendar,
   Clock,
-  MapPin,
   DollarSign,
   Plus,
   Search,
@@ -14,16 +13,12 @@ import {
   XCircle,
   AlertCircle,
   Loader2,
-  Trash2,
-  Edit,
   ExternalLink,
   ChevronRight,
-  Filter,
 } from "lucide-react";
 import type {
   Group,
   Student,
-  AttendanceRecord,
   StudentMonthlyBilling,
 } from "@/lib/attendanceTypes";
 
@@ -53,7 +48,7 @@ export default function AdminAttendanceModule() {
   const [newGroupTeacherId, setNewGroupTeacherId] = useState("");
   const [newGroupBranch, setNewGroupBranch] = useState("Algoritm Academy (O'quv markazi)");
   const [teacherList, setTeacherList] = useState<Array<{ id: string; name: string; subject: string }>>([]);
-  const [newGroupDays, setNewGroupDays] = useState<any>("dush-chor-juma");
+  const [newGroupDays, setNewGroupDays] = useState<string>("dush-chor-juma");
   const [newGroupTime, setNewGroupTime] = useState("14:00 - 15:30");
   const [newGroupRoom, setNewGroupRoom] = useState("201-xona");
   const [newGroupPrice, setNewGroupPrice] = useState("450000");
@@ -72,29 +67,14 @@ export default function AdminAttendanceModule() {
       const data = await res.json();
       if (data.success && Array.isArray(data.groups)) {
         setGroups(data.groups);
-        if (data.groups.length > 0 && !selectedGroupId) {
-          setSelectedGroupId(data.groups[0].id);
-          setNewStudentGroupId(data.groups[0].id);
+        if (data.groups.length > 0) {
+          setSelectedGroupId((prev) => prev || data.groups[0].id);
+          setNewStudentGroupId((prev) => prev || data.groups[0].id);
         }
       }
-    } catch (e) {
-      console.error(e);
+    } catch (err) {
+      console.error(err);
     }
-  }, [selectedGroupId]);
-
-  // Ustozlarni yuklash
-  const fetchTeachers = useCallback(async () => {
-    try {
-      const res = await fetch("/api/teachers/auth");
-      const data = await res.json();
-      if (data.teachers && Array.isArray(data.teachers)) {
-        setTeacherList(data.teachers);
-        if (data.teachers.length > 0) {
-          setNewGroupTeacherId(data.teachers[0].id);
-          setNewGroupTeacher(data.teachers[0].name);
-        }
-      }
-    } catch {}
   }, []);
 
   // O'quvchilarni yuklash
@@ -105,15 +85,14 @@ export default function AdminAttendanceModule() {
       if (data.success && Array.isArray(data.students)) {
         setStudents(data.students);
       }
-    } catch (e) {
-      console.error(e);
+    } catch (err) {
+      console.error(err);
     }
   }, []);
 
   // Tanlangan guruh va oy bo'yicha to'lov/davomat hisobini yuklash
   const fetchBilling = useCallback(async (groupId: string, month: string) => {
     if (!groupId) return;
-    setLoading(true);
     try {
       const res = await fetch(`/api/attendance?groupId=${groupId}&month=${month}&billing=true`);
       const data = await res.json();
@@ -122,24 +101,74 @@ export default function AdminAttendanceModule() {
       } else {
         setBillingList([]);
       }
-    } catch (e) {
-      console.error(e);
+    } catch (err) {
+      console.error(err);
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchGroups();
-    fetchStudents();
-    fetchTeachers();
-  }, [fetchGroups, fetchStudents, fetchTeachers]);
+    let ignore = false;
+    const initData = async () => {
+      try {
+        const [gRes, sRes, tRes] = await Promise.all([
+          fetch("/api/groups?activeOnly=false").then((r) => r.json()).catch(() => ({})),
+          fetch("/api/students").then((r) => r.json()).catch(() => ({})),
+          fetch("/api/teachers/auth").then((r) => r.json()).catch(() => ({})),
+        ]);
+        if (ignore) return;
+        if (gRes?.success && Array.isArray(gRes.groups)) {
+          setGroups(gRes.groups);
+          if (gRes.groups.length > 0) {
+            setSelectedGroupId((prev) => prev || gRes.groups[0].id);
+            setNewStudentGroupId((prev) => prev || gRes.groups[0].id);
+          }
+        }
+        if (sRes?.success && Array.isArray(sRes.students)) {
+          setStudents(sRes.students);
+        }
+        if (tRes?.teachers && Array.isArray(tRes.teachers)) {
+          setTeacherList(tRes.teachers);
+          if (tRes.teachers.length > 0) {
+            setNewGroupTeacherId((prev) => prev || tRes.teachers[0].id);
+            setNewGroupTeacher((prev) => prev || tRes.teachers[0].name);
+          }
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    void initData();
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   useEffect(() => {
-    if (selectedGroupId && selectedMonth) {
-      fetchBilling(selectedGroupId, selectedMonth);
-    }
-  }, [selectedGroupId, selectedMonth, fetchBilling]);
+    if (!selectedGroupId || !selectedMonth) return;
+    let ignore = false;
+    const loadBilling = async () => {
+      try {
+        const res = await fetch(`/api/attendance?groupId=${selectedGroupId}&month=${selectedMonth}&billing=true`);
+        const data = await res.json();
+        if (ignore) return;
+        if (data.success && Array.isArray(data.billing)) {
+          setBillingList(data.billing);
+        } else {
+          setBillingList([]);
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        if (!ignore) setLoading(false);
+      }
+    };
+    void loadBilling();
+    return () => {
+      ignore = true;
+    };
+  }, [selectedGroupId, selectedMonth]);
 
   // Yangi guruh yaratish
   const handleCreateGroup = async (e: React.FormEvent) => {
@@ -152,6 +181,7 @@ export default function AdminAttendanceModule() {
           name: newGroupName,
           subject: newGroupSubject,
           teacherName: newGroupTeacher,
+          teacherId: newGroupTeacherId || undefined,
           days: newGroupDays,
           time: newGroupTime,
           room: newGroupRoom,
@@ -164,9 +194,9 @@ export default function AdminAttendanceModule() {
         setNewGroupName("");
         setNewGroupSubject("");
         setNewGroupTeacher("");
-        fetchGroups();
+        void fetchGroups();
       }
-    } catch (e) {
+    } catch {
       alert("Xatolik yuz berdi");
     }
   };
@@ -191,10 +221,10 @@ export default function AdminAttendanceModule() {
         setNewStudentName("");
         setNewStudentPhone("+998 ");
         setNewStudentParent("+998 ");
-        fetchStudents();
-        if (selectedGroupId) fetchBilling(selectedGroupId, selectedMonth);
+        void fetchStudents();
+        if (selectedGroupId) void fetchBilling(selectedGroupId, selectedMonth);
       }
-    } catch (e) {
+    } catch {
       alert("Xatolik yuz berdi");
     }
   };
