@@ -346,13 +346,13 @@ export default function DavomatTeacherPage() {
             </span>
             <h2 className="text-xl font-extrabold text-white">Algoritm Ustoz Davomat Portali</h2>
             <p className="text-xs text-slate-400 leading-relaxed">
-              Xavfsizlik talablariga ko'ra ushbu sahifa ochiq brauzerlar uchun yopiq. Davomat qilish uchun rasmiy <b>Algoritm Telegram Boti</b> orqali kiring.
+              Xavfsizlik talablariga ko'ra ushbu sahifa ochiq brauzerlar uchun yopiq. Davomat qilish uchun rasmiy <b>Algoritm Telegram Boti (@algoritm_ustoz_bot)</b> orqali kiring.
             </p>
           </div>
 
           <div className="space-y-3 pt-2">
             <a
-              href="https://t.me/algoritm_uz_bot"
+              href="https://t.me/algoritm_ustoz_bot"
               target="_blank"
               rel="noopener noreferrer"
               className="w-full py-3.5 px-4 rounded-2xl bg-sky-500 hover:bg-sky-400 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-sky-500/25 transition cursor-pointer"

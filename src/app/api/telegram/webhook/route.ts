@@ -4,13 +4,71 @@ import { listGroups, listStudents, getAttendance } from "@/lib/attendanceStore";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const configured = Boolean(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID);
-  return NextResponse.json({
-    success: true,
-    service: "Algoritm Ecosystem Telegram Webhook",
-    configured,
-    timestamp: new Date().toISOString(),
-  });
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  if (!token) {
+    return NextResponse.json({
+      success: false,
+      configured: false,
+      message: "TELEGRAM_BOT_TOKEN muhit o'zgaruvchisi o'rnatilmagan.",
+    });
+  }
+
+  const webhookUrl = "https://algoritm-academy.vercel.app/api/telegram/webhook";
+  const webAppUrl = "https://algoritm-academy.vercel.app/davomat";
+
+  try {
+    // 1. Telegramga Webhookni ulash
+    const whRes = await fetch(`https://api.telegram.org/bot${token}/setWebhook?url=${encodeURIComponent(webhookUrl)}`);
+    const whData = await whRes.json().catch(() => ({}));
+
+    // 2. Pastki chap burchakka doimiy "📋 Davomat" WebApp menyu tugmasini o'rnatish
+    const btnRes = await fetch(`https://api.telegram.org/bot${token}/setChatMenuButton`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        menu_button: {
+          type: "web_app",
+          text: "📋 Davomat",
+          web_app: { url: webAppUrl },
+        },
+      }),
+    });
+    const btnData = await btnRes.json().catch(() => ({}));
+
+    // 3. Bot buyruqlarini ro'yxatdan o'tkazish
+    const cmdRes = await fetch(`https://api.telegram.org/bot${token}/setMyCommands`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        commands: [
+          { command: "davomat", description: "10 soniyalik Davomat (Mini App)" },
+          { command: "guruhlar", description: "Faol guruhlar va jadvallar" },
+          { command: "hisobot", description: "Bugungi davomat statistikasi" },
+          { command: "start", description: "Botni qayta ishga tushirish" },
+        ],
+      }),
+    });
+    const cmdData = await cmdRes.json().catch(() => ({}));
+
+    // 4. Bot ma'lumotlarini olish
+    const meRes = await fetch(`https://api.telegram.org/bot${token}/getMe`);
+    const meData = await meRes.json().catch(() => ({}));
+
+    return NextResponse.json({
+      success: true,
+      configured: true,
+      bot: meData?.result,
+      webhook: whData,
+      menuButton: btnData,
+      commands: cmdData,
+      message: "@algoritm_ustoz_bot to'liq muvaffaqiyatli sozlandi va ulandi!",
+    });
+  } catch (err) {
+    return NextResponse.json({
+      success: false,
+      error: String(err),
+    });
+  }
 }
 
 async function sendTelegramReply(chatId: number | string, text: string, replyMarkup?: any) {
