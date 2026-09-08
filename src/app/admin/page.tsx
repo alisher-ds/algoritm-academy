@@ -38,6 +38,8 @@ import {
 } from "@/lib/leads";
 import type { LeadStatsSummary } from "@/lib/leadStore";
 import { sanitizeCsvField } from "@/lib/sanitize";
+import AdminAttendanceModule from "@/components/admin/AdminAttendanceModule";
+import Link from "next/link";
 
 type AuthState = "tekshirilmoqda" | "login" | "tayyor";
 type DateRangeOption = "hammasi" | "bugun" | "hafta" | "oy";
@@ -74,6 +76,7 @@ export default function AdminPage() {
 
   // Bulk action busy state
   const [bulkBusy, setBulkBusy] = useState(false);
+  const [adminSection, setAdminSection] = useState<"leads" | "davomat">("leads");
 
   const PAGE_SIZE = 200;
 
@@ -688,6 +691,49 @@ export default function AdminPage() {
             </button>
           </div>
         </div>
+
+        {/* Asosiy Modullar Switcher */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white/5 border border-white/10 p-2 rounded-2xl mb-8">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setAdminSection("leads")}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs transition cursor-pointer ${
+                adminSection === "leads"
+                  ? "bg-brand-500 text-slate-950 shadow-md font-extrabold"
+                  : "text-slate-300 hover:text-white hover:bg-white/5"
+              }`}
+            >
+              <Sparkles className="w-4 h-4" />
+              <span>Arizalar & CRM ({total})</span>
+            </button>
+
+            <button
+              onClick={() => setAdminSection("davomat")}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs transition cursor-pointer ${
+                adminSection === "davomat"
+                  ? "bg-brand-500 text-slate-950 shadow-md font-extrabold"
+                  : "text-slate-300 hover:text-white hover:bg-white/5"
+              }`}
+            >
+              <Users className="w-4 h-4" />
+              <span>Davomat, Guruhlar & Moliya</span>
+            </button>
+          </div>
+
+          <Link
+            href="/davomat"
+            target="_blank"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-brand-400 bg-brand-500/10 hover:bg-brand-500/20 border border-brand-500/20 transition"
+          >
+            <span>📱 Mobil Davomat Portali</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+
+        {adminSection === "davomat" ? (
+          <AdminAttendanceModule />
+        ) : (
+          <>
 
         {/* ─────────────────────────── Executive KPI Cards ─────────────────────────── */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-7">
@@ -1308,6 +1354,8 @@ export default function AdminPage() {
             </div>
           )}
         </div>
+          </>
+        )}
       </main>
 
       {/* ─────────────────────────── Lead Details & Admin Notes Modal ─────────────────────────── */}
