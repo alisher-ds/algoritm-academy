@@ -94,6 +94,7 @@ export async function POST(req: Request) {
       const res = NextResponse.json({
         success: true,
         teacher,
+        token,
         message: `Xush kelibsiz, ${teacher.name}!`,
       });
 
@@ -173,6 +174,7 @@ export async function POST(req: Request) {
       const res = NextResponse.json({
         success: true,
         teacher: updated,
+        token,
         message: "Shaxsiy parolingiz muvaffaqiyatli o'rnatildi!",
       });
 
@@ -223,6 +225,7 @@ export async function POST(req: Request) {
       const res = NextResponse.json({
         success: true,
         teacher: regResult.teacher,
+        token,
         message: `Tabriklaymiz, ${regResult.teacher.name}! Siz muvaffaqiyatli ro'yxatdan o'tdingiz.`,
       });
 
@@ -269,6 +272,7 @@ export async function POST(req: Request) {
       const res = NextResponse.json({
         success: true,
         teacher,
+        token,
         message: `Assalomu alaykum, ${teacher.name}!`,
       });
 
