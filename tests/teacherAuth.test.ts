@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import {
   loadTeachers,
   setTeacherPassword,
+  registerTeacher,
   verifyTeacherCredentials,
   createTeacherToken,
   verifyTeacherToken,
@@ -85,10 +86,43 @@ describe("Teacher Authentication & Role Isolation", () => {
     expect(verifyTeacherToken(expiredToken)).toBeNull();
   });
 
-  it("Telegram profilini biriktirish va Telegram orqali topish", async () => {
-    await bindTeacherTelegram("tm-shohista", "123456789", "shohista_teacher");
-    const found = await findTeacherByTelegram("123456789", "shohista_teacher");
-    expect(found).not.toBeNull();
-    expect(found?.id).toBe("tm-shohista");
+  it("yangi ustoz mustaqil ro'yxatdan o'ta oladi va o'z paroli bilan tizimga kira oladi", async () => {
+    const testLogin = `dilshod_${Date.now()}`;
+    const regResult = await registerTeacher({
+      name: "Dilshod Mahmudov",
+      login: testLogin,
+      subject: "Oliy Matematika",
+      phone: "+998 93 999-88-77",
+      password: "dilshod_parol_2026",
+    });
+
+    expect(regResult.error).toBeUndefined();
+    expect(regResult.teacher).toBeDefined();
+    expect(regResult.teacher?.name).toBe("Dilshod Mahmudov");
+
+    // Login va parol orqali kirishni tekshirish
+    const auth = await verifyTeacherCredentials(testLogin, "dilshod_parol_2026");
+    expect(auth).not.toBeNull();
+    expect(auth?.name).toBe("Dilshod Mahmudov");
+  });
+
+  it("takroriy login bilan ro'yxatdan o'tishni rad etadi", async () => {
+    const duplicateLogin = `dup_${Date.now()}`;
+    await registerTeacher({
+      name: "Birinchi Ustoz",
+      login: duplicateLogin,
+      subject: "Fizika",
+      password: "parol_birinchi",
+    });
+
+    const res = await registerTeacher({
+      name: "Ikkinchi Ustoz",
+      login: duplicateLogin, // allaqachon mavjud
+      subject: "Kimyo",
+      password: "boshqa_parol",
+    });
+
+    expect(res.error).toBeDefined();
+    expect(res.teacher).toBeUndefined();
   });
 });

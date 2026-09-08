@@ -144,6 +144,67 @@ export async function setTeacherPassword(teacherId: string, plainPassword: strin
   return sanitizeTeacher(teachers[index]);
 }
 
+export interface RegisterTeacherInput {
+  name: string;
+  login: string;
+  subject: string;
+  phone?: string;
+  password: string;
+  telegramId?: string | number;
+  telegramUsername?: string;
+}
+
+/** Yangi ustozning mustaqil ro'yxatdan o'tishi */
+export async function registerTeacher(input: RegisterTeacherInput): Promise<{ teacher?: Teacher; error?: string }> {
+  const teachers = await loadTeachers();
+  const name = input.name?.trim();
+  const login = input.login?.trim().toLowerCase();
+  const subject = input.subject?.trim();
+  const password = input.password;
+  const phone = input.phone?.trim();
+
+  if (!name || name.length < 3) {
+    return { error: "Ism va familiyangizni to'liq kiriting (kamida 3 ta harf)" };
+  }
+  if (!login || login.length < 3 || !/^[a-z0-9_.-]+$/.test(login)) {
+    return { error: "Login kamida 3 ta lotin harfi yoki raqamdan iborat bo'lishi kerak (masalan: aziz_sat)" };
+  }
+  if (!subject || subject.length < 2) {
+    return { error: "Faningiz yoki mutaxassisligingizni kiriting" };
+  }
+  if (!password || password.length < 4) {
+    return { error: "Parol kamida 4 ta belgidan iborat bo'lishi kerak" };
+  }
+
+  // Dublikat loginni tekshirish
+  const exists = teachers.some((t) => t.login.toLowerCase() === login);
+  if (exists) {
+    return { error: "Ushbu login band. Iltimos, boshqa login tanlang." };
+  }
+
+  const salt = randomBytes(16).toString("hex");
+  const passwordHash = hashPassword(password, salt);
+  const id = `tm_${Date.now()}_${randomBytes(3).toString("hex")}`;
+
+  const newTeacher: Teacher = {
+    id,
+    name,
+    login,
+    subject,
+    phone,
+    passwordHash,
+    salt,
+    telegramId: input.telegramId ? String(input.telegramId) : undefined,
+    telegramUsername: input.telegramUsername ? input.telegramUsername.replace(/^@/, "") : undefined,
+    createdAt: new Date().toISOString(),
+  };
+
+  teachers.push(newTeacher);
+  await saveTeachers(teachers);
+
+  return { teacher: sanitizeTeacher(newTeacher) };
+}
+
 /** Login yoki telefon hamda parol bilan tekshirish */
 export async function verifyTeacherCredentials(
   loginOrPhone: string,
