@@ -14,7 +14,7 @@ import {
   TEACHER_AUTH_COOKIE,
   TEACHER_SESSION_TTL,
 } from "@/lib/teacherAuth";
-import { listGroups, listStudents } from "@/lib/attendanceStore";
+import { listGroups, listStudents, createGroup, createStudent } from "@/lib/attendanceStore";
 import { verifyTelegramWebAppData } from "@/lib/telegramAuth";
 import { isAuthed, isSameOrigin } from "@/lib/adminAuth";
 
@@ -27,9 +27,53 @@ export async function GET(req: Request) {
     if (currentTeacher) {
       // Faqat shu ustozning guruhlari va o'quvchilari!
       const allGroups = await listGroups({ activeOnly: true });
-      const teacherGroups = allGroups.filter((g) => g.teacherId === currentTeacher.id);
-      const groupIds = new Set(teacherGroups.map((g) => g.id));
+      let teacherGroups = allGroups.filter(
+        (g) => g.teacherId === currentTeacher.id || (g.teacherName && g.teacherName.toLowerCase() === currentTeacher.name.toLowerCase())
+      );
 
+      // Agar ustozga hali guruh biriktirilmagan bo'lsa, namunaviy guruh va o'quvchilarni taqdim etamiz
+      if (teacherGroups.length === 0) {
+        try {
+          const starterGroup = await createGroup({
+            name: `${currentTeacher.subject || "Matematika"} — ${currentTeacher.name}`,
+            subject: currentTeacher.subject || "Matematika",
+            teacherId: currentTeacher.id,
+            teacherName: currentTeacher.name,
+            days: "dush-chor-juma",
+            time: "15:00 - 16:30",
+            room: "201-xona",
+            monthlyPrice: 450000,
+            lessonsPerMonth: 12,
+            active: true,
+          });
+          await createStudent({
+            name: "Jahongir Rustamov",
+            phone: "+998 90 123 77 88",
+            parentPhone: "+998 90 987 66 55",
+            groupId: starterGroup.id,
+            status: "faol",
+          });
+          await createStudent({
+            name: "Mohinur Karimova",
+            phone: "+998 91 234 88 99",
+            parentPhone: "+998 91 876 55 44",
+            groupId: starterGroup.id,
+            status: "faol",
+          });
+          await createStudent({
+            name: "Boburmirzo Aliyev",
+            phone: "+998 93 345 99 00",
+            parentPhone: "+998 93 765 44 33",
+            groupId: starterGroup.id,
+            status: "faol",
+          });
+          teacherGroups = [starterGroup];
+        } catch (e) {
+          console.error("Failed to seed starter group:", e);
+        }
+      }
+
+      const groupIds = new Set(teacherGroups.map((g) => g.id));
       const allStudents = await listStudents({ status: "faol" });
       const teacherStudents = allStudents.filter((s) => groupIds.has(s.groupId));
 
@@ -71,7 +115,7 @@ export async function POST(req: Request) {
 
     // 1. Shaxsiy Login va Parol orqali kirish
     if (action === "login") {
-      const { login, password } = body;
+      const { login, password, bindTelegramId, bindTelegramUsername } = body;
       if (!login || !password) {
         return NextResponse.json(
           { success: false, error: "Login (yoki telefon) va parolni kiriting" },
@@ -79,15 +123,20 @@ export async function POST(req: Request) {
         );
       }
 
-      const teacher = await verifyTeacherCredentials(String(login), String(password));
+      let teacher = await verifyTeacherCredentials(String(login), String(password));
       if (!teacher) {
         return NextResponse.json(
           {
             success: false,
-            error: "Login yoki parol noto'g'ri. Agar birinchi marta kirayotgan bo'lsangiz, 'Yangi parol yaratish' bo'limidan o'zingizga parol o'rnating.",
+            error: "Login yoki parol noto'g'ri. Agar birinchi marta kirayotgan bo'lsangiz, 'Yangi hisob ochish' bo'limidan ro'yxatdan o'ting.",
           },
           { status: 401 }
         );
+      }
+
+      if (bindTelegramId) {
+        const bound = await bindTeacherTelegram(teacher.id, bindTelegramId, bindTelegramUsername);
+        if (bound) teacher = bound;
       }
 
       const token = createTeacherToken(teacher);
@@ -219,6 +268,45 @@ export async function POST(req: Request) {
 
       if (regResult.error || !regResult.teacher) {
         return NextResponse.json({ success: false, error: regResult.error || "Ro'yxatdan o'tishda xatolik" }, { status: 400 });
+      }
+
+      // Yangi ustoz uchun avtomatik tarzda starter guruh va o'quvchilarni yaratamiz
+      try {
+        const starterGroup = await createGroup({
+          name: `${regResult.teacher.subject} — Asosiy Guruh`,
+          subject: regResult.teacher.subject,
+          teacherId: regResult.teacher.id,
+          teacherName: regResult.teacher.name,
+          days: "dush-chor-juma",
+          time: "15:00 - 16:30",
+          room: "201-xona",
+          monthlyPrice: 450000,
+          lessonsPerMonth: 12,
+          active: true,
+        });
+        await createStudent({
+          name: "Jahongir Rustamov",
+          phone: "+998 90 123 77 88",
+          parentPhone: "+998 90 987 66 55",
+          groupId: starterGroup.id,
+          status: "faol",
+        });
+        await createStudent({
+          name: "Mohinur Karimova",
+          phone: "+998 91 234 88 99",
+          parentPhone: "+998 91 876 55 44",
+          groupId: starterGroup.id,
+          status: "faol",
+        });
+        await createStudent({
+          name: "Boburmirzo Aliyev",
+          phone: "+998 93 345 99 00",
+          parentPhone: "+998 93 765 44 33",
+          groupId: starterGroup.id,
+          status: "faol",
+        });
+      } catch (e) {
+        console.error("Auto-seed on register error:", e);
       }
 
       const token = createTeacherToken(regResult.teacher);

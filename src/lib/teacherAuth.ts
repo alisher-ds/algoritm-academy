@@ -317,7 +317,13 @@ export async function verifyTeacherCredentials(
 
   const teacher = teachers.find((t) => {
     if (t.login.toLowerCase() === clean) return true;
-    if (t.phone && t.phone.replace(/\D/g, "") === digits && digits.length >= 9) return true;
+    if (t.name.toLowerCase() === clean) return true;
+    if (t.phone) {
+      const pDigits = t.phone.replace(/\D/g, "");
+      if (pDigits === digits) return true;
+      if (digits.length >= 9 && pDigits.endsWith(digits.slice(-9))) return true;
+      if (pDigits.length >= 9 && digits.endsWith(pDigits.slice(-9))) return true;
+    }
     return false;
   });
 
@@ -354,8 +360,9 @@ export async function findTeacherByTelegram(
   const userStr = username ? username.replace(/^@/, "").toLowerCase() : null;
 
   const match = teachers.find((t) => {
-    if (t.telegramId && t.telegramId === idStr) return true;
+    if (t.telegramId && String(t.telegramId) === idStr) return true;
     if (userStr && t.telegramUsername && t.telegramUsername.toLowerCase() === userStr) return true;
+    if (userStr && t.login.toLowerCase() === userStr) return true;
     return false;
   });
 
@@ -413,6 +420,10 @@ export interface TeacherSessionPayload {
   teacherId: string;
   name: string;
   login: string;
+  subject?: string;
+  phone?: string;
+  telegramId?: string;
+  telegramUsername?: string;
   iat: number;
   exp: number;
 }
@@ -423,6 +434,10 @@ export function createTeacherToken(teacher: Teacher, ttlSeconds = TEACHER_SESSIO
     teacherId: teacher.id,
     name: teacher.name,
     login: teacher.login,
+    subject: teacher.subject,
+    phone: teacher.phone,
+    telegramId: teacher.telegramId,
+    telegramUsername: teacher.telegramUsername,
     iat: now,
     exp: now + ttlSeconds,
   };
@@ -473,6 +488,23 @@ export async function getAuthenticatedTeacher(req: Request): Promise<Teacher | n
   if (!payload) return null;
 
   const teachers = await loadTeachers();
-  const teacher = teachers.find((t) => t.id === payload.teacherId);
+  let teacher = teachers.find((t) => t.id === payload.teacherId || t.login.toLowerCase() === payload.login.toLowerCase());
+  if (!teacher) {
+    // Agar serverless konteyner almashuvi sababli mahalliy xotirada topilmasa,
+    // HMAC-imzolangan xavfsiz token payload'idan tiklaymiz va xotiraga yozamiz
+    const recovered: Teacher = {
+      id: payload.teacherId,
+      name: payload.name,
+      login: payload.login,
+      subject: payload.subject || "Ustoz",
+      phone: payload.phone,
+      telegramId: payload.telegramId,
+      telegramUsername: payload.telegramUsername,
+      createdAt: new Date(payload.iat * 1000).toISOString(),
+    };
+    teachers.push(recovered);
+    await saveTeachers(teachers).catch(() => {});
+    teacher = recovered;
+  }
   return teacher ? sanitizeTeacher(teacher) : null;
 }

@@ -82,6 +82,15 @@ export default function DavomatTeacherPage() {
   const [newStudentPhone, setNewStudentPhone] = useState("+998 ");
   const [addingStudent, setAddingStudent] = useState(false);
 
+  // Yangi guruh ochish modali
+  const [showAddGroupModal, setShowAddGroupModal] = useState(false);
+  const [newGroupName, setNewGroupName] = useState("");
+  const [newGroupDays, setNewGroupDays] = useState("dush-chor-juma");
+  const [newGroupTime, setNewGroupTime] = useState("14:00 - 15:30");
+  const [newGroupRoom, setNewGroupRoom] = useState("201-xona");
+  const [newGroupPrice, setNewGroupPrice] = useState("450000");
+  const [addingGroup, setAddingGroup] = useState(false);
+
   // Bugungi sana
   const todayStr = useMemo(() => {
     const d = new Date();
@@ -152,6 +161,9 @@ export default function DavomatTeacherPage() {
 
       if (data.success && data.authenticated && data.teacher) {
         setCurrentTeacher(data.teacher);
+        if (typeof window !== "undefined") {
+          localStorage.setItem("algoritm_teacher_profile", JSON.stringify(data.teacher));
+        }
         const sortedGroups = (data.groups || []).sort((a: Group, b: Group) => {
           const aToday = isLessonToday(a.days);
           const bToday = isLessonToday(b.days);
@@ -162,13 +174,25 @@ export default function DavomatTeacherPage() {
 
         setGroups(sortedGroups);
         if (sortedGroups.length > 0) {
-          setSelectedGroupId(sortedGroups[0].id);
+          setSelectedGroupId((prev) => (prev && sortedGroups.some((g: Group) => g.id === prev) ? prev : sortedGroups[0].id));
         }
       } else {
+        if (res.status === 401 && typeof window !== "undefined") {
+          localStorage.removeItem("algoritm_teacher_token");
+          localStorage.removeItem("algoritm_teacher_profile");
+        }
         setCurrentTeacher(null);
       }
     } catch {
-      setCurrentTeacher(null);
+      // Tarmoq uzilsa saqlangan profildan tiklaymiz
+      if (typeof window !== "undefined") {
+        try {
+          const cachedProfile = localStorage.getItem("algoritm_teacher_profile");
+          if (cachedProfile) {
+            setCurrentTeacher(JSON.parse(cachedProfile));
+          }
+        } catch {}
+      }
     } finally {
       setAuthLoading(false);
     }
@@ -198,6 +222,10 @@ export default function DavomatTeacherPage() {
             .then((data) => {
               if (data.success && data.token && typeof window !== "undefined") {
                 localStorage.setItem("algoritm_teacher_token", data.token);
+                if (data.teacher) {
+                  localStorage.setItem("algoritm_teacher_profile", JSON.stringify(data.teacher));
+                  setCurrentTeacher(data.teacher);
+                }
               }
               checkSession();
             })
@@ -283,6 +311,7 @@ export default function DavomatTeacherPage() {
     setAuthSubmitting(true);
     setAuthError("");
     try {
+      const tgUser = (window as any).Telegram?.WebApp?.initDataUnsafe?.user || telegramUser;
       const res = await fetch("/api/teachers/auth", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -290,12 +319,18 @@ export default function DavomatTeacherPage() {
           action: "login",
           login: loginInput.trim(),
           password: passwordInput,
+          bindTelegramId: tgUser?.id ? String(tgUser.id) : undefined,
+          bindTelegramUsername: tgUser?.username || undefined,
         }),
       });
       const data = await res.json();
       if (res.ok && data.success) {
         if (data.token && typeof window !== "undefined") {
           localStorage.setItem("algoritm_teacher_token", data.token);
+        }
+        if (data.teacher && typeof window !== "undefined") {
+          localStorage.setItem("algoritm_teacher_profile", JSON.stringify(data.teacher));
+          setCurrentTeacher(data.teacher);
         }
         setPasswordInput("");
         await checkSession();
@@ -327,6 +362,7 @@ export default function DavomatTeacherPage() {
     setAuthSubmitting(true);
     setAuthError("");
     try {
+      const tgUser = (window as any).Telegram?.WebApp?.initDataUnsafe?.user || telegramUser;
       const res = await fetch("/api/teachers/auth", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -338,14 +374,18 @@ export default function DavomatTeacherPage() {
           login: regLogin.trim(),
           password: regPassword,
           confirmPassword: regConfirmPassword,
-          bindTelegramId: telegramUser?.id,
-          bindTelegramUsername: telegramUser?.username,
+          bindTelegramId: tgUser?.id ? String(tgUser.id) : undefined,
+          bindTelegramUsername: tgUser?.username || undefined,
         }),
       });
       const data = await res.json();
       if (res.ok && data.success) {
         if (data.token && typeof window !== "undefined") {
           localStorage.setItem("algoritm_teacher_token", data.token);
+        }
+        if (data.teacher && typeof window !== "undefined") {
+          localStorage.setItem("algoritm_teacher_profile", JSON.stringify(data.teacher));
+          setCurrentTeacher(data.teacher);
         }
         setRegName("");
         setRegSubject("");
@@ -360,6 +400,41 @@ export default function DavomatTeacherPage() {
       setAuthError("Serverga ulanishda xatolik");
     } finally {
       setAuthSubmitting(false);
+    }
+  };
+
+  const handleAddGroup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newGroupName.trim() || !currentTeacher) return;
+    setAddingGroup(true);
+    try {
+      const res = await fetch("/api/groups", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newGroupName.trim(),
+          subject: currentTeacher.subject || "Matematika",
+          teacherId: currentTeacher.id,
+          teacherName: currentTeacher.name,
+          days: newGroupDays,
+          time: newGroupTime,
+          room: newGroupRoom,
+          monthlyPrice: Number(newGroupPrice) || 450000,
+          lessonsPerMonth: 12,
+          active: true,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success && data.group) {
+        setGroups((prev) => [...prev, data.group]);
+        setSelectedGroupId(data.group.id);
+        setShowAddGroupModal(false);
+        setNewGroupName("");
+      }
+    } catch {
+      setErrorNotice("Guruhni yaratishda xatolik yuz berdi");
+    } finally {
+      setAddingGroup(false);
     }
   };
 
@@ -559,6 +634,16 @@ export default function DavomatTeacherPage() {
             <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs flex items-start gap-2.5">
               <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
               <div className="leading-relaxed">{authError}</div>
+            </div>
+          )}
+
+          {Boolean(isTelegram || telegramUser) && (
+            <div className="p-3 rounded-2xl bg-sky-500/10 border border-sky-500/20 text-sky-300 text-xs flex items-center gap-2.5">
+              <Send className="w-4 h-4 text-sky-400 shrink-0" />
+              <div className="text-[11px] leading-relaxed">
+                Telegram: <b>@{telegramUser?.username || telegramUser?.first_name || "ustoz"}</b>.
+                Kirishingiz yoki ro'yxatdan o'tishingiz bilan profilingiz Telegram bilan avtomatik bog'lanadi.
+              </div>
             </div>
           )}
 
@@ -813,14 +898,28 @@ export default function DavomatTeacherPage() {
             <span className="font-bold text-slate-400 uppercase tracking-wider text-[10px]">
               Mening Guruhlarim ({groups.length})
             </span>
-            <span className="text-[11px] text-slate-500">Bugungi darslar birinchi o'rinda</span>
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] text-slate-500 hidden sm:inline">Bugungi darslar birinchi o'rinda</span>
+              <button
+                onClick={() => setShowAddGroupModal(true)}
+                className="py-1 px-2.5 rounded-xl bg-brand-500/20 hover:bg-brand-500/30 text-brand-300 border border-brand-500/30 text-[11px] font-bold flex items-center gap-1 transition cursor-pointer"
+              >
+                <span>+ Yangi Guruh</span>
+              </button>
+            </div>
           </div>
 
           {groups.length === 0 ? (
-            <div className="p-8 rounded-3xl bg-slate-900 border border-white/10 text-center space-y-2">
+            <div className="p-8 rounded-3xl bg-slate-900 border border-white/10 text-center space-y-3">
               <Users className="w-8 h-8 text-slate-600 mx-auto" />
-              <p className="text-xs text-slate-400">Sizga hali guruh biriktirilmagan.</p>
-              <p className="text-[11px] text-slate-500">Administrator bilan bog'laning.</p>
+              <p className="text-xs text-slate-300 font-bold">Hozircha guruhlaringiz yo'q</p>
+              <p className="text-[11px] text-slate-500">O'quvchilaringiz bilan darsni boshlash uchun birinchi guruhingizni oching:</p>
+              <button
+                onClick={() => setShowAddGroupModal(true)}
+                className="py-2.5 px-4 rounded-2xl bg-brand-500 hover:bg-brand-400 text-slate-950 text-xs font-bold inline-flex items-center gap-2 transition cursor-pointer shadow-lg shadow-brand-500/20"
+              >
+                <span>➕ Birinchi Guruhingizni Ochish</span>
+              </button>
             </div>
           ) : (
             <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
@@ -1082,6 +1181,109 @@ export default function DavomatTeacherPage() {
                   className="flex-1 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-400 text-slate-950 text-xs font-bold transition cursor-pointer"
                 >
                   {addingStudent ? "Qo'shilmoqda..." : "Qo'shish"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Yangi Guruh Ochish Modali ─── */}
+      {showAddGroupModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="w-full max-w-sm bg-slate-900 border border-white/10 rounded-3xl p-6 shadow-2xl space-y-4">
+            <h3 className="text-sm font-extrabold text-white">Yangi guruh ochish</h3>
+            <p className="text-xs text-slate-400">
+              Ustoz: <b>{currentTeacher.name}</b> ({currentTeacher.subject})
+            </p>
+
+            <form onSubmit={handleAddGroup} className="space-y-3">
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
+                  Guruh Nomi *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="masalan: SAT Intensive 1-Guruh"
+                  value={newGroupName}
+                  onChange={(e) => setNewGroupName(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-white text-xs placeholder:text-slate-600 focus:outline-none focus:border-brand-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
+                    Dars Kunlari
+                  </label>
+                  <select
+                    value={newGroupDays}
+                    onChange={(e) => setNewGroupDays(e.target.value)}
+                    className="w-full px-2.5 py-2 rounded-xl bg-slate-950 border border-white/10 text-white text-xs focus:outline-none focus:border-brand-500"
+                  >
+                    <option value="dush-chor-juma">Dush-Chor-Juma</option>
+                    <option value="sesh-pay-shanba">Sesh-Pay-Shanba</option>
+                    <option value="har-kuni">Har kuni</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
+                    Dars Vaqti
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="14:00 - 15:30"
+                    value={newGroupTime}
+                    onChange={(e) => setNewGroupTime(e.target.value)}
+                    className="w-full px-2.5 py-2 rounded-xl bg-slate-950 border border-white/10 text-white text-xs placeholder:text-slate-600 focus:outline-none focus:border-brand-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
+                    Xona / Bino
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="201-xona"
+                    value={newGroupRoom}
+                    onChange={(e) => setNewGroupRoom(e.target.value)}
+                    className="w-full px-2.5 py-2 rounded-xl bg-slate-950 border border-white/10 text-white text-xs placeholder:text-slate-600 focus:outline-none focus:border-brand-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
+                    Oylik To'lov (so'm)
+                  </label>
+                  <input
+                    type="number"
+                    value={newGroupPrice}
+                    onChange={(e) => setNewGroupPrice(e.target.value)}
+                    className="w-full px-2.5 py-2 rounded-xl bg-slate-950 border border-white/10 text-white text-xs placeholder:text-slate-600 focus:outline-none focus:border-brand-500"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddGroupModal(false)}
+                  className="flex-1 py-2.5 rounded-xl bg-white/5 text-slate-400 text-xs font-semibold hover:bg-white/10 transition cursor-pointer"
+                >
+                  Bekor qilish
+                </button>
+                <button
+                  type="submit"
+                  disabled={addingGroup}
+                  className="flex-1 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-400 text-slate-950 text-xs font-bold transition cursor-pointer"
+                >
+                  {addingGroup ? "Yaratilmoqda..." : "Guruhni Ochish"}
                 </button>
               </div>
             </form>

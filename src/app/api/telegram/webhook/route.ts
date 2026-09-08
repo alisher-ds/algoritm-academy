@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { listGroups, listStudents, getAttendance } from "@/lib/attendanceStore";
-import { findTeacherByTelegram } from "@/lib/teacherAuth";
+import { findTeacherByTelegram, verifyTeacherCredentials, bindTeacherTelegram } from "@/lib/teacherAuth";
 
 export const dynamic = "force-dynamic";
 
@@ -54,6 +54,7 @@ export async function GET() {
           { command: "davomat", description: "10 soniyalik Davomat (Mini App)" },
           { command: "guruhlar", description: "Faol guruhlar va jadvallar" },
           { command: "hisobot", description: "Bugungi davomat statistikasi" },
+          { command: "login", description: "Shaxsiy hisobga ulanish (/login login parol)" },
           { command: "start", description: "Botni qayta ishga tushirish" },
         ],
       }),
@@ -126,6 +127,65 @@ export async function POST(req: Request) {
     const teacher = await findTeacherByTelegram(chatId, message.from?.username);
     const isAdmin = Boolean(process.env.TELEGRAM_CHAT_ID && String(process.env.TELEGRAM_CHAT_ID) === String(chatId));
 
+    // ─── 1. Bot orqali Login va Telegram hisobni ulash ───
+    if (text.startsWith("/login") || text.startsWith("/kirish")) {
+      const parts = text.split(/\s+/);
+      if (parts.length < 3) {
+        const usage = [
+          "🔐 <b>Ustoz Kabinetiga Ulanish</b>",
+          "",
+          "Hisobingizni Telegramga ulash uchun login va parolingizni birga yuboring:",
+          "👉 <code>/login sizning_login sizning_parol</code>",
+          "",
+          "Misol: <code>/login alisher 12345</code>",
+          "",
+          "<i>Agar hali hisob ochmagan bo'lsangiz, quyidagi tugma orqali ro'yxatdan o'ting:</i>",
+        ].join("\n");
+        await sendTelegramReply(chatId, usage, {
+          inline_keyboard: [
+            [{ text: "📝 Ro'yxatdan O'tish (Ustoz Portali)", web_app: { url: `${baseUrl}/davomat` } }],
+          ],
+        });
+        return NextResponse.json({ ok: true });
+      }
+
+      const inputLogin = parts[1];
+      const inputPass = parts.slice(2).join(" ");
+
+      const authedTeacher = await verifyTeacherCredentials(inputLogin, inputPass);
+      if (!authedTeacher) {
+        await sendTelegramReply(
+          chatId,
+          "❌ <b>Login yoki parol noto'g'ri!</b>\n\nIltimos, qayta tekshirib yozing yoki /start bosib 'Ustoz Portali' orqali kiring."
+        );
+        return NextResponse.json({ ok: true });
+      }
+
+      // Telegram akkauntini ustozga biriktiramiz
+      const bound = await bindTeacherTelegram(authedTeacher.id, chatId, message.from?.username);
+      const teacherName = bound?.name || authedTeacher.name;
+
+      const successMsg = [
+        `🎉 <b>Tabriklaymiz, ${teacherName}!</b>`,
+        "",
+        "✅ Sizning Telegram profilingiz Algoritm Ustoz tizimiga muvaffaqiyatli ulandi!",
+        `Mutaxassislik: <b>${authedTeacher.subject}</b>`,
+        "",
+        "Endi siz quyidagi barcha imkoniyatlardan foydalanishingiz mumkin:",
+        "📱 /davomat — 5 soniyada Davomat (Mini App)",
+        "👥 /guruhlar — Shaxsiy guruhlaringiz va o'quvchilaringiz",
+        "📊 /hisobot — Bugungi darslar statistikasi",
+      ].join("\n");
+
+      await sendTelegramReply(chatId, successMsg, {
+        inline_keyboard: [
+          [{ text: "📋 Davomat Qilish (Mini App)", web_app: { url: `${baseUrl}/davomat` } }],
+          [{ text: "👥 Mening Guruhlarim", callback_data: "my_groups" }],
+        ],
+      });
+      return NextResponse.json({ ok: true });
+    }
+
     if (text === "/start") {
       if (teacher) {
         // Tizimda tasdiqlangan ustoz uchun shaxsiy xush kelibsiz xabari
@@ -170,7 +230,12 @@ export async function POST(req: Request) {
         "",
         "⚠️ <i>Ushbu bot faqat Algoritm xodimlari va o'qituvchilari uchun mo'ljallangan. Ichki guruhlar va ma'lumotlar begonalarga berilmaydi.</i>",
         "",
-        "Agar siz Algoritm o'qituvchisi bo'lsangiz, avval portaldan ro'yxatdan o'ting va parolingizni belgilang:",
+        "🔑 <b>Hisobingizni ulash:</b>",
+        "Agar siz portaldan ro'yxatdan o'tgan bo'lsangiz, Telegram orqali darhol kirish uchun quyidagicha yuboring:",
+        "👉 <code>/login sizning_login sizning_parol</code>",
+        "Masalan: <code>/login alisher 12345</code>",
+        "",
+        "Agar hali ro'yxatdan o'tmagan bo'lsangiz, pastdagi tugma orqali yangi hisob oching:",
       ].join("\n");
 
       const guestMarkup = {
