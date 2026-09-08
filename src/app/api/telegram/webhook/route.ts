@@ -3,6 +3,14 @@ import { listGroups, listStudents, getAttendance } from "@/lib/attendanceStore";
 
 export const dynamic = "force-dynamic";
 
+function getBaseUrl(): string {
+  const envUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  if (envUrl) {
+    return envUrl.replace(/\/$/, "");
+  }
+  return "https://algoritm-academy.vercel.app";
+}
+
 export async function GET() {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   if (!token) {
@@ -13,8 +21,9 @@ export async function GET() {
     });
   }
 
-  const webhookUrl = "https://algoritm-academy.vercel.app/api/telegram/webhook";
-  const webAppUrl = "https://algoritm-academy.vercel.app/davomat";
+  const baseUrl = getBaseUrl();
+  const webhookUrl = `${baseUrl}/api/telegram/webhook`;
+  const webAppUrl = `${baseUrl}/davomat`;
 
   try {
     // 1. Telegramga Webhookni ulash
@@ -107,6 +116,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true });
     }
 
+    const baseUrl = getBaseUrl();
     const chatId = message.chat.id;
     const text = String(message.text).trim();
     const senderName = [message.from?.first_name, message.from?.last_name].filter(Boolean).join(" ") || "Ustoz";
@@ -130,13 +140,13 @@ export async function POST(req: Request) {
           [
             {
               text: "📱 Mobil Davomat Portali",
-              web_app: { url: "https://algoritm-academy.vercel.app/davomat" },
+              web_app: { url: `${baseUrl}/davomat` },
             },
           ],
           [
             {
               text: "🌐 Algoritm Rasmiy Sayti",
-              url: "https://algoritm-academy.vercel.app",
+              url: baseUrl,
             },
           ],
         ],
@@ -160,7 +170,7 @@ export async function POST(req: Request) {
           [
             {
               text: "📋 Davomat Qilish (Mini App)",
-              web_app: { url: "https://algoritm-academy.vercel.app/davomat" },
+              web_app: { url: `${baseUrl}/davomat` },
             },
           ],
         ],

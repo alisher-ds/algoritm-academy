@@ -83,6 +83,9 @@ export const LEAD_OPTIONS: LeadOption[] = [
 ];
 
 function generateIdempotencyKey(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return `req_${Date.now()}_${crypto.randomUUID()}`;
+  }
   return `req_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 }
 

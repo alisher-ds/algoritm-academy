@@ -33,8 +33,9 @@ function sessionSecret(): string | null {
   if (!pwd) return null;
   const explicit = process.env.ADMIN_SESSION_SECRET?.trim();
   if (explicit) return `explicit:${explicit}:pwd:${pwd}`;
-  // Kalit ko'rsatilmasa — paroldan hosil qilinadi (parol o'zgarsa sessiyalar bekor bo'ladi).
-  return `derived:${pwd}`;
+  // Kalit ko'rsatilmasa — paroldan mustaqil kriptografik HMAC bilan hosil qilinadi (key separation).
+  const derivedKey = createHmac("sha256", "algoritm-session-key-v1").update(pwd).digest("hex");
+  return `derived:${derivedKey}`;
 }
 
 /** Konfiguratsiya to'g'ri o'rnatilganmi? */
