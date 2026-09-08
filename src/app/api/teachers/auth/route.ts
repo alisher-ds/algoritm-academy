@@ -110,6 +110,9 @@ export async function POST(req: Request) {
 
     // 2. Ustoz o'zi uchun yangi shaxsiy parol yaratishi
     if (action === "set-password") {
+      if (!isSameOrigin(req)) {
+        return NextResponse.json({ success: false, error: "Noto'g'ri manba" }, { status: 403 });
+      }
       const { teacherId, password, confirmPassword, phone, bindTelegramId, bindTelegramUsername } = body;
       if (!teacherId || !password) {
         return NextResponse.json(
@@ -251,16 +254,8 @@ export async function POST(req: Request) {
       const tgUser = authResult.user;
       let teacher = await findTeacherByTelegram(tgUser.id, tgUser.username);
 
-      // Agar hali biriktirilmagan bo'lsa, ism bo'yicha qidirib ko'ramiz
-      if (!teacher && tgUser.first_name) {
-        const teachers = await loadTeachers();
-        const fn = tgUser.first_name.toLowerCase();
-        const match = teachers.find((t) => t.name.toLowerCase().includes(fn));
-        if (match) {
-          teacher = await bindTeacherTelegram(match.id, tgUser.id, tgUser.username);
-        }
-      }
-
+      // Telegram ID/username must already be explicitly bound to a teacher.
+      // Never infer account ownership from a display name.
       if (!teacher) {
         return NextResponse.json({
           success: false,
