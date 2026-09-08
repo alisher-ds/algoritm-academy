@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import Link from "next/link";
 import Script from "next/script";
 import {
   Users,
@@ -13,60 +12,62 @@ import {
   MapPin,
   ChevronRight,
   UserPlus,
-  ArrowLeft,
   Save,
   Loader2,
   Check,
-  UserX,
   Phone,
   Sparkles,
   RefreshCw,
   Lock,
-  Send,
+  LogOut,
   KeyRound,
   ShieldCheck,
   WifiOff,
-  CloudUpload,
+  UserCheck,
+  GraduationCap,
+  BookOpen,
+  ArrowRight,
+  Send,
+  History,
 } from "lucide-react";
 import {
   type Group,
   type Student,
   type AttendanceStatus,
-  type AttendanceRecord,
   isLessonToday,
 } from "@/lib/attendanceTypes";
-
-const TEACHERS = [
-  { id: "tm-aziz", name: "Aziz Xolmurodov", subject: "Matematika & SAT Math" },
-  { id: "tm-jasur", name: "Jasur Jovliyev", subject: "Ingliz Tili · IELTS" },
-  { id: "tm-oxunjon", name: "Oxunjon Ozodov", subject: "Digital SAT" },
-  { id: "tm-adham", name: "Adham Sohibov", subject: "Prezident Maktabi & Mantiq" },
-  { id: "tm-shohista", name: "Shohista Jalilovna", subject: "Boshlang'ich Rus Sinf" },
-  { id: "tm-bobur", name: "Bobur Xaydarov", subject: "Asoschi & SAT Math" },
-];
+import type { Teacher } from "@/lib/teacherAuth";
 
 export default function DavomatTeacherPage() {
-  // Telegram WebApp va Xavfsizlik Holati
+  // ─── 1. Autentifikatsiya va Ustoz Holati ───
+  const [currentTeacher, setCurrentTeacher] = useState<Teacher | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [isTelegram, setIsTelegram] = useState<boolean | null>(null);
   const [telegramUser, setTelegramUser] = useState<any>(null);
-  const [pinAuth, setPinAuth] = useState(false);
-  const [showPinModal, setShowPinModal] = useState(false);
-  const [pinInput, setPinInput] = useState("");
-  const [pinError, setPinError] = useState("");
 
-  const [teacherList, setTeacherList] = useState<{ id: string; name: string; subject: string }[]>([
-    { id: "all", name: "🌟 Barcha Guruhlar", subject: "Umumiy ko'rinish" },
-    ...TEACHERS,
-  ]);
-  const [selectedTeacherId, setSelectedTeacherId] = useState<string>("tm-aziz");
-  const [isTeacherLocked, setIsTeacherLocked] = useState(false);
+  // Login formasi holati
+  const [authTab, setAuthTab] = useState<"login" | "set-password">("login");
+  const [loginInput, setLoginInput] = useState("");
+  const [passwordInput, setPasswordInput] = useState("");
+  const [authError, setAuthError] = useState("");
+  const [authSubmitting, setAuthSubmitting] = useState(false);
 
+  // Yangi parol o'rnatish holati
+  const [availableTeachers, setAvailableTeachers] = useState<any[]>([]);
+  const [selectedSetupTeacherId, setSelectedSetupTeacherId] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  // ─── 2. Guruhlar va Davomat Holati ───
   const [groups, setGroups] = useState<Group[]>([]);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
   const [attendance, setAttendance] = useState<Record<string, AttendanceStatus>>({});
   const [notes, setNotes] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<"attendance" | "students" | "history">("attendance");
+
+  // UX va Tarmoq
+  const [loadingGroup, setLoadingGroup] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [isOfflineSaved, setIsOfflineSaved] = useState(false);
@@ -79,7 +80,7 @@ export default function DavomatTeacherPage() {
   const [newStudentPhone, setNewStudentPhone] = useState("+998 ");
   const [addingStudent, setAddingStudent] = useState(false);
 
-  // Bugungi sana (YYYY-MM-DD)
+  // Bugungi sana
   const todayStr = useMemo(() => {
     const d = new Date();
     const y = d.getFullYear();
@@ -97,7 +98,7 @@ export default function DavomatTeacherPage() {
     });
   }, []);
 
-  // 1. Oflayn navbatni serverga sinxronizatsiya qilish
+  // ─── 3. Tarmoq va Oflayn Navbat Listeneri ───
   const syncOfflineQueue = useCallback(async () => {
     if (typeof window === "undefined") return;
     try {
@@ -110,15 +111,13 @@ export default function DavomatTeacherPage() {
         await fetch("/api/attendance", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ records: item.records }),
+          body: JSON.stringify(item),
         });
       }
       localStorage.removeItem("algoritm_offline_queue");
-      setIsOfflineSaved(false);
     } catch {}
   }, []);
 
-  // 2. Tarmoq holatini kuzatish (Online/Offline listener)
   useEffect(() => {
     if (typeof window !== "undefined") {
       setIsOnline(navigator.onLine);
@@ -137,7 +136,44 @@ export default function DavomatTeacherPage() {
     }
   }, [syncOfflineQueue]);
 
-  // 3. Telegram WebApp Tekshiruvi va Ustozni aniqlash
+  // ─── 4. Sessiya va Ustoz Ma'lumotlarini Tekshirish ───
+  const checkSession = useCallback(async () => {
+    setAuthLoading(true);
+    try {
+      const res = await fetch("/api/teachers/auth");
+      const data = await res.json();
+
+      if (data.success && data.authenticated && data.teacher) {
+        setCurrentTeacher(data.teacher);
+        const sortedGroups = (data.groups || []).sort((a: Group, b: Group) => {
+          const aToday = isLessonToday(a.days);
+          const bToday = isLessonToday(b.days);
+          if (aToday && !bToday) return -1;
+          if (!aToday && bToday) return 1;
+          return 0;
+        });
+
+        setGroups(sortedGroups);
+        if (sortedGroups.length > 0) {
+          setSelectedGroupId(sortedGroups[0].id);
+        }
+      } else {
+        setCurrentTeacher(null);
+        if (data.teachers && Array.isArray(data.teachers)) {
+          setAvailableTeachers(data.teachers);
+          if (data.teachers.length > 0) {
+            setSelectedSetupTeacherId(data.teachers[0].id);
+          }
+        }
+      }
+    } catch {
+      setCurrentTeacher(null);
+    } finally {
+      setAuthLoading(false);
+    }
+  }, []);
+
+  // Telegram WebApp muhitini tekshirish
   useEffect(() => {
     if (typeof window !== "undefined") {
       const tg = (window as any).Telegram?.WebApp;
@@ -150,149 +186,187 @@ export default function DavomatTeacherPage() {
         const user = tg.initDataUnsafe?.user;
         setTelegramUser(user);
 
-        // Telegram profil nomi bo'yicha ustozni aniqlash va qulflash
-        if (user?.first_name) {
-          const fn = user.first_name.toLowerCase();
-          const match = TEACHERS.find((t) => t.name.toLowerCase().includes(fn));
-          if (match) {
-            setSelectedTeacherId(match.id);
-            setIsTeacherLocked(true); // O'zga ustoz guruhlariga adashib o'tmasligi uchun
-          }
+        // Telegram WebApp orqali avtomatik kirish urinishi
+        if (tg.initData) {
+          fetch("/api/teachers/auth", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "telegram-auth", initData: tg.initData }),
+          })
+            .then((r) => r.json())
+            .then((data) => {
+              if (data.success && data.teacher) {
+                checkSession();
+              } else {
+                checkSession();
+              }
+            })
+            .catch(() => checkSession());
+          return;
         }
       } else {
-        const savedAuth = sessionStorage.getItem("algoritm_teacher_auth");
-        if (savedAuth === "true") {
-          setPinAuth(true);
-        }
         setIsTelegram(false);
       }
     }
-  }, []);
+    checkSession();
+  }, [checkSession]);
 
-  // 4. Dinamik ustozlar ro'yxatini yuklash
-  useEffect(() => {
-    fetch("/api/groups?activeOnly=true")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success && Array.isArray(data.groups)) {
-          const map = new Map<string, { id: string; name: string; subject: string }>();
-          data.groups.forEach((g: Group) => {
-            if (g.teacherName && !map.has(g.teacherId)) {
-              map.set(g.teacherId, {
-                id: g.teacherId,
-                name: g.teacherName,
-                subject: g.subject,
-              });
-            }
-          });
-          const merged = [{ id: "all", name: "🌟 Barcha Guruhlar", subject: "Umumiy ko'rinish" }, ...TEACHERS];
-          map.forEach((t) => {
-            if (!merged.some((m) => m.id === t.id || m.name.toLowerCase() === t.name.toLowerCase())) {
-              merged.push(t);
-            }
-          });
-          setTeacherList(merged);
-        }
-      })
-      .catch(() => {});
-  }, []);
+  // ─── 5. Guruh Tanlanganda O'quvchilar va Davomatni Yuklash ───
+  const fetchGroupData = useCallback(
+    async (groupId: string) => {
+      setLoadingGroup(true);
+      setErrorNotice(null);
+      try {
+        const studRes = await fetch(`/api/students?groupId=${groupId}`);
+        const studData = await studRes.json();
+        const studentList: Student[] = studData.success && Array.isArray(studData.students) ? studData.students : [];
+        setStudents(studentList);
 
-  // 5. Guruhlarni yuklash va Bugungi kun bo'yicha aqlli saralash
-  const fetchGroups = useCallback(async (teacherId: string) => {
-    setLoading(true);
-    try {
-      const url = teacherId === "all" ? "/api/groups?activeOnly=true" : `/api/groups?teacherId=${teacherId}`;
-      const res = await fetch(url);
-      const data = await res.json();
-      if (data.success && Array.isArray(data.groups)) {
-        // Aqlli saralash: Bugun darsi bor guruhlar eng yuqorida turadi!
-        const sorted = [...data.groups].sort((a: Group, b: Group) => {
-          const aToday = isLessonToday(a.days);
-          const bToday = isLessonToday(b.days);
-          if (aToday && !bToday) return -1;
-          if (!aToday && bToday) return 1;
-          return 0;
-        });
+        const attRes = await fetch(`/api/attendance?groupId=${groupId}&date=${todayStr}`);
+        const attData = await attRes.json();
 
-        setGroups(sorted);
-        if (sorted.length > 0) {
-          setSelectedGroupId(sorted[0].id);
-        } else {
-          setSelectedGroupId(null);
-        }
-      }
-    } catch {
-      setErrorNotice("Guruhlarni yuklab bo'lmadi.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (isTelegram || pinAuth) {
-      fetchGroups(selectedTeacherId);
-    }
-  }, [selectedTeacherId, fetchGroups, isTelegram, pinAuth]);
-
-  // 6. Tanlangan guruh o'quvchilarini va bugungi davomatini yuklash
-  const fetchGroupData = useCallback(async (groupId: string) => {
-    try {
-      const [stdRes, attRes] = await Promise.all([
-        fetch(`/api/students?groupId=${groupId}&status=faol`),
-        fetch(`/api/attendance?groupId=${groupId}&date=${todayStr}`),
-      ]);
-
-      const stdData = await stdRes.json();
-      const attData = await attRes.json();
-
-      if (stdData.success && Array.isArray(stdData.students)) {
-        setStudents(stdData.students);
-
-        const initialMap: Record<string, AttendanceStatus> = {};
+        const initialStatus: Record<string, AttendanceStatus> = {};
         const initialNotes: Record<string, string> = {};
 
-        if (attData.success && Array.isArray(attData.records)) {
-          attData.records.forEach((r: AttendanceRecord) => {
-            initialMap[r.studentId] = r.status;
+        if (attData.success && Array.isArray(attData.records) && attData.records.length > 0) {
+          attData.records.forEach((r: any) => {
+            initialStatus[r.studentId] = r.status;
             if (r.note) initialNotes[r.studentId] = r.note;
           });
+        } else {
+          // Keshda saqlangan qoralama bormi?
+          try {
+            const draft = localStorage.getItem(`draft_att_${groupId}_${todayStr}`);
+            if (draft) {
+              const records = JSON.parse(draft);
+              records.forEach((r: any) => {
+                initialStatus[r.studentId] = r.status;
+                if (r.note) initialNotes[r.studentId] = r.note;
+              });
+            } else {
+              studentList.forEach((s) => {
+                initialStatus[s.id] = "keldi";
+              });
+            }
+          } catch {
+            studentList.forEach((s) => {
+              initialStatus[s.id] = "keldi";
+            });
+          }
         }
 
-        stdData.students.forEach((s: Student) => {
-          if (!initialMap[s.id]) {
-            initialMap[s.id] = "keldi";
-          }
-        });
-
-        setAttendance(initialMap);
+        setAttendance(initialStatus);
         setNotes(initialNotes);
+      } catch (err) {
+        setErrorNotice("Guruh ma'lumotlarini yuklashda xatolik yuz berdi");
+      } finally {
+        setLoadingGroup(false);
       }
-    } catch {
-      // Oflayn holatda bo'lsa, lokal keshdan tiklash
-      const cached = localStorage.getItem(`cached_std_${groupId}`);
-      if (cached) {
-        try {
-          const parsed = JSON.parse(cached);
-          setStudents(parsed);
-          const initialMap: Record<string, AttendanceStatus> = {};
-          parsed.forEach((s: Student) => {
-            initialMap[s.id] = "keldi";
-          });
-          setAttendance(initialMap);
-        } catch {}
-      }
-    }
-  }, [todayStr]);
+    },
+    [todayStr]
+  );
 
   useEffect(() => {
-    if (selectedGroupId && (isTelegram || pinAuth)) {
+    if (selectedGroupId && currentTeacher) {
       fetchGroupData(selectedGroupId);
-    } else {
-      setStudents([]);
     }
-  }, [selectedGroupId, fetchGroupData, isTelegram, pinAuth]);
+  }, [selectedGroupId, currentTeacher, fetchGroupData]);
 
-  // 7. Barchasini keldi deb belgilash (1-bosish)
+  // ─── 6. Autentifikatsiya Amallari (Login, Parol o'rnatish, Chiqish) ───
+
+  const handleLoginSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!loginInput.trim() || !passwordInput) {
+      setAuthError("Login va parolni kiriting");
+      return;
+    }
+    setAuthSubmitting(true);
+    setAuthError("");
+    try {
+      const res = await fetch("/api/teachers/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "login",
+          login: loginInput.trim(),
+          password: passwordInput,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setPasswordInput("");
+        await checkSession();
+      } else {
+        setAuthError(data.error || "Login yoki parol noto'g'ri");
+      }
+    } catch {
+      setAuthError("Serverga ulanishda xatolik");
+    } finally {
+      setAuthSubmitting(false);
+    }
+  };
+
+  const handleSetPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedSetupTeacherId) {
+      setAuthError("Iltimos, ismingizni tanlang");
+      return;
+    }
+    if (newPassword.length < 4) {
+      setAuthError("Parol kamida 4 ta belgidan iborat bo'lishi kerak");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setAuthError("Kiritilgan parollar bir-biriga mos kelmadi");
+      return;
+    }
+
+    setAuthSubmitting(true);
+    setAuthError("");
+    try {
+      const res = await fetch("/api/teachers/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "set-password",
+          teacherId: selectedSetupTeacherId,
+          password: newPassword,
+          confirmPassword,
+          bindTelegramId: telegramUser?.id,
+          bindTelegramUsername: telegramUser?.username,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setNewPassword("");
+        setConfirmPassword("");
+        await checkSession();
+      } else {
+        setAuthError(data.error || "Parolni o'rnatib bo'lmadi");
+      }
+    } catch {
+      setAuthError("Serverga ulanishda xatolik");
+    } finally {
+      setAuthSubmitting(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/teachers/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "logout" }),
+      });
+    } catch {}
+    setCurrentTeacher(null);
+    setGroups([]);
+    setStudents([]);
+    await checkSession();
+  };
+
+  // ─── 7. Davomat Amallari ───
+
   const markAllPresent = () => {
     const updated: Record<string, AttendanceStatus> = {};
     students.forEach((s) => {
@@ -304,7 +378,6 @@ export default function DavomatTeacherPage() {
     } catch {}
   };
 
-  // Yakka o'quvchi statusini o'zgartirish
   const setStudentStatus = (studentId: string, status: AttendanceStatus) => {
     setAttendance((prev) => ({ ...prev, [studentId]: status }));
     try {
@@ -312,25 +385,23 @@ export default function DavomatTeacherPage() {
     } catch {}
   };
 
-  // 8. Davomatni saqlash (Oflayn rejim va Kriptografik imzo bilan)
   const handleSaveAttendance = async () => {
-    if (!selectedGroupId || students.length === 0) return;
+    if (!selectedGroupId || students.length === 0 || !currentTeacher) return;
     setSaving(true);
     setSaveSuccess(false);
     setIsOfflineSaved(false);
     setErrorNotice(null);
 
-    const teacher = teacherList.find((t) => t.id === selectedTeacherId);
     const records = students.map((s) => ({
       groupId: selectedGroupId,
       studentId: s.id,
       date: todayStr,
       status: attendance[s.id] || "keldi",
       note: notes[s.id] || undefined,
-      markedBy: teacher?.name || "Ustoz",
+      markedBy: currentTeacher.name,
     }));
 
-    // Doimiy xavfsizlik: Har ehtimolga qarshi avval lokal keshga yozib olamiz
+    // Lokal qoralama
     try {
       localStorage.setItem(`draft_att_${selectedGroupId}_${todayStr}`, JSON.stringify(records));
     } catch {}
@@ -355,30 +426,18 @@ export default function DavomatTeacherPage() {
         throw new Error(data.error || "Server xatosi");
       }
     } catch (err) {
-      // Internet uzilgan bo'lsa: Oflayn navbatga yozish
       try {
         const rawQueue = localStorage.getItem("algoritm_offline_queue") || "[]";
-        const queue: Array<{ records: any[] }> = JSON.parse(rawQueue);
+        const queue = JSON.parse(rawQueue);
         queue.push({ records });
         localStorage.setItem("algoritm_offline_queue", JSON.stringify(queue));
         setIsOfflineSaved(true);
-        setTimeout(() => setIsOfflineSaved(false), 4500);
-      } catch {}
+        setTimeout(() => setIsOfflineSaved(false), 5000);
+      } catch {
+        setErrorNotice("Davomatni saqlab bo'lmadi. Internet aloqasini tekshiring.");
+      }
     } finally {
       setSaving(false);
-    }
-  };
-
-  // PIN tekshirish
-  const handlePinSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (pinInput === "2026" || pinInput === "1234") {
-      sessionStorage.setItem("algoritm_teacher_auth", "true");
-      setPinAuth(true);
-      setShowPinModal(false);
-      setPinError("");
-    } else {
-      setPinError("Noto'g'ri PIN-kod. Qayta urinib ko'ring.");
     }
   };
 
@@ -416,389 +475,476 @@ export default function DavomatTeacherPage() {
 
   const selectedGroup = groups.find((g) => g.id === selectedGroupId);
 
-  // ────────────────── 1. BRAUZER UCHUN HIMOYALANGAN EKRAN ──────────────────
-  if (isTelegram === false && !pinAuth) {
+  // ═════════════════════════════════════════════════════════════════════════
+  // EKRAN 1: YUKLANISH HOLATI
+  // ═════════════════════════════════════════════════════════════════════════
+  if (authLoading) {
     return (
-      <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-4">
+      <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center p-4">
         <Script src="https://telegram.org/js/telegram-web-app.js" strategy="beforeInteractive" />
-        <div className="w-full max-w-md bg-slate-900 border border-white/10 rounded-3xl p-8 text-center space-y-6 shadow-2xl backdrop-blur-md">
-          <div className="w-16 h-16 rounded-full bg-brand-500/10 border border-brand-500/30 flex items-center justify-center mx-auto text-brand-400 shadow-inner">
-            <Lock className="w-7 h-7 text-brand-400" />
-          </div>
-
-          <div className="space-y-2">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-brand-400 bg-brand-500/10 px-3 py-1 rounded-full border border-brand-500/20 inline-flex items-center gap-1.5">
-              <ShieldCheck className="w-3 h-3" /> Maxfiy Portal
-            </span>
-            <h2 className="text-xl font-extrabold text-white">Algoritm Ustoz Davomat Portali</h2>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Xavfsizlik talablariga ko'ra ushbu sahifa ochiq brauzerlar uchun yopiq. Davomat qilish uchun rasmiy <b>Algoritm Telegram Boti</b> orqali kiring.
-            </p>
-          </div>
-
-          <div className="space-y-3 pt-2">
-            <a
-              href="https://t.me/algoritm_ustoz_bot"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full py-3.5 px-4 rounded-2xl bg-sky-500 hover:bg-sky-400 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-sky-500/25 transition cursor-pointer"
-            >
-              <Send className="w-4 h-4" />
-              <span>Telegram Bot orqali ochish</span>
-            </a>
-
-            <button
-              onClick={() => setShowPinModal(true)}
-              className="w-full py-3 px-4 rounded-2xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white font-semibold text-xs border border-white/10 transition flex items-center justify-center gap-2 cursor-pointer"
-            >
-              <KeyRound className="w-3.5 h-3.5 text-slate-400" />
-              <span>Ustoz PIN-kodi bilan kirish</span>
-            </button>
-          </div>
-
-          <div className="pt-2 border-t border-white/5 text-[11px] text-slate-500">
-            Algoritm Academy & School · Boshqaruv Tizimi
-          </div>
-        </div>
-
-        {/* PIN Kod Modali */}
-        {showPinModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-            <div className="w-full max-w-xs bg-slate-900 border border-white/15 rounded-3xl p-6 shadow-2xl text-center space-y-4">
-              <div className="w-12 h-12 rounded-full bg-brand-500/20 border border-brand-500/40 flex items-center justify-center mx-auto text-brand-400">
-                <KeyRound className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-white">Ustoz PIN-kodini kiriting</h3>
-                <p className="text-[11px] text-slate-400 mt-1">
-                  Xodimlar va o'qituvchilar uchun 4 xonali maxfiy kod
-                </p>
-              </div>
-              <form onSubmit={handlePinSubmit} className="space-y-3">
-                <input
-                  type="password"
-                  maxLength={4}
-                  autoFocus
-                  placeholder="••••"
-                  value={pinInput}
-                  onChange={(e) => setPinInput(e.target.value)}
-                  className="w-full py-3 rounded-xl bg-slate-950 border border-white/15 text-center text-xl tracking-[0.5em] font-mono text-white focus:outline-none focus:border-brand-500"
-                />
-                {pinError && <p className="text-[11px] text-rose-400">{pinError}</p>}
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowPinModal(false)}
-                    className="flex-1 py-2 rounded-xl bg-white/5 text-slate-400 text-xs font-semibold"
-                  >
-                    Bekor qilish
-                  </button>
-                  <button
-                    type="submit"
-                    className="flex-1 py-2 rounded-xl bg-brand-500 hover:bg-brand-400 text-slate-950 text-xs font-bold shadow-md"
-                  >
-                    Kirish
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
+        <Loader2 className="w-8 h-8 text-brand-500 animate-spin mb-3" />
+        <p className="text-xs text-slate-400 font-medium">Ustoz kabineti yuklanmoqda...</p>
       </div>
     );
   }
 
-  // ────────────────── 2. TELEGRAM MINI APP INTERFEYSI ──────────────────
+  // ═════════════════════════════════════════════════════════════════════════
+  // EKRAN 2: AVTORIZATSIYA VA PAROL YARATISH (KIRMAGAN BO'LSA)
+  // ═════════════════════════════════════════════════════════════════════════
+  if (!currentTeacher) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-4">
+        <Script src="https://telegram.org/js/telegram-web-app.js" strategy="beforeInteractive" />
+
+        <div className="w-full max-w-md bg-slate-900 border border-white/10 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-md space-y-6">
+          {/* Logo va Sarlavha */}
+          <div className="text-center space-y-2">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-brand-600 to-amber-400 flex items-center justify-center mx-auto text-slate-950 shadow-lg shadow-brand-500/20">
+              <GraduationCap className="w-7 h-7" />
+            </div>
+            <h2 className="text-xl font-extrabold tracking-tight text-white">Algoritm Ustoz Portali</h2>
+            <p className="text-xs text-slate-400">
+              Har bir ustoz uchun alohida shaxsiy kabinet va mustaqil guruhlar
+            </p>
+          </div>
+
+          {/* Tab Tanlash (Kirish vs Parol O'rnatish) */}
+          <div className="grid grid-cols-2 p-1 bg-slate-950/80 rounded-2xl border border-white/5 text-xs font-bold">
+            <button
+              onClick={() => {
+                setAuthTab("login");
+                setAuthError("");
+              }}
+              className={`py-2.5 rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                authTab === "login"
+                  ? "bg-brand-500 text-slate-950 shadow-md"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              <KeyRound className="w-3.5 h-3.5" />
+              <span>Tizimga Kirish</span>
+            </button>
+            <button
+              onClick={() => {
+                setAuthTab("set-password");
+                setAuthError("");
+              }}
+              className={`py-2.5 rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                authTab === "set-password"
+                  ? "bg-brand-500 text-slate-950 shadow-md"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Parol O'rnatish</span>
+            </button>
+          </div>
+
+          {authError && (
+            <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs flex items-start gap-2.5">
+              <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+              <div className="leading-relaxed">{authError}</div>
+            </div>
+          )}
+
+          {/* TAB 1: KIRISH FORMASI */}
+          {authTab === "login" && (
+            <form onSubmit={handleLoginSubmit} className="space-y-4">
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                  Ustoz Logini yoki Telefoni
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="masalan: aziz yoki +998901234501"
+                  value={loginInput}
+                  onChange={(e) => setLoginInput(e.target.value)}
+                  className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-white/10 text-white text-xs placeholder:text-slate-600 focus:outline-none focus:border-brand-500 transition"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                  Shaxsiy Parol
+                </label>
+                <input
+                  type="password"
+                  required
+                  placeholder="••••••••"
+                  value={passwordInput}
+                  onChange={(e) => setPasswordInput(e.target.value)}
+                  className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-white/10 text-white text-xs placeholder:text-slate-600 focus:outline-none focus:border-brand-500 transition"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={authSubmitting}
+                className="w-full py-3.5 px-4 rounded-2xl bg-brand-500 hover:bg-brand-400 disabled:opacity-50 text-slate-950 font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-brand-500/20 transition cursor-pointer"
+              >
+                {authSubmitting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    <span>Kabinetga Kirish</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+            </form>
+          )}
+
+          {/* TAB 2: YANGI PAROL O'RNATISH (O'ZI PAROL YARATADI) */}
+          {authTab === "set-password" && (
+            <form onSubmit={handleSetPasswordSubmit} className="space-y-4">
+              <div className="p-3 rounded-xl bg-brand-500/10 border border-brand-500/20 text-[11px] text-brand-300">
+                💡 <b>Birinchi marta kirayotgan ustozlar uchun:</b> Ro'yxatdan o'z ismingizni tanlang va o'zingiz xohlagan yangi parolni belgilang.
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                  Ismingizni tanlang
+                </label>
+                <select
+                  value={selectedSetupTeacherId}
+                  onChange={(e) => setSelectedSetupTeacherId(e.target.value)}
+                  className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-white/10 text-white text-xs focus:outline-none focus:border-brand-500 transition"
+                >
+                  {availableTeachers.map((t) => (
+                    <option key={t.id} value={t.id} className="bg-slate-900 text-white">
+                      {t.name} ({t.subject}) {t.hasPassword ? "· (Parol o'rnatilgan)" : "· (Parol yo'q)"}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                  Yangi Shaxsiy Parol
+                </label>
+                <input
+                  type="password"
+                  required
+                  placeholder="Kamida 4 ta belgi"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-white/10 text-white text-xs placeholder:text-slate-600 focus:outline-none focus:border-brand-500 transition"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                  Parolni Qayta Kiriting
+                </label>
+                <input
+                  type="password"
+                  required
+                  placeholder="Parolni tasdiqlang"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-white/10 text-white text-xs placeholder:text-slate-600 focus:outline-none focus:border-brand-500 transition"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={authSubmitting}
+                className="w-full py-3.5 px-4 rounded-2xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 transition cursor-pointer"
+              >
+                {authSubmitting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    <span>Parolni Saqlash va Kirish</span>
+                    <Check className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+            </form>
+          )}
+
+          {/* Telegram Bot havolasi */}
+          <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[11px] text-slate-500">
+            <span>Algoritm Academy & School</span>
+            <a
+              href="https://t.me/algoritm_ustoz_bot"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sky-400 hover:underline flex items-center gap-1"
+            >
+              <Send className="w-3 h-3" />
+              <span>@algoritm_ustoz_bot</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ═════════════════════════════════════════════════════════════════════════
+  // EKRAN 3: USTOZNING SHAXSIY KABINETI (FAZOLAR VA FAQAT O'Z GURUHLARI)
+  // ═════════════════════════════════════════════════════════════════════════
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 pb-28">
       <Script src="https://telegram.org/js/telegram-web-app.js" strategy="beforeInteractive" />
 
-      {/* Tarmoq uzilganda ogohlantirish */}
+      {/* Oflayn ogohlantirish */}
       {!isOnline && (
         <div className="bg-amber-500/90 text-slate-950 px-4 py-1.5 text-xs font-bold flex items-center justify-center gap-1.5 sticky top-0 z-40">
           <WifiOff className="w-3.5 h-3.5" />
-          <span>Internet bilan aloqa yo'q. Oflayn rejim faol — ma'lumotlar qurilmada saqlanadi.</span>
+          <span>Internet yo'q. Oflayn rejim faol — davomat qurilmada xavfsiz saqlanadi.</span>
         </div>
       )}
 
-      {/* Yuqori qism (Telegram Header) */}
-      <header className="sticky top-0 z-30 bg-slate-900/95 backdrop-blur-md border-b border-white/10 px-4 py-3">
-        <div className="max-w-xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-brand-500/20 border border-brand-500/40 flex items-center justify-center text-brand-400 font-bold text-xs">
-              AA
+      {/* ─── Shaxsiy Ustoz Navbari ─── */}
+      <header className="sticky top-0 z-30 bg-slate-900/90 backdrop-blur-md border-b border-white/10 px-4 py-3.5">
+        <div className="max-w-4xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-amber-400 text-slate-950 font-black text-sm flex items-center justify-center shadow-md">
+              {currentTeacher.name
+                .split(" ")
+                .map((n) => n[0])
+                .join("")
+                .slice(0, 2)}
             </div>
             <div>
-              <h1 className="font-display text-sm font-extrabold text-white flex items-center gap-1.5">
-                <span>{telegramUser ? `Salom, ${telegramUser.first_name}!` : "Elektron Davomat"}</span>
-                <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-brand-500/20 text-brand-400 border border-brand-500/30">
-                  {isTelegram ? "Telegram App" : "Ustoz Portali"}
+              <div className="flex items-center gap-2">
+                <h1 className="text-sm font-extrabold text-white leading-tight">{currentTeacher.name}</h1>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-400 border border-brand-500/20">
+                  Ustoz
                 </span>
-              </h1>
-              <p className="text-[10px] text-slate-400 flex items-center gap-1 capitalize">
-                <Calendar className="w-2.5 h-2.5 text-brand-400" />
-                <span>{todayFormattedUz}</span>
+              </div>
+              <p className="text-[11px] text-slate-400 flex items-center gap-1.5">
+                <BookOpen className="w-3 h-3 text-slate-500" />
+                <span>{currentTeacher.subject}</span>
               </p>
             </div>
           </div>
 
-          {isTelegram && (
-            <button
-              onClick={() => {
-                try {
-                  (window as any).Telegram?.WebApp?.close();
-                } catch {}
-              }}
-              className="text-[11px] font-semibold text-slate-400 hover:text-white px-2.5 py-1 rounded-lg bg-white/5 border border-white/10"
-            >
-              Yopish
-            </button>
-          )}
+          <button
+            onClick={handleLogout}
+            title="Kabinetdan chiqish"
+            className="p-2.5 rounded-xl bg-white/5 hover:bg-rose-500/20 text-slate-400 hover:text-rose-300 border border-white/10 transition cursor-pointer flex items-center gap-1.5 text-xs font-semibold"
+          >
+            <LogOut className="w-4 h-4" />
+            <span className="hidden sm:inline">Chiqish</span>
+          </button>
         </div>
       </header>
 
-      <main className="max-w-xl mx-auto px-3.5 py-3 space-y-3.5">
-        {/* Ustozni tanlash (Faqat qulflanmagan bo'lsa ko'rinadi) */}
-        {!isTeacherLocked && (
-          <div className="bg-slate-900/80 border border-white/10 rounded-2xl p-3 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                Ustoz profili:
-              </label>
-              <span className="text-[10px] text-brand-400 font-mono">
-                {teacherList.find((t) => t.id === selectedTeacherId)?.name}
-              </span>
-            </div>
+      <main className="max-w-4xl mx-auto px-4 pt-4 space-y-4">
+        {/* Bugungi sana va hisobot ko'rsatkichi */}
+        <div className="bg-slate-900/60 border border-white/10 rounded-2xl p-3.5 flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2 text-slate-300 font-medium">
+            <Calendar className="w-4 h-4 text-brand-400" />
+            <span className="capitalize">{todayFormattedUz}</span>
+          </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
-              {teacherList.map((t) => {
-                const isSelected = selectedTeacherId === t.id;
-                return (
-                  <button
-                    key={t.id}
-                    onClick={() => setSelectedTeacherId(t.id)}
-                    className={`p-2 rounded-xl text-left transition border cursor-pointer flex flex-col justify-between ${
-                      isSelected
-                        ? "bg-brand-500 text-slate-950 border-brand-400 shadow-sm font-bold"
-                        : "bg-white/5 text-slate-300 border-white/5 hover:bg-white/10"
-                    }`}
-                  >
-                    <span className="text-xs truncate">{t.name}</span>
-                    <span className={`text-[9px] truncate mt-0.5 ${isSelected ? "text-slate-900/80" : "text-slate-500"}`}>
-                      {t.subject}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+          <div className="flex items-center gap-2">
+            <span className="text-slate-400">Guruhlarim:</span>
+            <span className="font-bold text-white bg-slate-800 px-2 py-0.5 rounded-lg border border-white/5">
+              {groups.length} ta
+            </span>
           </div>
-        )}
+        </div>
 
-        {/* Guruhlar ro'yxati (Bugungi darslar birinchi o'rinda!) */}
-        {loading ? (
-          <div className="py-8 text-center text-slate-400 flex items-center justify-center gap-2">
-            <Loader2 className="w-5 h-5 animate-spin text-brand-400" />
-            <span className="text-xs">Guruhlar yuklanmoqda...</span>
+        {/* ─── Ustozning Faol Guruhlarni Tanlash Lentalari ─── */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-xs px-1">
+            <span className="font-bold text-slate-400 uppercase tracking-wider text-[10px]">
+              Mening Guruhlarim ({groups.length})
+            </span>
+            <span className="text-[11px] text-slate-500">Bugungi darslar birinchi o'rinda</span>
           </div>
-        ) : groups.length === 0 ? (
-          <div className="p-6 text-center bg-slate-900 border border-white/10 rounded-2xl space-y-2">
-            <p className="text-xs text-slate-400">Sizga biriktirilgan faol guruhlar topilmadi.</p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-[11px] text-slate-400 px-1 font-bold">
-              <span>GURUHLARINGIZ:</span>
-              <span className="font-mono text-brand-400">{groups.length} ta guruh</span>
+
+          {groups.length === 0 ? (
+            <div className="p-8 rounded-3xl bg-slate-900 border border-white/10 text-center space-y-2">
+              <Users className="w-8 h-8 text-slate-600 mx-auto" />
+              <p className="text-xs text-slate-400">Sizga hali guruh biriktirilmagan.</p>
+              <p className="text-[11px] text-slate-500">Administrator bilan bog'laning.</p>
             </div>
-            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
-              {groups.map((g) => {
-                const isSelected = selectedGroupId === g.id;
-                const hasClassToday = isLessonToday(g.days);
+          ) : (
+            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
+              {groups.map((group) => {
+                const isSelected = group.id === selectedGroupId;
+                const isToday = isLessonToday(group.days);
 
                 return (
                   <button
-                    key={g.id}
-                    onClick={() => setSelectedGroupId(g.id)}
-                    className={`px-3.5 py-2.5 rounded-xl text-left shrink-0 transition border cursor-pointer space-y-1 relative overflow-hidden ${
+                    key={group.id}
+                    onClick={() => setSelectedGroupId(group.id)}
+                    className={`shrink-0 p-3 rounded-2xl border text-left transition cursor-pointer flex flex-col justify-between min-w-[170px] ${
                       isSelected
-                        ? "bg-slate-800 border-brand-500 ring-1 ring-brand-500/50 shadow-md"
-                        : "bg-slate-900/90 border-white/10 hover:border-white/20"
+                        ? "bg-brand-500/15 border-brand-500/50 shadow-lg shadow-brand-500/10 text-white"
+                        : "bg-slate-900/80 border-white/5 text-slate-400 hover:border-white/20 hover:text-slate-200"
                     }`}
                   >
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-xs text-white">{g.name}</span>
-                      {hasClassToday ? (
-                        <span className="px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-400 text-[9px] font-bold border border-emerald-500/30 flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Bugun
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <span className="text-xs font-bold truncate max-w-[130px]">{group.name}</span>
+                      {isToday && (
+                        <span className="shrink-0 text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                          Bugun
                         </span>
-                      ) : (
-                        <span className="text-[9px] text-slate-500 font-normal">Boshqa kun</span>
                       )}
                     </div>
-                    <div className="text-[10px] text-slate-400 flex items-center gap-1.5 font-mono">
-                      <span>{g.time}</span>
-                      <span>·</span>
-                      <span className="text-brand-400">{g.days}</span>
+                    <div className="space-y-0.5 text-[10px] text-slate-400">
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-2.5 h-2.5 text-slate-500" />
+                        <span>{group.time}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <MapPin className="w-2.5 h-2.5 text-slate-500" />
+                        <span>{group.room}</span>
+                      </div>
                     </div>
                   </button>
                 );
               })}
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
-        {/* Tanlangan guruh tafsilotlari va O'quvchilar ro'yxati */}
+        {/* ─── Tanlangan Guruh Boshqaruvi ─── */}
         {selectedGroup && (
-          <div className="space-y-3">
-            {/* Guruh kartasi va tezkor amallar */}
-            <div className="bg-slate-900 border border-white/10 rounded-2xl p-3.5 flex items-center justify-between gap-3 shadow-sm">
+          <div className="bg-slate-900/80 border border-white/10 rounded-3xl p-4 sm:p-5 space-y-4 shadow-xl">
+            {/* Guruh Ma'lumotlari Paneli */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-white/5">
               <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="font-bold text-sm text-white">{selectedGroup.name}</h3>
-                  {isLessonToday(selectedGroup.days) && (
-                    <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 text-[10px] font-bold">
-                      Bugungi Dars
-                    </span>
-                  )}
-                </div>
-                <p className="text-[11px] text-slate-400 flex items-center gap-1.5 mt-0.5">
-                  <Clock className="w-3 h-3 text-slate-500" />
-                  <span>{selectedGroup.time} ({selectedGroup.room})</span>
-                </p>
+                <h2 className="text-base font-extrabold text-white">{selectedGroup.name}</h2>
+                <p className="text-xs text-brand-400 font-semibold">{selectedGroup.subject}</p>
               </div>
 
               <div className="flex items-center gap-2">
                 <button
-                  onClick={markAllPresent}
-                  className="px-3 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 text-xs font-bold transition flex items-center gap-1 cursor-pointer"
-                  title="Barcha o'quvchilarni bir vaqtda keldi deb belgilash"
+                  onClick={() => setShowAddModal(true)}
+                  className="py-2 px-3 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-semibold border border-white/10 flex items-center gap-1.5 transition cursor-pointer"
                 >
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>Barchasi keldi</span>
+                  <UserPlus className="w-3.5 h-3.5 text-brand-400" />
+                  <span>O'quvchi qo'shish</span>
                 </button>
 
                 <button
-                  onClick={() => setShowAddModal(true)}
-                  className="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white transition cursor-pointer"
-                  title="Yangi o'quvchi qo'shish"
+                  onClick={markAllPresent}
+                  className="py-2 px-3 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
                 >
-                  <UserPlus className="w-4 h-4" />
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Barchasi keldi</span>
                 </button>
               </div>
             </div>
 
-            {/* O'quvchilar ro'yxati */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-[11px] text-slate-400 px-1 font-bold">
-                <span>O'QUVCHILAR ({students.length} ta):</span>
-                <span className="text-emerald-400 font-mono font-bold">
-                  {Object.values(attendance).filter((st) => st === "keldi").length} keldi ·{" "}
-                  {Object.values(attendance).filter((st) => st === "sababli").length} sababli
-                </span>
+            {/* O'quvchilar Ro'yxati */}
+            {loadingGroup ? (
+              <div className="py-12 text-center text-xs text-slate-400 flex flex-col items-center justify-center gap-2">
+                <Loader2 className="w-6 h-6 animate-spin text-brand-500" />
+                <span>O'quvchilar ro'yxati yuklanmoqda...</span>
               </div>
+            ) : students.length === 0 ? (
+              <div className="py-12 text-center text-xs text-slate-400">
+                Ushbu guruhda o'quvchilar mavjud emas. Yuqoridagi "+ O'quvchi qo'shish" tugmasi orqali kiriting.
+              </div>
+            ) : (
+              <div className="space-y-2.5">
+                {students.map((student, idx) => {
+                  const status = attendance[student.id] || "keldi";
 
-              {students.length === 0 ? (
-                <div className="p-8 text-center bg-slate-900 border border-white/10 rounded-2xl space-y-2">
-                  <p className="text-xs text-slate-400">Bu guruhda hali o'quvchilar yo'q.</p>
-                  <button
-                    onClick={() => setShowAddModal(true)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-500 text-slate-950 font-bold text-xs"
-                  >
-                    <UserPlus className="w-3.5 h-3.5" /> + O'quvchi qo'shish
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {students.map((student, idx) => {
-                    const st = attendance[student.id] || "keldi";
-                    return (
-                      <div
-                        key={student.id}
-                        className={`p-3 rounded-2xl border transition space-y-2 ${
-                          st === "keldi"
-                            ? "bg-emerald-950/20 border-emerald-500/30"
-                            : st === "sababli"
-                            ? "bg-amber-950/20 border-amber-500/30"
-                            : "bg-rose-950/20 border-rose-500/30"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2">
-                            <span className="text-slate-500 text-xs font-mono w-5">{idx + 1}.</span>
-                            <span className="font-bold text-xs text-white">{student.name}</span>
-                          </div>
-
-                          {/* 3 ta status tugmasi */}
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={() => setStudentStatus(student.id, "keldi")}
-                              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition flex items-center gap-1 cursor-pointer ${
-                                st === "keldi"
-                                  ? "bg-emerald-500 text-slate-950 shadow-sm"
-                                  : "bg-white/5 text-slate-400 hover:text-white"
-                              }`}
+                  return (
+                    <div
+                      key={student.id}
+                      className="p-3 rounded-2xl bg-slate-950/70 border border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition hover:border-white/15"
+                    >
+                      {/* O'quvchi ismi va telefon */}
+                      <div className="flex items-center gap-3">
+                        <span className="text-[11px] font-mono text-slate-500 w-5 text-center">
+                          {idx + 1}
+                        </span>
+                        <div>
+                          <div className="text-xs font-bold text-white">{student.name}</div>
+                          {student.phone && (
+                            <a
+                              href={`tel:${student.phone}`}
+                              className="text-[10px] text-slate-400 hover:text-brand-400 flex items-center gap-1 mt-0.5"
                             >
-                              <CheckCircle2 className="w-3 h-3" />
-                              <span>Keldi</span>
-                            </button>
-
-                            <button
-                              onClick={() => setStudentStatus(student.id, "sababli")}
-                              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition flex items-center gap-1 cursor-pointer ${
-                                st === "sababli"
-                                  ? "bg-amber-500 text-slate-950 shadow-sm font-extrabold"
-                                  : "bg-white/5 text-slate-400 hover:text-white"
-                              }`}
-                              title="Uzrli sabab bilan qatnashmadi"
-                            >
-                              <AlertCircle className="w-3 h-3" />
-                              <span>Sababli</span>
-                            </button>
-
-                            <button
-                              onClick={() => setStudentStatus(student.id, "kelmadi")}
-                              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition flex items-center gap-1 cursor-pointer ${
-                                st === "kelmadi"
-                                  ? "bg-rose-500 text-white shadow-sm font-extrabold"
-                                  : "bg-white/5 text-slate-400 hover:text-white"
-                              }`}
-                            >
-                              <XCircle className="w-3 h-3" />
-                              <span>Kelmadi</span>
-                            </button>
-                          </div>
+                              <Phone className="w-2.5 h-2.5" />
+                              <span>{student.phone}</span>
+                            </a>
+                          )}
                         </div>
-
-                        {st === "sababli" && (
-                          <div className="text-[10px] text-amber-300/90 font-medium pl-7">
-                            ℹ️ Sababli qoldirilgan — davomat vedomostida alohida qayd etiladi.
-                          </div>
-                        )}
                       </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+
+                      {/* 3 ta Katta Status Tugmalari */}
+                      <div className="grid grid-cols-3 gap-1.5 sm:w-auto w-full">
+                        <button
+                          onClick={() => setStudentStatus(student.id, "keldi")}
+                          className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition cursor-pointer ${
+                            status === "keldi"
+                              ? "bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20"
+                              : "bg-white/5 text-slate-400 hover:text-emerald-300 hover:bg-emerald-500/10"
+                          }`}
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span>Keldi</span>
+                        </button>
+
+                        <button
+                          onClick={() => setStudentStatus(student.id, "sababli")}
+                          className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition cursor-pointer ${
+                            status === "sababli"
+                              ? "bg-amber-400 text-slate-950 shadow-md shadow-amber-400/20"
+                              : "bg-white/5 text-slate-400 hover:text-amber-300 hover:bg-amber-500/10"
+                          }`}
+                        >
+                          <AlertCircle className="w-3.5 h-3.5" />
+                          <span>Sababli</span>
+                        </button>
+
+                        <button
+                          onClick={() => setStudentStatus(student.id, "kelmadi")}
+                          className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition cursor-pointer ${
+                            status === "kelmadi"
+                              ? "bg-rose-500 text-white shadow-md shadow-rose-500/20"
+                              : "bg-white/5 text-slate-400 hover:text-rose-300 hover:bg-rose-500/10"
+                          }`}
+                        >
+                          <XCircle className="w-3.5 h-3.5" />
+                          <span>Kelmadi</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
       </main>
 
-      {/* Pastki Yopishqoq Saqlash Paneli */}
+      {/* ─── Pastki Qotirilgan Davomatni Saqlash Paneli ─── */}
       {selectedGroup && students.length > 0 && (
-        <div className="fixed bottom-0 inset-x-0 z-40 bg-slate-900/95 backdrop-blur-md border-t border-white/10 p-3 shadow-2xl">
-          <div className="max-w-xl mx-auto flex items-center justify-between gap-3">
-            <div>
-              <span className="text-[10px] text-slate-400 block uppercase">Davomat holati:</span>
-              <span className="text-xs font-bold text-white">
-                {Object.values(attendance).filter((s) => s === "keldi").length} / {students.length} o'quvchi
-              </span>
+        <div className="fixed bottom-0 inset-x-0 bg-slate-900/95 border-t border-white/10 p-3 sm:p-4 backdrop-blur-lg z-30">
+          <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
+            <div className="text-xs space-y-0.5">
+              <div className="text-slate-400 font-medium">Jami {students.length} ta o'quvchi</div>
+              <div className="flex items-center gap-2 text-[11px] font-bold">
+                <span className="text-emerald-400">
+                  {Object.values(attendance).filter((s) => s === "keldi").length} Keldi
+                </span>
+                <span className="text-slate-600">·</span>
+                <span className="text-amber-400">
+                  {Object.values(attendance).filter((s) => s === "sababli").length} Sababli
+                </span>
+                <span className="text-slate-600">·</span>
+                <span className="text-rose-400">
+                  {Object.values(attendance).filter((s) => s === "kelmadi").length} Kelmadi
+                </span>
+              </div>
             </div>
 
             <button
               onClick={handleSaveAttendance}
               disabled={saving}
-              className="py-3 px-6 rounded-2xl bg-brand-500 hover:bg-brand-400 text-slate-950 font-black text-xs uppercase tracking-wider transition shadow-lg shadow-brand-500/25 flex items-center gap-2 cursor-pointer disabled:opacity-50"
+              className="py-3 px-6 rounded-2xl bg-brand-500 hover:bg-brand-400 text-slate-950 font-extrabold text-xs flex items-center gap-2 shadow-lg shadow-brand-500/25 transition cursor-pointer disabled:opacity-50"
             >
               {saving ? (
                 <>
@@ -808,12 +954,12 @@ export default function DavomatTeacherPage() {
               ) : saveSuccess ? (
                 <>
                   <Check className="w-4 h-4 text-emerald-950" />
-                  <span>Davomat Saqlandi!</span>
+                  <span>Saqlandi!</span>
                 </>
               ) : isOfflineSaved ? (
                 <>
-                  <CloudUpload className="w-4 h-4 text-amber-950" />
-                  <span>Oflayn Saqlandi!</span>
+                  <WifiOff className="w-4 h-4" />
+                  <span>Oflayn saqlandi</span>
                 </>
               ) : (
                 <>
@@ -826,64 +972,58 @@ export default function DavomatTeacherPage() {
         </div>
       )}
 
-      {/* Yangi o'quvchi qo'shish Modali */}
+      {/* ─── Yangi O'quvchi Qo'shish Modali ─── */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="w-full max-w-sm bg-slate-900 border border-white/15 rounded-3xl p-5 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <h3 className="text-xs font-bold text-white flex items-center gap-1.5">
-                <UserPlus className="w-4 h-4 text-brand-400" />
-                <span>Guruhga O'quvchi Qo'shish</span>
-              </h3>
-              <button
-                onClick={() => setShowAddModal(false)}
-                className="text-slate-400 hover:text-white text-xs font-bold"
-              >
-                ✕
-              </button>
-            </div>
+          <div className="w-full max-w-sm bg-slate-900 border border-white/10 rounded-3xl p-6 shadow-2xl space-y-4">
+            <h3 className="text-sm font-extrabold text-white">Yangi o'quvchi qo'shish</h3>
+            <p className="text-xs text-slate-400">
+              Guruh: <b>{selectedGroup?.name}</b>
+            </p>
 
             <form onSubmit={handleAddStudent} className="space-y-3">
               <div>
                 <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
-                  O'quvchi F.I.Sh *
+                  O'quvchi Ism Familiyasi
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="Masalan: Azizbek Aliyev"
+                  placeholder="masalan: Alisher Navoiy"
                   value={newStudentName}
                   onChange={(e) => setNewStudentName(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/15 text-white text-xs focus:outline-none focus:border-brand-500"
+                  className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-white/10 text-white text-xs placeholder:text-slate-600 focus:outline-none focus:border-brand-500"
                 />
               </div>
 
               <div>
                 <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
-                  Telefon raqami
+                  Telefon Raqami
                 </label>
                 <input
                   type="text"
+                  required
+                  placeholder="+998 90 123 45 67"
                   value={newStudentPhone}
                   onChange={(e) => setNewStudentPhone(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/15 text-white text-xs font-mono focus:outline-none focus:border-brand-500"
+                  className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-white/10 text-white text-xs placeholder:text-slate-600 focus:outline-none focus:border-brand-500"
                 />
               </div>
 
-              <div className="pt-2 flex gap-2">
+              <div className="flex gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 text-xs font-semibold"
+                  className="flex-1 py-2.5 rounded-xl bg-white/5 text-slate-400 text-xs font-semibold hover:bg-white/10 transition cursor-pointer"
                 >
                   Bekor qilish
                 </button>
                 <button
                   type="submit"
-                  disabled={addingStudent || !newStudentName.trim()}
-                  className="flex-1 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-400 text-slate-950 text-xs font-bold shadow-md disabled:opacity-50"
+                  disabled={addingStudent}
+                  className="flex-1 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-400 text-slate-950 text-xs font-bold transition cursor-pointer"
                 >
-                  {addingStudent ? "Qo'shilmoqda..." : "Guruhga qo'shish"}
+                  {addingStudent ? "Qo'shilmoqda..." : "Qo'shish"}
                 </button>
               </div>
             </form>

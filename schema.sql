@@ -3,6 +3,20 @@
 -- Bepul Supabase yoki Neon PostgreSQL uchun 1-bosishda tushirishga tayyor.
 -- ==============================================================================
 
+-- 0. Ustozlar Jadvali (Teachers)
+CREATE TABLE IF NOT EXISTS teachers (
+  id VARCHAR(64) PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  login VARCHAR(64) UNIQUE NOT NULL,
+  subject VARCHAR(255) NOT NULL,
+  phone VARCHAR(32),
+  password_hash VARCHAR(255),
+  salt VARCHAR(64),
+  telegram_id VARCHAR(64),
+  telegram_username VARCHAR(64),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 -- 1. Guruhlar Jadvali (Groups)
 CREATE TABLE IF NOT EXISTS groups (
   id VARCHAR(64) PRIMARY KEY,

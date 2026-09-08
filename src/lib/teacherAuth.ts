@@ -1,0 +1,290 @@
+import { createHmac, randomBytes, timingSafeEqual } from "crypto";
+import { promises as fs } from "fs";
+import path from "path";
+import os from "os";
+
+export interface Teacher {
+  id: string;
+  name: string;
+  login: string;
+  subject: string;
+  phone?: string;
+  passwordHash?: string;
+  salt?: string;
+  telegramId?: string;
+  telegramUsername?: string;
+  createdAt: string;
+}
+
+export const TEACHER_AUTH_COOKIE = "algoritm_teacher_session";
+export const TEACHER_SESSION_TTL = 60 * 60 * 24 * 30; // 30 kun
+
+// Boshlang'ich ustozlar ro'yxati
+export const INITIAL_TEACHERS: Teacher[] = [
+  {
+    id: "tm-aziz",
+    name: "Aziz Xolmurodov",
+    login: "aziz",
+    subject: "Matematika & SAT Math",
+    phone: "+998901234501",
+    createdAt: "2026-09-01T00:00:00.000Z",
+  },
+  {
+    id: "tm-jasur",
+    name: "Jasur Jovliyev",
+    login: "jasur",
+    subject: "Ingliz Tili · IELTS",
+    phone: "+998901234502",
+    createdAt: "2026-09-01T00:00:00.000Z",
+  },
+  {
+    id: "tm-oxunjon",
+    name: "Oxunjon Ozodov",
+    login: "oxunjon",
+    subject: "Digital SAT",
+    phone: "+998901234503",
+    createdAt: "2026-09-01T00:00:00.000Z",
+  },
+  {
+    id: "tm-adham",
+    name: "Adham Sohibov",
+    login: "adham",
+    subject: "Prezident Maktabi & Mantiq",
+    phone: "+998901234504",
+    createdAt: "2026-09-01T00:00:00.000Z",
+  },
+  {
+    id: "tm-shohista",
+    name: "Shohista Jalilovna",
+    login: "shohista",
+    subject: "Boshlang'ich Rus Sinf",
+    phone: "+998901234505",
+    createdAt: "2026-09-01T00:00:00.000Z",
+  },
+  {
+    id: "tm-bobur",
+    name: "Bobur Xaydarov",
+    login: "bobur",
+    subject: "Asoschi & SAT Math",
+    phone: "+998901234506",
+    createdAt: "2026-09-01T00:00:00.000Z",
+  },
+];
+
+// Xotirada va faylda ustozlarni saqlash kesh
+let teacherCache: Teacher[] | null = null;
+
+function getStoragePath(): string {
+  const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+  return isServerless
+    ? path.join(os.tmpdir(), "algoritm_teachers.json")
+    : path.join(process.cwd(), ".data", "teachers.json");
+}
+
+export async function loadTeachers(): Promise<Teacher[]> {
+  if (teacherCache) return teacherCache;
+
+  const filePath = getStoragePath();
+  try {
+    const raw = await fs.readFile(filePath, "utf8");
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      teacherCache = parsed;
+      return parsed;
+    }
+  } catch {
+    // Fayl mavjud emas bo'lsa boshlang'ich ma'lumotlar ishlatiladi
+  }
+
+  teacherCache = [...INITIAL_TEACHERS];
+  await saveTeachers(teacherCache).catch(() => {});
+  return teacherCache;
+}
+
+export async function saveTeachers(teachers: Teacher[]): Promise<void> {
+  teacherCache = teachers;
+  const filePath = getStoragePath();
+  try {
+    await fs.mkdir(path.dirname(filePath), { recursive: true });
+    await fs.writeFile(filePath, JSON.stringify(teachers, null, 2), "utf8");
+  } catch (err) {
+    console.error("[teacherAuth] Ustozlar ma'lumotlarini saqlashda xato:", err);
+  }
+}
+
+/** Parolni xavfsiz HMAC-SHA256 xesh qilish */
+export function hashPassword(password: string, salt: string): string {
+  return createHmac("sha256", salt).update(password).digest("hex");
+}
+
+/** Timing-safe solishtirish */
+function safeEqual(a: string, b: string): boolean {
+  const ab = Buffer.from(a);
+  const bb = Buffer.from(b);
+  if (ab.length !== bb.length) return false;
+  return timingSafeEqual(ab, bb);
+}
+
+/** Ustoz uchun yangi parol o'rnatish */
+export async function setTeacherPassword(teacherId: string, plainPassword: string): Promise<Teacher | null> {
+  const teachers = await loadTeachers();
+  const index = teachers.findIndex((t) => t.id === teacherId);
+  if (index === -1) return null;
+
+  const salt = randomBytes(16).toString("hex");
+  const passwordHash = hashPassword(plainPassword, salt);
+
+  teachers[index] = {
+    ...teachers[index],
+    passwordHash,
+    salt,
+  };
+
+  await saveTeachers(teachers);
+  return sanitizeTeacher(teachers[index]);
+}
+
+/** Login yoki telefon hamda parol bilan tekshirish */
+export async function verifyTeacherCredentials(
+  loginOrPhone: string,
+  plainPassword: string
+): Promise<Teacher | null> {
+  const teachers = await loadTeachers();
+  const clean = loginOrPhone.trim().toLowerCase();
+  const digits = clean.replace(/\D/g, "");
+
+  const teacher = teachers.find((t) => {
+    if (t.login.toLowerCase() === clean) return true;
+    if (t.phone && t.phone.replace(/\D/g, "") === digits && digits.length >= 9) return true;
+    return false;
+  });
+
+  if (!teacher) return null;
+
+  // Agar ustoz hali parol o'rnatmagan bo'lsa
+  if (!teacher.passwordHash || !teacher.salt) {
+    return null;
+  }
+
+  const computedHash = hashPassword(plainPassword, teacher.salt);
+  if (!safeEqual(computedHash, teacher.passwordHash)) {
+    return null;
+  }
+
+  return sanitizeTeacher(teacher);
+}
+
+/** Telegram ID orqali ustozni topish */
+export async function findTeacherByTelegram(
+  telegramId: string | number,
+  username?: string
+): Promise<Teacher | null> {
+  const teachers = await loadTeachers();
+  const idStr = String(telegramId);
+  const userStr = username ? username.replace(/^@/, "").toLowerCase() : null;
+
+  const match = teachers.find((t) => {
+    if (t.telegramId && t.telegramId === idStr) return true;
+    if (userStr && t.telegramUsername && t.telegramUsername.toLowerCase() === userStr) return true;
+    return false;
+  });
+
+  return match ? sanitizeTeacher(match) : null;
+}
+
+/** Ustoz profiliga Telegram ma'lumotlarini biriktirish */
+export async function bindTeacherTelegram(
+  teacherId: string,
+  telegramId: string | number,
+  telegramUsername?: string
+): Promise<Teacher | null> {
+  const teachers = await loadTeachers();
+  const index = teachers.findIndex((t) => t.id === teacherId);
+  if (index === -1) return null;
+
+  teachers[index] = {
+    ...teachers[index],
+    telegramId: String(telegramId),
+    telegramUsername: telegramUsername ? telegramUsername.replace(/^@/, "") : teachers[index].telegramUsername,
+  };
+
+  await saveTeachers(teachers);
+  return sanitizeTeacher(teachers[index]);
+}
+
+/** Shaxsiy xavfsizlik: Parol xeshi va tuzini yashirish */
+export function sanitizeTeacher(teacher: Teacher): Teacher {
+  const { passwordHash, salt, ...safe } = teacher;
+  return safe as Teacher;
+}
+
+// ─────────────────────── Sessiya Tokenlari (HMAC Imzo) ───────────────────────
+
+function getSessionSecret(): string {
+  const secret = process.env.ADMIN_SESSION_SECRET || process.env.TELEGRAM_BOT_TOKEN || "algoritm-teacher-secret-salt-2026";
+  return createHmac("sha256", "teacher-token-salt").update(secret).digest("hex");
+}
+
+export interface TeacherSessionPayload {
+  teacherId: string;
+  name: string;
+  login: string;
+  iat: number;
+  exp: number;
+}
+
+export function createTeacherToken(teacher: Teacher, ttlSeconds = TEACHER_SESSION_TTL): string {
+  const now = Math.floor(Date.now() / 1000);
+  const payload: TeacherSessionPayload = {
+    teacherId: teacher.id,
+    name: teacher.name,
+    login: teacher.login,
+    iat: now,
+    exp: now + ttlSeconds,
+  };
+
+  const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
+  const sig = createHmac("sha256", getSessionSecret()).update(body).digest("base64url");
+  return `t1.${body}.${sig}`;
+}
+
+export function verifyTeacherToken(token: string | undefined | null): TeacherSessionPayload | null {
+  if (!token) return null;
+  const parts = token.split(".");
+  if (parts.length !== 3 || parts[0] !== "t1") return null;
+
+  const [, body, sig] = parts;
+  const expectedSig = createHmac("sha256", getSessionSecret()).update(body).digest("base64url");
+  if (!safeEqual(sig, expectedSig)) return null;
+
+  try {
+    const payload = JSON.parse(Buffer.from(body, "base64url").toString("utf8")) as TeacherSessionPayload;
+    if (typeof payload.exp !== "number" || payload.exp < Math.floor(Date.now() / 1000)) {
+      return null;
+    }
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
+export function readCookie(header: string | null, name: string): string | undefined {
+  if (!header) return undefined;
+  for (const part of header.split(";")) {
+    const idx = part.indexOf("=");
+    if (idx === -1) continue;
+    if (part.slice(0, idx).trim() === name) return part.slice(idx + 1).trim();
+  }
+  return undefined;
+}
+
+export async function getAuthenticatedTeacher(req: Request): Promise<Teacher | null> {
+  const cookieHeader = req.headers.get("cookie");
+  const token = readCookie(cookieHeader, TEACHER_AUTH_COOKIE) || req.headers.get("x-teacher-token");
+  const payload = verifyTeacherToken(token);
+  if (!payload) return null;
+
+  const teachers = await loadTeachers();
+  const teacher = teachers.find((t) => t.id === payload.teacherId);
+  return teacher ? sanitizeTeacher(teacher) : null;
+}
