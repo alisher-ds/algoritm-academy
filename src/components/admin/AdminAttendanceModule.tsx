@@ -50,6 +50,9 @@ export default function AdminAttendanceModule() {
   const [newGroupName, setNewGroupName] = useState("");
   const [newGroupSubject, setNewGroupSubject] = useState("");
   const [newGroupTeacher, setNewGroupTeacher] = useState("");
+  const [newGroupTeacherId, setNewGroupTeacherId] = useState("");
+  const [newGroupBranch, setNewGroupBranch] = useState("Chilonzor filiali");
+  const [teacherList, setTeacherList] = useState<Array<{ id: string; name: string; subject: string }>>([]);
   const [newGroupDays, setNewGroupDays] = useState<any>("dush-chor-juma");
   const [newGroupTime, setNewGroupTime] = useState("14:00 - 15:30");
   const [newGroupRoom, setNewGroupRoom] = useState("201-xona");
@@ -78,6 +81,21 @@ export default function AdminAttendanceModule() {
       console.error(e);
     }
   }, [selectedGroupId]);
+
+  // Ustozlarni yuklash
+  const fetchTeachers = useCallback(async () => {
+    try {
+      const res = await fetch("/api/teachers/auth");
+      const data = await res.json();
+      if (data.teachers && Array.isArray(data.teachers)) {
+        setTeacherList(data.teachers);
+        if (data.teachers.length > 0) {
+          setNewGroupTeacherId(data.teachers[0].id);
+          setNewGroupTeacher(data.teachers[0].name);
+        }
+      }
+    } catch {}
+  }, []);
 
   // O'quvchilarni yuklash
   const fetchStudents = useCallback(async () => {
@@ -114,7 +132,8 @@ export default function AdminAttendanceModule() {
   useEffect(() => {
     fetchGroups();
     fetchStudents();
-  }, [fetchGroups, fetchStudents]);
+    fetchTeachers();
+  }, [fetchGroups, fetchStudents, fetchTeachers]);
 
   useEffect(() => {
     if (selectedGroupId && selectedMonth) {
@@ -627,16 +646,47 @@ export default function AdminAttendanceModule() {
                   className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/15 text-white focus:outline-none"
                 />
               </div>
-              <div>
-                <label className="block font-bold text-slate-400 mb-1">Biriktirilgan Ustoz *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Masalan: Aziz Xolmurodov"
-                  value={newGroupTeacher}
-                  onChange={(e) => setNewGroupTeacher(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/15 text-white focus:outline-none"
-                />
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block font-bold text-slate-400 mb-1">Filial *</label>
+                  <select
+                    value={newGroupBranch}
+                    onChange={(e) => setNewGroupBranch(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/15 text-white focus:outline-none"
+                  >
+                    <option value="Chilonzor filiali">Chilonzor filiali</option>
+                    <option value="Yunusobod filiali">Yunusobod filiali</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-400 mb-1">Biriktirilgan Ustoz *</label>
+                  {teacherList.length > 0 ? (
+                    <select
+                      value={newGroupTeacherId}
+                      onChange={(e) => {
+                        setNewGroupTeacherId(e.target.value);
+                        const t = teacherList.find((item) => item.id === e.target.value);
+                        if (t) setNewGroupTeacher(t.name);
+                      }}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/15 text-white focus:outline-none"
+                    >
+                      {teacherList.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.name} ({t.subject})
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      required
+                      placeholder="Masalan: Aziz Xolmurodov"
+                      value={newGroupTeacher}
+                      onChange={(e) => setNewGroupTeacher(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/15 text-white focus:outline-none"
+                    />
+                  )}
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>

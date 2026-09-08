@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { listGroups, listStudents, getAttendance } from "@/lib/attendanceStore";
+import { findTeacherByTelegram } from "@/lib/teacherAuth";
 
 export const dynamic = "force-dynamic";
 
@@ -119,27 +120,64 @@ export async function POST(req: Request) {
     const baseUrl = getBaseUrl();
     const chatId = message.chat.id;
     const text = String(message.text).trim();
-    const senderName = [message.from?.first_name, message.from?.last_name].filter(Boolean).join(" ") || "Ustoz";
+    const senderName = [message.from?.first_name, message.from?.last_name].filter(Boolean).join(" ") || "Foydalanuvchi";
+
+    // Qat'iy Xavfsizlik: Ushbu Telegram foydalanuvchisi Algoritm o'qituvchisimi?
+    const teacher = await findTeacherByTelegram(chatId, message.from?.username);
+    const isAdmin = Boolean(process.env.TELEGRAM_CHAT_ID && String(process.env.TELEGRAM_CHAT_ID) === String(chatId));
 
     if (text === "/start") {
-      const replyText = [
+      if (teacher) {
+        // Tizimda tasdiqlangan ustoz uchun shaxsiy xush kelibsiz xabari
+        const replyText = [
+          `👋 <b>Assalomu alaykum, ${teacher.name}!</b>`,
+          "",
+          "🏛 <b>Algoritm Ustoz Boshqaruv Markazi</b>",
+          `Mutaxassislik: <b>${teacher.subject}</b>`,
+          "",
+          "Quyidagi imkoniyatlar mavjud:",
+          "📱 /davomat — 5 soniyada dars davomati qilish (Mini App)",
+          "👥 /guruhlar — Sizga biriktirilgan faol guruhlar",
+          "📊 /hisobot — Bugungi darslaringiz davomat statistikasi",
+        ].join("\n");
+
+        const markup = {
+          inline_keyboard: [
+            [
+              {
+                text: "📋 Davomat Qilish (Mini App)",
+                web_app: { url: `${baseUrl}/davomat` },
+              },
+            ],
+            [
+              {
+                text: "👥 Mening Guruhlarim",
+                callback_data: "my_groups",
+              },
+            ],
+          ],
+        };
+
+        await sendTelegramReply(chatId, replyText, markup);
+        return NextResponse.json({ ok: true });
+      }
+
+      // Begona / Yangi foydalanuvchi uchun cheklangan xush kelibsiz xabari
+      const guestText = [
         `👋 <b>Assalomu alaykum, ${senderName}!</b>`,
         "",
-        "🏛 <b>Algoritm Academy & School Boshqaruv Botiga xush kelibsiz.</b>",
+        "🏛 <b>Algoritm Academy & School</b> rasmiy xodimlar va ustozlar botiga xush kelibsiz.",
         "",
-        "Quyidagi imkoniyatlar mavjud:",
-        "📱 /davomat — O'qituvchilar uchun 10 soniyalik mobil davomat portali",
-        "👥 /guruhlar — Hozirgi barcha faol guruhlar va dars jadvallari",
-        "📊 /hisobot — Bugungi darslar va davomat hisoboti",
+        "⚠️ <i>Ushbu bot faqat Algoritm xodimlari va o'qituvchilari uchun mo'ljallangan. Ichki guruhlar va ma'lumotlar begonalarga berilmaydi.</i>",
         "",
-        "Daftar tutishga chek qo'ying — barchasi raqamli va avtomatlashtirilgan!",
+        "Agar siz Algoritm o'qituvchisi bo'lsangiz, avval portaldan ro'yxatdan o'ting va parolingizni belgilang:",
       ].join("\n");
 
-      const markup = {
+      const guestMarkup = {
         inline_keyboard: [
           [
             {
-              text: "📱 Mobil Davomat Portali",
+              text: "🔐 Ustoz Portali (Kirish / Ro'yxatdan o'tish)",
               web_app: { url: `${baseUrl}/davomat` },
             },
           ],
@@ -152,7 +190,7 @@ export async function POST(req: Request) {
         ],
       };
 
-      await sendTelegramReply(chatId, replyText, markup);
+      await sendTelegramReply(chatId, guestText, guestMarkup);
       return NextResponse.json({ ok: true });
     }
 
@@ -209,9 +247,17 @@ export async function POST(req: Request) {
     }
 
     if (text === "/hisobot") {
+      if (!teacher && !isAdmin) {
+        await sendTelegramReply(
+          chatId,
+          "⛔️ <b>Ruxsat cheklangan</b>\n\nDavomat statistikasi faqat Algoritm xodimlari va ustozlari uchun ochiq."
+        );
+        return NextResponse.json({ ok: true });
+      }
       const d = new Date();
       const todayStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-      const groups = await listGroups({ activeOnly: true });
+      const allGroups = await listGroups({ activeOnly: true });
+      const groups = isAdmin ? allGroups : allGroups.filter((g) => g.teacherId === teacher?.id);
 
       const lines = [
         `📊 <b>BUGUNGI DAVOMAT HISOBOTI (${todayStr})</b>`,

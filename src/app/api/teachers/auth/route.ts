@@ -3,6 +3,7 @@ import {
   loadTeachers,
   verifyTeacherCredentials,
   setTeacherPassword,
+  registerTeacher,
   createTeacherToken,
   getAuthenticatedTeacher,
   findTeacherByTelegram,
@@ -144,6 +145,57 @@ export async function POST(req: Request) {
         teacher: updated,
         token,
         message: "Shaxsiy parolingiz muvaffaqiyatli o'rnatildi!",
+      });
+
+      res.cookies.set(TEACHER_AUTH_COOKIE, token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: TEACHER_SESSION_TTL,
+      });
+
+      return res;
+    }
+
+    // 2.1. Yangi ustozning mustaqil ro'yxatdan o'tishi (Ism-familiya, fan, telefon, login, parol)
+    if (action === "register") {
+      const { name, subject, phone, login, password, confirmPassword, bindTelegramId, bindTelegramUsername } = body;
+
+      if (!name || !subject || !login || !password) {
+        return NextResponse.json(
+          { success: false, error: "Barcha maydonlarni to'ldiring: Ism-familiya, fan, login va parol." },
+          { status: 400 }
+        );
+      }
+
+      if (confirmPassword && password !== confirmPassword) {
+        return NextResponse.json(
+          { success: false, error: "Kiritilgan parollar bir-biriga mos kelmadi" },
+          { status: 400 }
+        );
+      }
+
+      const regResult = await registerTeacher({
+        name: String(name),
+        subject: String(subject),
+        phone: phone ? String(phone) : undefined,
+        login: String(login),
+        password: String(password),
+        telegramId: bindTelegramId,
+        telegramUsername: bindTelegramUsername,
+      });
+
+      if (regResult.error || !regResult.teacher) {
+        return NextResponse.json({ success: false, error: regResult.error || "Ro'yxatdan o'tishda xatolik" }, { status: 400 });
+      }
+
+      const token = createTeacherToken(regResult.teacher);
+      const res = NextResponse.json({
+        success: true,
+        teacher: regResult.teacher,
+        token,
+        message: `Tabriklaymiz, ${regResult.teacher.name}! Siz muvaffaqiyatli ro'yxatdan o'tdingiz.`,
       });
 
       res.cookies.set(TEACHER_AUTH_COOKIE, token, {

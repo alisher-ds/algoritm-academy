@@ -46,17 +46,19 @@ export default function DavomatTeacherPage() {
   const [telegramUser, setTelegramUser] = useState<any>(null);
 
   // Login formasi holati
-  const [authTab, setAuthTab] = useState<"login" | "set-password">("login");
+  const [authTab, setAuthTab] = useState<"login" | "register">("login");
   const [loginInput, setLoginInput] = useState("");
   const [passwordInput, setPasswordInput] = useState("");
   const [authError, setAuthError] = useState("");
   const [authSubmitting, setAuthSubmitting] = useState(false);
 
-  // Yangi parol o'rnatish holati
-  const [availableTeachers, setAvailableTeachers] = useState<any[]>([]);
-  const [selectedSetupTeacherId, setSelectedSetupTeacherId] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  // Yangi hisob yaratish / Ro'yxatdan o'tish holati
+  const [regName, setRegName] = useState("");
+  const [regSubject, setRegSubject] = useState("");
+  const [regPhone, setRegPhone] = useState("+998 ");
+  const [regLogin, setRegLogin] = useState("");
+  const [regPassword, setRegPassword] = useState("");
+  const [regConfirmPassword, setRegConfirmPassword] = useState("");
 
   // ─── 2. Guruhlar va Davomat Holati ───
   const [groups, setGroups] = useState<Group[]>([]);
@@ -159,12 +161,6 @@ export default function DavomatTeacherPage() {
         }
       } else {
         setCurrentTeacher(null);
-        if (data.teachers && Array.isArray(data.teachers)) {
-          setAvailableTeachers(data.teachers);
-          if (data.teachers.length > 0) {
-            setSelectedSetupTeacherId(data.teachers[0].id);
-          }
-        }
       }
     } catch {
       setCurrentTeacher(null);
@@ -306,17 +302,17 @@ export default function DavomatTeacherPage() {
     }
   };
 
-  const handleSetPasswordSubmit = async (e: React.FormEvent) => {
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedSetupTeacherId) {
-      setAuthError("Iltimos, ismingizni tanlang");
+    if (!regName.trim() || !regSubject.trim() || !regLogin.trim() || !regPassword) {
+      setAuthError("Iltimos, barcha maydonlarni to'ldiring: Ism-familiya, fan, login va parol.");
       return;
     }
-    if (newPassword.length < 4) {
+    if (regPassword.length < 4) {
       setAuthError("Parol kamida 4 ta belgidan iborat bo'lishi kerak");
       return;
     }
-    if (newPassword !== confirmPassword) {
+    if (regPassword !== regConfirmPassword) {
       setAuthError("Kiritilgan parollar bir-biriga mos kelmadi");
       return;
     }
@@ -328,21 +324,27 @@ export default function DavomatTeacherPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          action: "set-password",
-          teacherId: selectedSetupTeacherId,
-          password: newPassword,
-          confirmPassword,
+          action: "register",
+          name: regName.trim(),
+          subject: regSubject.trim(),
+          phone: regPhone.trim(),
+          login: regLogin.trim(),
+          password: regPassword,
+          confirmPassword: regConfirmPassword,
           bindTelegramId: telegramUser?.id,
           bindTelegramUsername: telegramUser?.username,
         }),
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        setNewPassword("");
-        setConfirmPassword("");
+        setRegName("");
+        setRegSubject("");
+        setRegLogin("");
+        setRegPassword("");
+        setRegConfirmPassword("");
         await checkSession();
       } else {
-        setAuthError(data.error || "Parolni o'rnatib bo'lmadi");
+        setAuthError(data.error || "Ro'yxatdan o'tishda xatolik");
       }
     } catch {
       setAuthError("Serverga ulanishda xatolik");
@@ -526,17 +528,17 @@ export default function DavomatTeacherPage() {
             </button>
             <button
               onClick={() => {
-                setAuthTab("set-password");
+                setAuthTab("register");
                 setAuthError("");
               }}
               className={`py-2.5 rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 ${
-                authTab === "set-password"
+                authTab === "register"
                   ? "bg-brand-500 text-slate-950 shadow-md"
                   : "text-slate-400 hover:text-white"
               }`}
             >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Parol O'rnatish</span>
+              <UserPlus className="w-3.5 h-3.5" />
+              <span>Ro'yxatdan O'tish</span>
             </button>
           </div>
 
@@ -595,68 +597,111 @@ export default function DavomatTeacherPage() {
             </form>
           )}
 
-          {/* TAB 2: YANGI PAROL O'RNATISH (O'ZI PAROL YARATADI) */}
-          {authTab === "set-password" && (
-            <form onSubmit={handleSetPasswordSubmit} className="space-y-4">
+          {/* TAB 2: YANGI USTOZ RO'YXATDAN O'TISHI (ISM-FAMILIYA QO'LDA KIRITILADI) */}
+          {authTab === "register" && (
+            <form onSubmit={handleRegisterSubmit} className="space-y-3.5">
               <div className="p-3 rounded-xl bg-brand-500/10 border border-brand-500/20 text-[11px] text-brand-300">
-                💡 <b>Birinchi marta kirayotgan ustozlar uchun:</b> Ro'yxatdan o'z ismingizni tanlang va o'zingiz xohlagan yangi parolni belgilang.
+                ✍️ <b>Yangi ustoz hisobi:</b> Ism-familiyangiz, faningiz va shaxsiy ma'lumotlaringizni to'liq kiriting. Hech kim sizning hisobingizga ruxsatsiz kira olmaydi.
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-                  Ismingizni tanlang
-                </label>
-                <select
-                  value={selectedSetupTeacherId}
-                  onChange={(e) => setSelectedSetupTeacherId(e.target.value)}
-                  className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-white/10 text-white text-xs focus:outline-none focus:border-brand-500 transition"
-                >
-                  {availableTeachers.map((t) => (
-                    <option key={t.id} value={t.id} className="bg-slate-900 text-white">
-                      {t.name} ({t.subject}) {t.hasPassword ? "· (Parol o'rnatilgan)" : "· (Parol yo'q)"}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-                  Yangi Shaxsiy Parol
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                  Ism va Familiyangiz *
                 </label>
                 <input
-                  type="password"
+                  type="text"
                   required
-                  placeholder="Kamida 4 ta belgi"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-white/10 text-white text-xs placeholder:text-slate-600 focus:outline-none focus:border-brand-500 transition"
+                  placeholder="masalan: Aziz Xolmurodov"
+                  value={regName}
+                  onChange={(e) => setRegName(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-2xl bg-slate-950 border border-white/10 text-white text-xs placeholder:text-slate-600 focus:outline-none focus:border-brand-500 transition"
                 />
               </div>
 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                    Fan / Mutaxassislik *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="masalan: SAT Matematika"
+                    value={regSubject}
+                    onChange={(e) => setRegSubject(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-2xl bg-slate-950 border border-white/10 text-white text-xs placeholder:text-slate-600 focus:outline-none focus:border-brand-500 transition"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                    Telefon Raqami *
+                  </label>
+                  <input
+                    type="tel"
+                    required
+                    placeholder="+998 90 123 45 67"
+                    value={regPhone}
+                    onChange={(e) => setRegPhone(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-2xl bg-slate-950 border border-white/10 text-white text-xs placeholder:text-slate-600 focus:outline-none focus:border-brand-500 transition"
+                  />
+                </div>
+              </div>
+
               <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-                  Parolni Qayta Kiriting
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                  Shaxsiy Login * (Lotin harflarida)
                 </label>
                 <input
-                  type="password"
+                  type="text"
                   required
-                  placeholder="Parolni tasdiqlang"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-white/10 text-white text-xs placeholder:text-slate-600 focus:outline-none focus:border-brand-500 transition"
+                  placeholder="masalan: aziz_sat yoki azizx"
+                  value={regLogin}
+                  onChange={(e) => setRegLogin(e.target.value.toLowerCase().replace(/[^a-z0-9_.-]/g, ""))}
+                  className="w-full px-4 py-2.5 rounded-2xl bg-slate-950 border border-white/10 text-white text-xs placeholder:text-slate-600 focus:outline-none focus:border-brand-500 transition font-mono"
                 />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                    Shaxsiy Parol *
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    placeholder="Kamida 4 ta belgi"
+                    value={regPassword}
+                    onChange={(e) => setRegPassword(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-2xl bg-slate-950 border border-white/10 text-white text-xs placeholder:text-slate-600 focus:outline-none focus:border-brand-500 transition"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                    Parolni Qayta Kiriting *
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    placeholder="Tasdiqlash"
+                    value={regConfirmPassword}
+                    onChange={(e) => setRegConfirmPassword(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-2xl bg-slate-950 border border-white/10 text-white text-xs placeholder:text-slate-600 focus:outline-none focus:border-brand-500 transition"
+                  />
+                </div>
               </div>
 
               <button
                 type="submit"
                 disabled={authSubmitting}
-                className="w-full py-3.5 px-4 rounded-2xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 transition cursor-pointer"
+                className="w-full py-3.5 px-4 rounded-2xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 transition cursor-pointer mt-2"
               >
                 {authSubmitting ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
                   <>
-                    <span>Parolni Saqlash va Kirish</span>
+                    <span>Ro'yxatdan O'tish va Kirish</span>
                     <Check className="w-4 h-4" />
                   </>
                 )}
