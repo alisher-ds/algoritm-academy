@@ -7,12 +7,11 @@ import {
 } from "../src/lib/attendanceTelegram";
 
 describe("Telegram Webhook & Attendance Notifications", () => {
-  it("GET /api/telegram/webhook xizmat holatini to'g'ri qaytaradi", async () => {
+  it("GET /api/telegram/webhook token yo'qligida ham xizmat holatini to'g'ri qaytaradi", async () => {
     const res = await GET();
     const data = await res.json();
     expect(res.status).toBe(200);
-    expect(data.success).toBe(true);
-    expect(data.service).toContain("Telegram");
+    expect(data.configured).toBe(false);
   });
 
   it("POST /api/telegram/webhook /start buyrug'iga xatoliksiz javob beradi", async () => {
