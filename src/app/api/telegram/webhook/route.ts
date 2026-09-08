@@ -217,11 +217,30 @@ export async function POST(req: Request) {
     }
 
     if (text === "/guruhlar") {
-      const groups = await listGroups({ activeOnly: true });
+      if (!teacher && !isAdmin) {
+        await sendTelegramReply(
+          chatId,
+          "⛔️ <b>Ruxsat cheklangan</b>\n\nGuruhlar ro'yxati va dars jadvali faqat Algoritm xodimlari va tasdiqlangan ustozlari uchun ochiq.\n\nAgar siz markaz ustozi bo'lsangiz, avval portaldan ro'yxatdan o'ting:",
+          {
+            inline_keyboard: [
+              [
+                {
+                  text: "🔐 Ustoz Portali (Kirish / Ro'yxatdan o'tish)",
+                  web_app: { url: `${baseUrl}/davomat` },
+                },
+              ],
+            ],
+          }
+        );
+        return NextResponse.json({ ok: true });
+      }
+
+      const allGroups = await listGroups({ activeOnly: true });
+      const groups = isAdmin ? allGroups : allGroups.filter((g) => g.teacherId === teacher?.id);
       const students = await listStudents({ status: "faol" });
 
       const lines = [
-        "👥 <b>ALGORITM ACADEMY | FAOL GURUHLAR</b>",
+        `👥 <b>${isAdmin ? "BARCHA FAOL GURUHLAR" : "SIZGA BIRIKTIRILGAN GURUHLAR"}</b>`,
         "━━━━━━━━━━━━━━━━━━━━",
       ];
 

@@ -4,6 +4,8 @@ import {
   verifyTeacherCredentials,
   setTeacherPassword,
   registerTeacher,
+  deleteTeacher,
+  resetTeachers,
   createTeacherToken,
   getAuthenticatedTeacher,
   findTeacherByTelegram,
@@ -275,6 +277,23 @@ export async function POST(req: Request) {
         maxAge: 0,
       });
       return res;
+    }
+
+    // 5. Ustozni o'chirish
+    if (action === "delete-teacher" || action === "delete") {
+      const { teacherId, login } = body;
+      const target = teacherId || login;
+      if (!target) {
+        return NextResponse.json({ success: false, error: "O'chirilishi kerak bo'lgan ustoz ko'rsatilmadi" }, { status: 400 });
+      }
+      const ok = await deleteTeacher(String(target));
+      return NextResponse.json({ success: ok, message: ok ? "Ustoz muvaffaqiyatli o'chirildi" : "Ustoz topilmadi" });
+    }
+
+    // 6. Barcha ustozlarni tozalash / qayta o'rnatish
+    if (action === "reset-teachers" || action === "reset") {
+      const fresh = await resetTeachers();
+      return NextResponse.json({ success: true, message: "Ustozlar ro'yxati boshlang'ich toza holatga keltirildi", teachers: fresh });
     }
 
     return NextResponse.json({ success: false, error: "Noto'g'ri amal" }, { status: 400 });

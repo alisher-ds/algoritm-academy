@@ -71,8 +71,65 @@ export const INITIAL_TEACHERS: Teacher[] = [
   },
 ];
 
+// Upstash Redis konfiguratsiyasi
+function upstashConfig(): { url: string; token: string } | null {
+  const url = process.env.UPSTASH_REDIS_REST_URL?.trim();
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN?.trim();
+  if (!url || !token) return null;
+  return { url: url.replace(/\/$/, ""), token };
+}
+
+const REDIS_TEACHERS_KEY = process.env.TEACHERS_REDIS_KEY || "algoritm:teachers";
+
+async function redisGetTeachers(): Promise<Teacher[] | null> {
+  const cfg = upstashConfig();
+  if (!cfg) return null;
+  try {
+    const res = await fetch(`${cfg.url}/get/${encodeURIComponent(REDIS_TEACHERS_KEY)}`, {
+      headers: { Authorization: `Bearer ${cfg.token}` },
+      cache: "no-store",
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data.result) {
+      const parsed = typeof data.result === "string" ? JSON.parse(data.result) : data.result;
+      return Array.isArray(parsed) ? parsed : null;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+async function redisSaveTeachers(teachers: Teacher[]): Promise<boolean> {
+  const cfg = upstashConfig();
+  if (!cfg) return false;
+  try {
+    const res = await fetch(`${cfg.url}/set/${encodeURIComponent(REDIS_TEACHERS_KEY)}`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${cfg.token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(JSON.stringify(teachers)),
+      cache: "no-store",
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 // Xotirada va faylda ustozlarni saqlash kesh
-let teacherCache: Teacher[] | null = null;
+function getGlobalTeachers(): Teacher[] | null {
+  const g = globalThis as any;
+  return g.__algoritm_teachers__ || null;
+}
+
+function setGlobalTeachers(teachers: Teacher[]): void {
+  const g = globalThis as any;
+  g.__algoritm_teachers__ = teachers;
+}
 
 function getStoragePath(): string {
   const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
@@ -82,27 +139,42 @@ function getStoragePath(): string {
 }
 
 export async function loadTeachers(): Promise<Teacher[]> {
-  if (teacherCache) return teacherCache;
+  const cached = getGlobalTeachers();
+  if (cached && cached.length > 0) return cached;
 
+  // 1. Upstash Redis (agar sozlangan bo'lsa)
+  const redisTeachers = await redisGetTeachers();
+  if (redisTeachers && redisTeachers.length > 0) {
+    setGlobalTeachers(redisTeachers);
+    return redisTeachers;
+  }
+
+  // 2. Mahalliy yoki vaqtinchalik fayl tizimi
   const filePath = getStoragePath();
   try {
     const raw = await fs.readFile(filePath, "utf8");
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed) && parsed.length > 0) {
-      teacherCache = parsed;
+      setGlobalTeachers(parsed);
       return parsed;
     }
   } catch {
     // Fayl mavjud emas bo'lsa boshlang'ich ma'lumotlar ishlatiladi
   }
 
-  teacherCache = [...INITIAL_TEACHERS];
-  await saveTeachers(teacherCache).catch(() => {});
-  return teacherCache;
+  const initial = [...INITIAL_TEACHERS];
+  setGlobalTeachers(initial);
+  await saveTeachers(initial).catch(() => {});
+  return initial;
 }
 
 export async function saveTeachers(teachers: Teacher[]): Promise<void> {
-  teacherCache = teachers;
+  setGlobalTeachers(teachers);
+
+  // 1. Upstash Redis ga yozish
+  await redisSaveTeachers(teachers).catch(() => {});
+
+  // 2. Fayl tizimiga yozish
   const filePath = getStoragePath();
   try {
     await fs.mkdir(path.dirname(filePath), { recursive: true });
@@ -110,6 +182,25 @@ export async function saveTeachers(teachers: Teacher[]): Promise<void> {
   } catch (err) {
     console.error("[teacherAuth] Ustozlar ma'lumotlarini saqlashda xato:", err);
   }
+}
+
+/** Ustozni id yoki login orqali o'chirish */
+export async function deleteTeacher(idOrLogin: string): Promise<boolean> {
+  const teachers = await loadTeachers();
+  const clean = idOrLogin.trim().toLowerCase();
+  const filtered = teachers.filter(
+    (t) => t.id !== idOrLogin && t.login.toLowerCase() !== clean
+  );
+  if (filtered.length === teachers.length) return false;
+  await saveTeachers(filtered);
+  return true;
+}
+
+/** Barcha ustozlar ro'yxatini boshlang'ich toza holatga qaytarish */
+export async function resetTeachers(): Promise<Teacher[]> {
+  const fresh = [...INITIAL_TEACHERS];
+  await saveTeachers(fresh);
+  return fresh;
 }
 
 /** Parolni xavfsiz HMAC-SHA256 xesh qilish */
@@ -340,8 +431,12 @@ export function readCookie(header: string | null, name: string): string | undefi
 }
 
 export async function getAuthenticatedTeacher(req: Request): Promise<Teacher | null> {
+  const authHeader = req.headers.get("authorization");
+  const bearerToken = authHeader && authHeader.toLowerCase().startsWith("bearer ")
+    ? authHeader.slice(7).trim()
+    : undefined;
   const cookieHeader = req.headers.get("cookie");
-  const token = readCookie(cookieHeader, TEACHER_AUTH_COOKIE) || req.headers.get("x-teacher-token");
+  const token = bearerToken || readCookie(cookieHeader, TEACHER_AUTH_COOKIE) || req.headers.get("x-teacher-token");
   const payload = verifyTeacherToken(token);
   if (!payload) return null;
 
