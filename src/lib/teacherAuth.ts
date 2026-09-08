@@ -144,6 +144,11 @@ function setGlobalTeachers(teachers: Teacher[]): void {
   g.__algoritm_teachers__ = teachers;
 }
 
+export function __resetTeacherCache(): void {
+  const g = globalThis as unknown as GlobalTeacherScope;
+  delete g.__algoritm_teachers__;
+}
+
 function getStoragePath(): string {
   if (process.env.TEACHERS_FILE) return process.env.TEACHERS_FILE;
   const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);

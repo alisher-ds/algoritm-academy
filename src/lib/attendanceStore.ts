@@ -413,3 +413,8 @@ export async function calculateMonthlyBilling(
     };
   });
 }
+
+/** Testlar uchun xotira keshini tozalash */
+export function __resetAttendanceCache(): void {
+  cache = null;
+}

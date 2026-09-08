@@ -1,4 +1,7 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterAll } from "vitest";
+import os from "os";
+import path from "path";
+import { promises as fs } from "fs";
 import {
   loadTeachers,
   setTeacherPassword,
@@ -11,12 +14,22 @@ import {
   createTeacherByAdmin,
   updateTeacherStatus,
   adminResetTeacherPassword,
+  __resetTeacherCache,
 } from "../src/lib/teacherAuth";
 
 describe("Teacher Authentication & Role Isolation", () => {
+  let tempDir: string;
+
   beforeEach(async () => {
-    // Reset test environment
+    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "vitest-teacher-auth-"));
+    process.env.TEACHERS_FILE = path.join(tempDir, "teachers.json");
     process.env.ADMIN_SESSION_SECRET = "test-secret-salt-1234567890";
+    __resetTeacherCache();
+  });
+
+  afterAll(async () => {
+    delete process.env.TEACHERS_FILE;
+    __resetTeacherCache();
   });
 
   it("ustozlar ro'yxatini to'g'ri yuklaydi", async () => {

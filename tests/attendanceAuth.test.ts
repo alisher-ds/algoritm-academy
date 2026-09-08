@@ -1,19 +1,33 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterAll } from "vitest";
+import os from "os";
+import path from "path";
+import { promises as fs } from "fs";
 import { GET as getGroups, POST as postGroups } from "../src/app/api/groups/route";
 import { GET as getStudents, POST as postStudents } from "../src/app/api/students/route";
 import { GET as getAttendance, POST as postAttendance } from "../src/app/api/attendance/route";
 import { GET as getTeacherAuth, POST as postTeacherAuth } from "../src/app/api/teachers/auth/route";
 import { createTeacherToken, setTeacherPassword } from "../src/lib/teacherAuth";
 import { createSessionToken, AUTH_COOKIE } from "../src/lib/adminAuth";
-import { createGroup } from "../src/lib/attendanceStore";
+import { createGroup, __resetAttendanceCache } from "../src/lib/attendanceStore";
 
 describe("Security Hardening & RBAC Tests", () => {
   const secret = "test-secret-salt-1234567890123456";
+  let tempDir: string;
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "vitest-att-auth-"));
+    process.env.ATTENDANCE_FILE = path.join(tempDir, "attendance.json");
+    process.env.TEACHERS_FILE = path.join(tempDir, "teachers.json");
     process.env.ADMIN_SESSION_SECRET = secret;
     process.env.TEACHER_SESSION_SECRET = secret;
     process.env.ADMIN_PASSWORD = "algoritm-admin-2026";
+    __resetAttendanceCache();
+  });
+
+  afterAll(async () => {
+    delete process.env.ATTENDANCE_FILE;
+    delete process.env.TEACHERS_FILE;
+    __resetAttendanceCache();
   });
 
   const mockTeacher1 = {

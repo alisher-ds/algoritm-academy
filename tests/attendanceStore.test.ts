@@ -1,4 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, beforeEach, afterAll } from "vitest";
+import os from "os";
+import path from "path";
+import { promises as fs } from "fs";
 import {
   listGroups,
   createGroup,
@@ -10,9 +13,22 @@ import {
   recordAttendance,
   getAttendance,
   calculateMonthlyBilling,
+  __resetAttendanceCache,
 } from "../src/lib/attendanceStore";
 
 describe("attendanceStore & Billing Engine", () => {
+  let tempDir: string;
+
+  beforeEach(async () => {
+    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "vitest-att-store-"));
+    process.env.ATTENDANCE_FILE = path.join(tempDir, "attendance.json");
+    __resetAttendanceCache();
+  });
+
+  afterAll(async () => {
+    delete process.env.ATTENDANCE_FILE;
+    __resetAttendanceCache();
+  });
   it("boshlang'ich guruhlarni muvaffaqiyatli yuklaydi (Aziz va Jasur ustozlar guruhi mavjud)", async () => {
     const groups = await listGroups();
     expect(groups.length).toBeGreaterThanOrEqual(3);
