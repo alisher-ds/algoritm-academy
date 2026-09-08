@@ -51,7 +51,7 @@ export default function AdminAttendanceModule() {
   const [newGroupSubject, setNewGroupSubject] = useState("");
   const [newGroupTeacher, setNewGroupTeacher] = useState("");
   const [newGroupTeacherId, setNewGroupTeacherId] = useState("");
-  const [newGroupBranch, setNewGroupBranch] = useState("Chilonzor filiali");
+  const [newGroupBranch, setNewGroupBranch] = useState("Algoritm Academy (O'quv markazi)");
   const [teacherList, setTeacherList] = useState<Array<{ id: string; name: string; subject: string }>>([]);
   const [newGroupDays, setNewGroupDays] = useState<any>("dush-chor-juma");
   const [newGroupTime, setNewGroupTime] = useState("14:00 - 15:30");
@@ -654,8 +654,8 @@ export default function AdminAttendanceModule() {
                     onChange={(e) => setNewGroupBranch(e.target.value)}
                     className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/15 text-white focus:outline-none"
                   >
-                    <option value="Chilonzor filiali">Chilonzor filiali</option>
-                    <option value="Yunusobod filiali">Yunusobod filiali</option>
+                    <option value="Algoritm Academy (O'quv markazi)">Algoritm Academy (O&apos;quv markazi)</option>
+                    <option value="Algoritm School (Xususiy maktab)">Algoritm School (Xususiy maktab)</option>
                   </select>
                 </div>
                 <div>
