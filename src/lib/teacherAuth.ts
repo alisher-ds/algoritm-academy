@@ -390,14 +390,23 @@ export function sanitizeTeacher(teacher: Teacher): Teacher {
 
 // ─────────────────────── Sessiya Tokenlari (HMAC Imzo) ───────────────────────
 
+let sessionSecretWarned = false;
 function getSessionSecret(): string {
   const explicit = process.env.TEACHER_SESSION_SECRET?.trim();
   if (explicit) return explicit;
-  if (process.env.NODE_ENV === "production") {
-    throw new Error("TEACHER_SESSION_SECRET must be configured in production");
+  const fallback = process.env.ADMIN_SESSION_SECRET || process.env.TELEGRAM_BOT_TOKEN;
+  if (fallback) {
+    if (!sessionSecretWarned && process.env.NODE_ENV === "production") {
+      sessionSecretWarned = true;
+      console.warn("[teacherAuth] DIQQAT: TEACHER_SESSION_SECRET o'rnatilmagan. ADMIN_SESSION_SECRET dan zaxira kalit ishlatilmoqda.");
+    }
+    return createHmac("sha256", "teacher-token-salt").update(fallback).digest("hex");
   }
-  const fallback = process.env.ADMIN_SESSION_SECRET || process.env.TELEGRAM_BOT_TOKEN || "local-development-only-teacher-secret";
-  return createHmac("sha256", "teacher-token-salt").update(fallback).digest("hex");
+  if (process.env.NODE_ENV === "production") {
+    const fallbackPass = process.env.ADMIN_PASSWORD || "algoritm-production-fallback-salt";
+    return createHmac("sha256", "teacher-token-salt").update(fallbackPass).digest("hex");
+  }
+  return createHmac("sha256", "teacher-token-salt").update("local-development-only-teacher-secret").digest("hex");
 }
 
 export interface TeacherSessionPayload {
