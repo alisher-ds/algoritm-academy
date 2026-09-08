@@ -16,6 +16,7 @@ import {
 } from "@/lib/teacherAuth";
 import { listGroups, listStudents } from "@/lib/attendanceStore";
 import { verifyTelegramWebAppData } from "@/lib/telegramAuth";
+import { isAuthed, isSameOrigin } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 
@@ -93,7 +94,6 @@ export async function POST(req: Request) {
       const res = NextResponse.json({
         success: true,
         teacher,
-        token,
         message: `Xush kelibsiz, ${teacher.name}!`,
       });
 
@@ -110,7 +110,7 @@ export async function POST(req: Request) {
 
     // 2. Ustoz o'zi uchun yangi shaxsiy parol yaratishi
     if (action === "set-password") {
-      const { teacherId, password, confirmPassword, bindTelegramId, bindTelegramUsername } = body;
+      const { teacherId, password, confirmPassword, phone, bindTelegramId, bindTelegramUsername } = body;
       if (!teacherId || !password) {
         return NextResponse.json(
           { success: false, error: "Ustoz va yangi parolni kiriting" },
@@ -132,6 +132,31 @@ export async function POST(req: Request) {
         );
       }
 
+      const targetTeacher = (await loadTeachers()).find((t) => t.id === String(teacherId));
+      if (!targetTeacher) {
+        return NextResponse.json({ success: false, error: "Ustoz topilmadi" }, { status: 404 });
+      }
+
+      const currentTeacher = await getAuthenticatedTeacher(req);
+      const admin = isAuthed(req);
+      const isSelf = currentTeacher?.id === targetTeacher.id;
+
+      if (targetTeacher.passwordHash) {
+        if (!admin && !isSelf) {
+          return NextResponse.json({ success: false, error: "Bu amal uchun ruxsat yo'q" }, { status: 403 });
+        }
+      } else {
+        const suppliedPhone = String(phone || "").replace(/\D/g, "");
+        const storedPhone = String(targetTeacher.phone || "").replace(/\D/g, "");
+        if (!admin && (!suppliedPhone || !storedPhone || suppliedPhone !== storedPhone)) {
+          return NextResponse.json({ success: false, error: "Birinchi parolni o'rnatish uchun telefon raqamini tasdiqlang" }, { status: 403 });
+        }
+      }
+
+      if (bindTelegramId && !admin && !isSelf) {
+        return NextResponse.json({ success: false, error: "Telegramni biriktirish uchun ruxsat yo'q" }, { status: 403 });
+      }
+
       const updated = await setTeacherPassword(String(teacherId), String(password));
       if (!updated) {
         return NextResponse.json({ success: false, error: "Ustoz topilmadi" }, { status: 404 });
@@ -145,7 +170,6 @@ export async function POST(req: Request) {
       const res = NextResponse.json({
         success: true,
         teacher: updated,
-        token,
         message: "Shaxsiy parolingiz muvaffaqiyatli o'rnatildi!",
       });
 
@@ -196,7 +220,6 @@ export async function POST(req: Request) {
       const res = NextResponse.json({
         success: true,
         teacher: regResult.teacher,
-        token,
         message: `Tabriklaymiz, ${regResult.teacher.name}! Siz muvaffaqiyatli ro'yxatdan o'tdingiz.`,
       });
 
@@ -251,7 +274,6 @@ export async function POST(req: Request) {
       const res = NextResponse.json({
         success: true,
         teacher,
-        token,
         message: `Assalomu alaykum, ${teacher.name}!`,
       });
 
@@ -279,8 +301,11 @@ export async function POST(req: Request) {
       return res;
     }
 
-    // 5. Ustozni o'chirish
+    // 5. Ustozni o'chirish — faqat admin.
     if (action === "delete-teacher" || action === "delete") {
+      if (!isSameOrigin(req) || !isAuthed(req)) {
+        return NextResponse.json({ success: false, error: "Bu amal faqat administrator uchun" }, { status: 403 });
+      }
       const { teacherId, login } = body;
       const target = teacherId || login;
       if (!target) {
@@ -290,8 +315,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: ok, message: ok ? "Ustoz muvaffaqiyatli o'chirildi" : "Ustoz topilmadi" });
     }
 
-    // 6. Barcha ustozlarni tozalash / qayta o'rnatish
+    // 6. Barcha ustozlarni tozalash / qayta o'rnatish — faqat admin.
     if (action === "reset-teachers" || action === "reset") {
+      if (!isSameOrigin(req) || !isAuthed(req)) {
+        return NextResponse.json({ success: false, error: "Bu amal faqat administrator uchun" }, { status: 403 });
+      }
       const fresh = await resetTeachers();
       return NextResponse.json({ success: true, message: "Ustozlar ro'yxati boshlang'ich toza holatga keltirildi", teachers: fresh });
     }
