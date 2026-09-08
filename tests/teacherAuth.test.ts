@@ -3,6 +3,8 @@ import {
   loadTeachers,
   setTeacherPassword,
   registerTeacher,
+  deleteTeacher,
+  resetTeachers,
   verifyTeacherCredentials,
   createTeacherToken,
   verifyTeacherToken,
@@ -124,5 +126,27 @@ describe("Teacher Authentication & Role Isolation", () => {
 
     expect(res.error).toBeDefined();
     expect(res.teacher).toBeUndefined();
+  });
+
+  it("ustozni o'chira oladi va ro'yxatdan chiqaradi", async () => {
+    const delLogin = `del_${Date.now()}`;
+    const reg = await registerTeacher({
+      name: "O'chiriladigan Ustoz",
+      login: delLogin,
+      subject: "Biologiya",
+      password: "pass_delete_123",
+    });
+    expect(reg.teacher).toBeDefined();
+
+    const deleted = await deleteTeacher(delLogin);
+    expect(deleted).toBe(true);
+
+    const check = await verifyTeacherCredentials(delLogin, "pass_delete_123");
+    expect(check).toBeNull();
+  });
+
+  it("resetTeachers barcha ustozlarni toza holatga qaytaradi", async () => {
+    const fresh = await resetTeachers();
+    expect(fresh.length).toBeGreaterThanOrEqual(6);
   });
 });

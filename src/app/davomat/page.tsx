@@ -142,7 +142,12 @@ export default function DavomatTeacherPage() {
   const checkSession = useCallback(async () => {
     setAuthLoading(true);
     try {
-      const res = await fetch("/api/teachers/auth");
+      const savedToken = typeof window !== "undefined" ? localStorage.getItem("algoritm_teacher_token") : null;
+      const headers: Record<string, string> = {};
+      if (savedToken) {
+        headers["Authorization"] = `Bearer ${savedToken}`;
+      }
+      const res = await fetch("/api/teachers/auth", { headers });
       const data = await res.json();
 
       if (data.success && data.authenticated && data.teacher) {
@@ -191,11 +196,10 @@ export default function DavomatTeacherPage() {
           })
             .then((r) => r.json())
             .then((data) => {
-              if (data.success && data.teacher) {
-                checkSession();
-              } else {
-                checkSession();
+              if (data.success && data.token && typeof window !== "undefined") {
+                localStorage.setItem("algoritm_teacher_token", data.token);
               }
+              checkSession();
             })
             .catch(() => checkSession());
           return;
@@ -290,6 +294,9 @@ export default function DavomatTeacherPage() {
       });
       const data = await res.json();
       if (res.ok && data.success) {
+        if (data.token && typeof window !== "undefined") {
+          localStorage.setItem("algoritm_teacher_token", data.token);
+        }
         setPasswordInput("");
         await checkSession();
       } else {
@@ -337,6 +344,9 @@ export default function DavomatTeacherPage() {
       });
       const data = await res.json();
       if (res.ok && data.success) {
+        if (data.token && typeof window !== "undefined") {
+          localStorage.setItem("algoritm_teacher_token", data.token);
+        }
         setRegName("");
         setRegSubject("");
         setRegLogin("");
@@ -355,6 +365,9 @@ export default function DavomatTeacherPage() {
 
   const handleLogout = async () => {
     try {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("algoritm_teacher_token");
+      }
       await fetch("/api/teachers/auth", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
