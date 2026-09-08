@@ -37,8 +37,8 @@ export async function sendAttendanceReportNotification(
     `❌ <b>Kelmaganlar:</b> ${params.absentCount} ta`,
     "━━━━━━━━━━━━━━━━━━━━",
     params.excusedCount > 0
-      ? `💰 <i>${params.excusedCount} ta sababli dars oylik to'lov hisobidan avtomatik chegirildi.</i>`
-      : "✨ <i>Barcha hisob-kitoblar va davomat vedomosti yangilandi.</i>",
+      ? `⚠️ <i>${params.excusedCount} ta uzrli (sababli) qoldirilgan dars vedomostda qayd etildi.</i>`
+      : "✨ <i>Bugungi davomat vedomosti to'liq yangilandi.</i>",
   ].join("\n");
 
   if (!botToken || !chatId) {

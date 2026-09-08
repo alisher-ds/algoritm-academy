@@ -82,18 +82,22 @@ export async function POST(req: Request) {
 
     if (text === "/davomat") {
       const replyText = [
-        "📱 <b>O'QITUVCHILAR MOBIL DAVOMAT PORTALI</b>",
+        "📱 <b>O'QITUVCHILAR UCHUN TELEGRAM DAVOMAT</b>",
         "━━━━━━━━━━━━━━━━━━━━",
-        "Bitta tugma bilan davomat qiling va darsga kelmagan yoki uzrli sabab bilan qatnashmagan o'quvchilarni belgilang.",
+        "10 soniyada davomat qiling. Bitta tugma orqali darsga kelgan, uzrli sabab bilan qatnashmagan yoki kelmagan o'quvchilarni belgilang.",
         "",
-        "🔗 <b>Kirish havolasi:</b>",
-        "https://algoritm-academy.vercel.app/davomat",
-        "",
-        "💡 <i>Eslatma: Sababli qoldirilgan darslar oylik to'lovdan avtomatik chegiriladi.</i>",
+        "Telegram ichida mini-ilova tarzida ochiladi (brauzerga o'tish talab etilmaydi):",
       ].join("\n");
 
       await sendTelegramReply(chatId, replyText, {
-        inline_keyboard: [[{ text: "👉 Portalni ochish", url: "https://algoritm-academy.vercel.app/davomat" }]],
+        inline_keyboard: [
+          [
+            {
+              text: "📋 Davomat Qilish (Mini App)",
+              web_app: { url: "https://algoritm-academy.vercel.app/davomat" },
+            },
+          ],
+        ],
       });
       return NextResponse.json({ ok: true });
     }

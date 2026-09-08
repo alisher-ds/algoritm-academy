@@ -180,7 +180,7 @@ export default function AdminAttendanceModule() {
     }
   };
 
-  // Excelga CSV formatda eksport qilish (UTF-8 BOM bilan)
+  // Excelga CSV formatda eksport qilish (Sof darslar davomati, UTF-8 BOM bilan)
   const exportToCsv = () => {
     if (billingList.length === 0) return;
     const activeGrp = groups.find((g) => g.id === selectedGroupId);
@@ -188,36 +188,35 @@ export default function AdminAttendanceModule() {
       "№",
       "O'quvchi F.I.Sh",
       "Guruh",
-      "Oy",
-      "Reja darslar",
-      "Qatnashgan darslar",
-      "Uzrli (Sababli) darslar",
-      "Sababsiz qoldirgan",
-      "Asl oylik to'lov (so'm)",
-      "Uzrli darslar chegirilishi (so'm)",
-      "Yakuniy to'lanishi kerak summa (so'm)",
+      "Hisob Oyi",
+      "Reja Darslar",
+      "Qatnashgan (Keldi)",
+      "Uzrli (Sababli)",
+      "Sababsiz (Kelmadi)",
+      "Davomat Foizi (%)",
     ];
 
-    const rows = billingList.map((b, idx) => [
-      idx + 1,
-      `"${b.studentName.replace(/"/g, '""')}"`,
-      `"${b.groupName.replace(/"/g, '""')}"`,
-      b.month,
-      b.standardLessons,
-      b.attendedCount,
-      b.excusedCount,
-      b.unexcusedCount,
-      b.baseMonthlyPrice,
-      b.excusedDeduction,
-      b.finalPayable,
-    ]);
+    const rows = billingList.map((b, idx) => {
+      const rate = b.standardLessons > 0 ? Math.round((b.attendedCount / b.standardLessons) * 100) : 0;
+      return [
+        idx + 1,
+        `"${b.studentName.replace(/"/g, '""')}"`,
+        `"${b.groupName.replace(/"/g, '""')}"`,
+        b.month,
+        b.standardLessons,
+        b.attendedCount,
+        b.excusedCount,
+        b.unexcusedCount,
+        `${rate}%`,
+      ];
+    });
 
     const csvContent = "\uFEFF" + [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", `Davomat_${activeGrp?.name || "guruh"}_${selectedMonth}.csv`);
+    link.setAttribute("download", `Davomat_Jurnali_${activeGrp?.name || "guruh"}_${selectedMonth}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -247,7 +246,7 @@ export default function AdminAttendanceModule() {
             }`}
           >
             <DollarSign className="w-3.5 h-3.5" />
-            <span>Davomat & To'lov Hisobi</span>
+            <span>Oylik Davomat Jurnali</span>
           </button>
 
           <button
@@ -344,7 +343,7 @@ export default function AdminAttendanceModule() {
 
           {/* Ma'lumot jadvali */}
           <div className="bg-slate-900 border border-white/10 rounded-2xl overflow-hidden shadow-xl">
-            <div className="p-4 border-b border-white/10 flex items-center justify-between">
+            <div className="p-4 border-b border-white/10 flex items-center justify-between flex-wrap gap-3">
               <div>
                 <h3 className="text-sm font-bold text-white flex items-center gap-2">
                   <span>{activeGrp?.name || "Guruh"}</span>
@@ -353,16 +352,28 @@ export default function AdminAttendanceModule() {
                   </span>
                 </h3>
                 <p className="text-[11px] text-slate-400 mt-0.5">
-                  Standart darslar: {activeGrp?.lessonsPerMonth || 12} ta | Oylik to'liq narx:{" "}
-                  {Number(activeGrp?.monthlyPrice || 0).toLocaleString("uz-UZ")} so'm
+                  Rejadagi darslar: <b>{activeGrp?.lessonsPerMonth || 12} ta</b> · Xona: {activeGrp?.room || "Asosiy bino"}
                 </p>
               </div>
 
-              <div className="text-right">
-                <span className="text-[10px] text-slate-400 block uppercase">Jami To'lanishi Kerak:</span>
-                <span className="text-base font-extrabold text-emerald-400 font-mono">
-                  {billingList.reduce((acc, b) => acc + b.finalPayable, 0).toLocaleString("uz-UZ")} so'm
-                </span>
+              <div className="flex items-center gap-4 text-xs font-mono">
+                <div className="text-right">
+                  <span className="text-[10px] text-slate-400 block uppercase">Jami O'quvchilar:</span>
+                  <span className="text-sm font-black text-white">{billingList.length} ta</span>
+                </div>
+                <div className="text-right">
+                  <span className="text-[10px] text-slate-400 block uppercase">O'rtacha Davomat:</span>
+                  <span className="text-sm font-black text-emerald-400">
+                    {billingList.length > 0
+                      ? Math.round(
+                          (billingList.reduce((acc, b) => acc + b.attendedCount, 0) /
+                            (billingList.length * (activeGrp?.lessonsPerMonth || 12))) *
+                            100
+                        )
+                      : 0}
+                    %
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -385,55 +396,68 @@ export default function AdminAttendanceModule() {
                   <thead>
                     <tr className="bg-white/5 text-[11px] text-slate-400 uppercase tracking-wider border-b border-white/10">
                       <th className="py-3 px-4">№</th>
-                      <th className="py-3 px-4">O'quvchi</th>
-                      <th className="py-3 px-4 text-center">Kelgan</th>
-                      <th className="py-3 px-4 text-center">Uzrli (Sababli)</th>
-                      <th className="py-3 px-4 text-right">Asl Narx</th>
-                      <th className="py-3 px-4 text-right text-amber-400">Uzrli Chegirma</th>
-                      <th className="py-3 px-4 text-right text-emerald-400 font-bold">To'lanishi Kerak</th>
+                      <th className="py-3 px-4">O'quvchi F.I.Sh</th>
+                      <th className="py-3 px-4 text-center">Reja Darslar</th>
+                      <th className="py-3 px-4 text-center text-emerald-400">Keldi (Qatnashdi)</th>
+                      <th className="py-3 px-4 text-center text-amber-300">Sababli (Uzrli)</th>
+                      <th className="py-3 px-4 text-center text-rose-400">Kelmadi</th>
+                      <th className="py-3 px-4 text-right">Davomat Ko'rsatkichi</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5 text-slate-300 font-medium">
-                    {billingList.map((b, idx) => (
-                      <tr key={b.studentId} className="hover:bg-white/[0.03] transition">
-                        <td className="py-3 px-4 text-slate-500 font-mono">{idx + 1}</td>
-                        <td className="py-3 px-4 font-bold text-white">
-                          <div>{b.studentName}</div>
-                          <div className="text-[10px] text-slate-500 font-normal">
-                            1 dars: {b.perLessonPrice.toLocaleString("uz-UZ")} so'm
-                          </div>
-                        </td>
-                        <td className="py-3 px-4 text-center">
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-bold font-mono">
-                            <CheckCircle2 className="w-3 h-3" /> {b.attendedCount}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 text-center">
-                          {b.excusedCount > 0 ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold font-mono">
-                              <AlertCircle className="w-3 h-3" /> {b.excusedCount} dars
+                    {billingList.map((b, idx) => {
+                      const totalLessons = b.standardLessons || 12;
+                      const rate = Math.min(100, Math.round((b.attendedCount / totalLessons) * 100));
+                      const rateColor =
+                        rate >= 85
+                          ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
+                          : rate >= 60
+                          ? "bg-amber-500/20 text-amber-300 border-amber-500/30"
+                          : "bg-rose-500/20 text-rose-300 border-rose-500/30";
+
+                      return (
+                        <tr key={b.studentId} className="hover:bg-white/[0.03] transition">
+                          <td className="py-3 px-4 text-slate-500 font-mono">{idx + 1}</td>
+                          <td className="py-3 px-4 font-bold text-white">
+                            <div>{b.studentName}</div>
+                            <div className="text-[10px] text-slate-500 font-normal">
+                              {b.groupName}
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 text-center font-mono text-slate-400">
+                            {totalLessons} ta
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-bold font-mono">
+                              <CheckCircle2 className="w-3 h-3" /> {b.attendedCount} ta
                             </span>
-                          ) : (
-                            <span className="text-slate-500">—</span>
-                          )}
-                        </td>
-                        <td className="py-3 px-4 text-right font-mono text-slate-400">
-                          {b.baseMonthlyPrice.toLocaleString("uz-UZ")} so'm
-                        </td>
-                        <td className="py-3 px-4 text-right font-mono text-amber-400">
-                          {b.excusedDeduction > 0 ? (
-                            `- ${b.excusedDeduction.toLocaleString("uz-UZ")} so'm`
-                          ) : (
-                            "0 so'm"
-                          )}
-                        </td>
-                        <td className="py-3 px-4 text-right font-mono font-black text-white text-sm">
-                          <span className="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                            {b.finalPayable.toLocaleString("uz-UZ")} so'm
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            {b.excusedCount > 0 ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold font-mono">
+                                <AlertCircle className="w-3 h-3" /> {b.excusedCount} ta
+                              </span>
+                            ) : (
+                              <span className="text-slate-500 font-mono">0</span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            {b.unexcusedCount > 0 ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 font-bold font-mono">
+                                <XCircle className="w-3 h-3" /> {b.unexcusedCount} ta
+                              </span>
+                            ) : (
+                              <span className="text-slate-500 font-mono">0</span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            <span className={`px-2.5 py-1 rounded-lg border text-xs font-mono font-bold ${rateColor}`}>
+                              {rate}%
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
