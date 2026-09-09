@@ -12,6 +12,7 @@ import { promises as fs } from "fs";
 import os from "os";
 import path from "path";
 import type { Lead, LeadPayload, LeadStatus, LeadType } from "./leads";
+import { isDbConnected, query, initDatabase } from "./db";
 
 const REDIS_KEY = process.env.LEADS_REDIS_KEY || "algoritm:leads";
 
@@ -22,7 +23,8 @@ function upstashConfig(): { url: string; token: string } | null {
   return { url: url.replace(/\/$/, ""), token };
 }
 
-export function storageBackend(): "redis" | "file" {
+export function storageBackend(): "postgres" | "redis" | "file" {
+  if (isDbConnected()) return "postgres";
   return upstashConfig() ? "redis" : "file";
 }
 
@@ -34,7 +36,7 @@ function warnEphemeral() {
   if (storageBackend() === "file" && (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME)) {
     console.warn(
       "[leadStore] DIQQAT: serverless muhitda JSON fayl saqlash vaqtinchalik — arizalar yo'qolishi mumkin. " +
-        "UPSTASH_REDIS_REST_URL va UPSTASH_REDIS_REST_TOKEN ni o'rnating."
+        "DATABASE_URL (Supabase/Neon) yoki UPSTASH_REDIS_REST_URL ni o'rnating."
     );
   }
 }
@@ -155,30 +157,113 @@ async function fileRead(): Promise<Lead[]> {
   }
 }
 
+// ─────────────────────────────── PostgreSQL Backend ───────────────────────────────
+
+interface DbLeadRow {
+  id: string;
+  name: string;
+  phone: string;
+  type: LeadType;
+  target_interest: string;
+  preferred_time?: string | null;
+  notes?: string | null;
+  source?: string | null;
+  status: LeadStatus;
+  admin_notes?: string | null;
+  created_at: Date | string;
+}
+
+function mapDbLead(r: DbLeadRow): Lead {
+  return {
+    id: r.id,
+    name: r.name,
+    phone: r.phone,
+    type: r.type,
+    targetInterest: r.target_interest,
+    preferredTime: r.preferred_time || undefined,
+    notes: r.notes || undefined,
+    source: r.source || undefined,
+    status: r.status,
+    adminNotes: r.admin_notes || undefined,
+    createdAt: new Date(r.created_at).toISOString(),
+  };
+}
+
+async function postgresRead(): Promise<Lead[]> {
+  await initDatabase();
+  const rows = await query<DbLeadRow>("SELECT * FROM leads ORDER BY created_at DESC");
+  return rows.map(mapDbLead);
+}
+
+async function postgresWrite(leads: Lead[]): Promise<void> {
+  await initDatabase();
+  for (const l of leads) {
+    await query(
+      `INSERT INTO leads (id, name, phone, type, target_interest, preferred_time, notes, source, status, admin_notes, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+       ON CONFLICT (id) DO UPDATE SET
+         name = EXCLUDED.name,
+         phone = EXCLUDED.phone,
+         type = EXCLUDED.type,
+         target_interest = EXCLUDED.target_interest,
+         preferred_time = EXCLUDED.preferred_time,
+         notes = EXCLUDED.notes,
+         source = EXCLUDED.source,
+         status = EXCLUDED.status,
+         admin_notes = EXCLUDED.admin_notes`,
+      [
+        l.id,
+        l.name,
+        l.phone,
+        l.type,
+        l.targetInterest,
+        l.preferredTime || null,
+        l.notes || null,
+        l.source || null,
+        l.status,
+        l.adminNotes || null,
+        l.createdAt,
+      ]
+    );
+  }
+}
+
+async function postgresDelete(ids: string[]): Promise<number> {
+  await initDatabase();
+  if (ids.length === 0) return 0;
+  const res = await query<{ count: string }>(
+    "WITH del AS (DELETE FROM leads WHERE id = ANY($1) RETURNING *) SELECT count(*) FROM del",
+    [ids]
+  );
+  return Number(res[0]?.count || 0);
+}
+
 // ─────────────────────────────── Umumiy interfeys ───────────────────────────────
 
 async function readAll(): Promise<Lead[]> {
+  if (storageBackend() === "postgres") return postgresRead();
   warnEphemeral();
   return storageBackend() === "redis" ? redisRead() : fileRead();
 }
 
 async function writeAll(leads: Lead[]): Promise<void> {
-  if (storageBackend() === "redis") await redisWrite(leads);
+  if (storageBackend() === "postgres") await postgresWrite(leads);
+  else if (storageBackend() === "redis") await redisWrite(leads);
   else await filePersist(leads);
 }
 
 /**
- * Redis rejimida o'qish→o'zgartirish→yozish siklini CAS bilan bajaradi.
- *
- * Oddiy SET parallel so'rovlarda ma'lumot yo'qotadi: admin statusni yangilayotganda
- * kelgan yangi ariza eski nusxa ustidan yozilib o'chib ketardi. Shuning uchun har
- * urinishda joriy holat qayta o'qiladi va faqat u o'zgarmagan bo'lsa yoziladi.
- *
- * Fayl rejimida `enqueueWrite` navbati allaqachon ketma-ketlikni kafolatlaydi.
+ * Redis yoki PostgreSQL rejimida o'qish→o'zgartirish→yozish siklini bajaradi.
  */
 async function mutate<T>(
   apply: (leads: Lead[]) => { next: Lead[]; result: T } | { next: null; result: T }
 ): Promise<T> {
+  if (storageBackend() === "postgres") {
+    const leads = await postgresRead();
+    const { next, result } = apply(leads);
+    if (next) await postgresWrite(next);
+    return result;
+  }
   if (storageBackend() !== "redis") {
     const leads = await readAll();
     const { next, result } = apply(leads);
@@ -356,6 +441,32 @@ const receiptStore = new Map<string, Receipt>();
  * u yerda ishlamaydi va dublikat arizalar paydo bo'lardi.
  */
 async function readReceipt(kHash: string): Promise<Receipt | null> {
+  if (storageBackend() === "postgres") {
+    try {
+      await initDatabase();
+      const rows = await query<{
+        payload_hash: string;
+        lead_id: string;
+        created_at: Date | string;
+        expires_at: string | number;
+      }>("SELECT * FROM idempotency_receipts WHERE key_hash = $1", [kHash]);
+      if (rows.length === 0) return null;
+      const r = rows[0];
+      if (Number(r.expires_at) <= Date.now()) {
+        await query("DELETE FROM idempotency_receipts WHERE key_hash = $1", [kHash]).catch(() => {});
+        return null;
+      }
+      return {
+        payloadHash: r.payload_hash,
+        leadId: r.lead_id,
+        createdAt: new Date(r.created_at).toISOString(),
+        expiresAt: Number(r.expires_at),
+      };
+    } catch (err) {
+      console.error("[leadStore] PostgreSQL kvitansiyani o'qib bo'lmadi:", err);
+      return null;
+    }
+  }
   if (storageBackend() !== "redis") {
     return receiptStore.get(kHash) ?? null;
   }
@@ -371,6 +482,23 @@ async function readReceipt(kHash: string): Promise<Receipt | null> {
 }
 
 async function writeReceipt(kHash: string, receipt: Receipt): Promise<void> {
+  if (storageBackend() === "postgres") {
+    try {
+      await initDatabase();
+      await query(
+        `INSERT INTO idempotency_receipts (key_hash, payload_hash, lead_id, created_at, expires_at)
+         VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT (key_hash) DO UPDATE SET
+           payload_hash = EXCLUDED.payload_hash,
+           lead_id = EXCLUDED.lead_id,
+           expires_at = EXCLUDED.expires_at`,
+        [kHash, receipt.payloadHash, receipt.leadId, receipt.createdAt, receipt.expiresAt]
+      );
+    } catch (err) {
+      console.error("[leadStore] PostgreSQL kvitansiyani saqlab bo'lmadi:", err);
+    }
+    return;
+  }
   if (storageBackend() !== "redis") {
     receiptStore.set(kHash, receipt);
     // Xotira cheksiz o'smasligi uchun eskirganlarini tozalaymiz.
@@ -548,6 +676,10 @@ export async function updateLeadsBatch(
 }
 
 export async function deleteLead(id: string): Promise<boolean> {
+  if (storageBackend() === "postgres") {
+    const count = await postgresDelete([id]);
+    return count > 0;
+  }
   return enqueueWrite(() =>
     mutate<boolean>((leads) => {
       const next = leads.filter((l) => l.id !== id);
@@ -558,6 +690,10 @@ export async function deleteLead(id: string): Promise<boolean> {
 }
 
 export async function deleteLeadsBatch(ids: string[]): Promise<{ deletedCount: number }> {
+  if (storageBackend() === "postgres") {
+    const count = await postgresDelete(ids);
+    return { deletedCount: count };
+  }
   const idSet = new Set(ids);
   return enqueueWrite(() =>
     mutate<{ deletedCount: number }>((leads) => {

@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS teachers (
   salt VARCHAR(64),
   telegram_id VARCHAR(64),
   telegram_username VARCHAR(64),
+  status VARCHAR(32) NOT NULL DEFAULT 'active', -- 'active', 'pending', 'blocked'
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -60,9 +61,37 @@ CREATE TABLE IF NOT EXISTS attendance_records (
   CONSTRAINT unique_student_group_date UNIQUE (group_id, student_id, date)
 );
 
--- 4. Yuqori Tezlik Uchun Indekslar (Indexes for <10ms queries)
+-- 4. Arizalar Jadvali (Leads CRM)
+CREATE TABLE IF NOT EXISTS leads (
+  id VARCHAR(64) PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  phone VARCHAR(32) NOT NULL,
+  type VARCHAR(32) NOT NULL,
+  target_interest VARCHAR(255),
+  preferred_time VARCHAR(64),
+  notes TEXT,
+  source VARCHAR(128),
+  status VARCHAR(32) NOT NULL DEFAULT 'yangi', -- 'yangi', 'boglangan', 'rad'
+  admin_notes TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 5. Idempotentlik Kvitansiyalari (Dublikat arizalardan himoya)
+CREATE TABLE IF NOT EXISTS idempotency_receipts (
+  key_hash VARCHAR(128) PRIMARY KEY,
+  payload_hash VARCHAR(128) NOT NULL,
+  lead_id VARCHAR(64) NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  expires_at BIGINT NOT NULL
+);
+
+-- 6. Yuqori Tezlik Uchun Indekslar (Indexes for <10ms queries)
 CREATE INDEX IF NOT EXISTS idx_attendance_group_date ON attendance_records (group_id, date);
 CREATE INDEX IF NOT EXISTS idx_attendance_student_id ON attendance_records (student_id);
 CREATE INDEX IF NOT EXISTS idx_students_group_id ON students (group_id);
 CREATE INDEX IF NOT EXISTS idx_groups_teacher_id ON groups (teacher_id);
 CREATE INDEX IF NOT EXISTS idx_groups_telegram_id ON groups (telegram_id);
+CREATE INDEX IF NOT EXISTS idx_leads_created_at ON leads (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_leads_status ON leads (status);
+CREATE INDEX IF NOT EXISTS idx_leads_phone ON leads (phone);
+CREATE INDEX IF NOT EXISTS idx_receipts_expires_at ON idempotency_receipts (expires_at);

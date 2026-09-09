@@ -4,10 +4,13 @@
 import { promises as fs } from "fs";
 import os from "os";
 import path from "path";
+import { isDbConnected, query, initDatabase } from "./db";
 import type {
   Group,
   Student,
   AttendanceRecord,
+  AttendanceStatus,
+  DaySchedule,
   StudentStatus,
   StudentMonthlyBilling,
 } from "./attendanceTypes";
@@ -152,6 +155,122 @@ function storeFilePath(): string {
 
 async function loadData(): Promise<AttendanceStoreData> {
   if (cache) return cache;
+
+  // 0. PostgreSQL (Supabase / Neon / Vercel Postgres)
+  if (isDbConnected()) {
+    try {
+      await initDatabase();
+      const groupRows = await query<{
+        id: string;
+        name: string;
+        subject: string;
+        teacher_id: string;
+        teacher_name: string;
+        days: string;
+        time: string;
+        room: string;
+        monthly_price: string | number;
+        lessons_per_month: number;
+        active: boolean;
+        telegram_id?: string | null;
+        telegram_username?: string | null;
+        created_at: Date | string;
+      }>("SELECT * FROM groups ORDER BY created_at ASC");
+
+      const studentRows = await query<{
+        id: string;
+        name: string;
+        phone: string;
+        parent_phone?: string | null;
+        group_id: string;
+        status: StudentStatus;
+        notes?: string | null;
+        enrolled_at: Date | string;
+      }>("SELECT * FROM students ORDER BY enrolled_at ASC");
+
+      const recordRows = await query<{
+        id: string;
+        group_id: string;
+        student_id: string;
+        date: string | Date;
+        status: AttendanceStatus;
+        note?: string | null;
+        marked_by: string;
+        marked_at: Date | string;
+      }>("SELECT * FROM attendance_records ORDER BY date DESC, marked_at DESC");
+
+      if (groupRows.length === 0) {
+        for (const g of INITIAL_GROUPS) {
+          await query(
+            `INSERT INTO groups (id, name, subject, teacher_id, teacher_name, days, time, room, monthly_price, lessons_per_month, active, created_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+             ON CONFLICT (id) DO NOTHING`,
+            [g.id, g.name, g.subject, g.teacherId, g.teacherName, g.days, g.time, g.room, g.monthlyPrice, g.lessonsPerMonth, g.active, g.createdAt]
+          );
+        }
+        for (const s of INITIAL_STUDENTS) {
+          await query(
+            `INSERT INTO students (id, name, phone, parent_phone, group_id, status, enrolled_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)
+             ON CONFLICT (id) DO NOTHING`,
+            [s.id, s.name, s.phone, s.parentPhone || null, s.groupId, s.status, s.enrolledAt]
+          );
+        }
+        cache = {
+          groups: [...INITIAL_GROUPS],
+          students: [...INITIAL_STUDENTS],
+          records: [],
+        };
+        return cache;
+      }
+
+      const groups: Group[] = groupRows.map((r) => ({
+        id: r.id,
+        name: r.name,
+        subject: r.subject,
+        teacherId: r.teacher_id,
+        teacherName: r.teacher_name,
+        days: (r.days as DaySchedule) || "dush-chor-juma",
+        time: r.time,
+        room: r.room,
+        monthlyPrice: Number(r.monthly_price),
+        lessonsPerMonth: Number(r.lessons_per_month),
+        active: Boolean(r.active),
+        telegramId: r.telegram_id || undefined,
+        telegramUsername: r.telegram_username || undefined,
+        createdAt: new Date(r.created_at).toISOString(),
+      }));
+
+      const students: Student[] = studentRows.map((r) => ({
+        id: r.id,
+        name: r.name,
+        phone: r.phone,
+        parentPhone: r.parent_phone || undefined,
+        groupId: r.group_id,
+        status: r.status,
+        notes: r.notes || undefined,
+        enrolledAt: new Date(r.enrolled_at).toISOString(),
+      }));
+
+      const records: AttendanceRecord[] = recordRows.map((r) => ({
+        id: r.id,
+        groupId: r.group_id,
+        studentId: r.student_id,
+        date: typeof r.date === "string" ? r.date.slice(0, 10) : new Date(r.date).toISOString().slice(0, 10),
+        status: r.status,
+        note: r.note || undefined,
+        markedBy: r.marked_by,
+        markedAt: new Date(r.marked_at).toISOString(),
+      }));
+
+      cache = { groups, students, records };
+      return cache;
+    } catch (err) {
+      console.error("[attendanceStore] PostgreSQL dan yuklashda xato:", err);
+    }
+  }
+
+  // 1. Fayl tizimi (lokal/test fallback)
   const file = storeFilePath();
   try {
     const raw = await fs.readFile(file, "utf8");
@@ -178,6 +297,62 @@ async function loadData(): Promise<AttendanceStoreData> {
 }
 
 async function persistData(data: AttendanceStoreData): Promise<void> {
+  // 0. PostgreSQL (agar sozlangan bo'lsa)
+  if (isDbConnected()) {
+    try {
+      await initDatabase();
+      for (const g of data.groups) {
+        await query(
+          `INSERT INTO groups (id, name, subject, teacher_id, teacher_name, days, time, room, monthly_price, lessons_per_month, active, telegram_id, telegram_username, created_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+           ON CONFLICT (id) DO UPDATE SET
+             name = EXCLUDED.name,
+             subject = EXCLUDED.subject,
+             teacher_id = EXCLUDED.teacher_id,
+             teacher_name = EXCLUDED.teacher_name,
+             days = EXCLUDED.days,
+             time = EXCLUDED.time,
+             room = EXCLUDED.room,
+             monthly_price = EXCLUDED.monthly_price,
+             lessons_per_month = EXCLUDED.lessons_per_month,
+             active = EXCLUDED.active,
+             telegram_id = EXCLUDED.telegram_id,
+             telegram_username = EXCLUDED.telegram_username`,
+          [g.id, g.name, g.subject, g.teacherId, g.teacherName, g.days, g.time, g.room, g.monthlyPrice, g.lessonsPerMonth, g.active, g.telegramId || null, g.telegramUsername || null, g.createdAt]
+        );
+      }
+      for (const s of data.students) {
+        await query(
+          `INSERT INTO students (id, name, phone, parent_phone, group_id, status, notes, enrolled_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+           ON CONFLICT (id) DO UPDATE SET
+             name = EXCLUDED.name,
+             phone = EXCLUDED.phone,
+             parent_phone = EXCLUDED.parent_phone,
+             group_id = EXCLUDED.group_id,
+             status = EXCLUDED.status,
+             notes = EXCLUDED.notes`,
+          [s.id, s.name, s.phone, s.parentPhone || null, s.groupId, s.status, s.notes || null, s.enrolledAt]
+        );
+      }
+      for (const r of data.records) {
+        await query(
+          `INSERT INTO attendance_records (id, group_id, student_id, date, status, note, marked_by, marked_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+           ON CONFLICT (group_id, student_id, date) DO UPDATE SET
+             status = EXCLUDED.status,
+             note = EXCLUDED.note,
+             marked_by = EXCLUDED.marked_by,
+             marked_at = EXCLUDED.marked_at`,
+          [r.id, r.groupId, r.studentId, r.date, r.status, r.note || null, r.markedBy, r.markedAt]
+        );
+      }
+    } catch (err) {
+      console.error("[attendanceStore] PostgreSQL ga saqlashda xato:", err);
+    }
+  }
+
+  // 1. Fayl tizimiga yozish
   const file = storeFilePath();
   writeChain = writeChain
     .catch(() => undefined)
@@ -246,6 +421,11 @@ export async function deleteGroup(id: string): Promise<boolean> {
   const before = data.groups.length;
   data.groups = data.groups.filter((g) => g.id !== id);
   if (data.groups.length !== before) {
+    if (isDbConnected()) {
+      await query("DELETE FROM groups WHERE id = $1", [id]).catch((err) => {
+        console.error("[attendanceStore] PostgreSQL dan guruhni o'chirishda xato:", err);
+      });
+    }
     await persistData(data);
     return true;
   }
@@ -309,6 +489,11 @@ export async function deleteStudent(id: string): Promise<boolean> {
   const before = data.students.length;
   data.students = data.students.filter((s) => s.id !== id);
   if (data.students.length !== before) {
+    if (isDbConnected()) {
+      await query("DELETE FROM students WHERE id = $1", [id]).catch((err) => {
+        console.error("[attendanceStore] PostgreSQL dan o'quvchini o'chirishda xato:", err);
+      });
+    }
     await persistData(data);
     return true;
   }

@@ -2,6 +2,7 @@ import { createHmac, randomBytes, timingSafeEqual, scryptSync } from "crypto";
 import { promises as fs } from "fs";
 import path from "path";
 import os from "os";
+import { isDbConnected, query, initDatabase } from "./db";
 
 export type TeacherStatus = "active" | "pending" | "blocked";
 
@@ -161,6 +162,70 @@ export async function loadTeachers(): Promise<Teacher[]> {
   const cached = getGlobalTeachers();
   if (cached && cached.length > 0) return cached;
 
+  // 0. PostgreSQL (Supabase / Neon / Vercel Postgres)
+  if (isDbConnected()) {
+    try {
+      await initDatabase();
+      const rows = await query<{
+        id: string;
+        name: string;
+        login: string;
+        subject: string;
+        phone?: string | null;
+        password_hash?: string | null;
+        salt?: string | null;
+        telegram_id?: string | null;
+        telegram_username?: string | null;
+        status: TeacherStatus;
+        created_at: Date | string;
+      }>("SELECT * FROM teachers ORDER BY created_at ASC");
+
+      if (rows.length === 0) {
+        for (const t of INITIAL_TEACHERS) {
+          await query(
+            `INSERT INTO teachers (id, name, login, subject, phone, password_hash, salt, telegram_id, telegram_username, status, created_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+             ON CONFLICT (login) DO NOTHING`,
+            [
+              t.id,
+              t.name,
+              t.login,
+              t.subject,
+              t.phone || null,
+              t.passwordHash || null,
+              t.salt || null,
+              t.telegramId || null,
+              t.telegramUsername || null,
+              t.status || "active",
+              t.createdAt,
+            ]
+          );
+        }
+        setGlobalTeachers([...INITIAL_TEACHERS]);
+        return [...INITIAL_TEACHERS];
+      }
+
+      const teachers: Teacher[] = rows.map((r) => ({
+        id: r.id,
+        name: r.name,
+        login: r.login,
+        subject: r.subject,
+        phone: r.phone || undefined,
+        passwordHash: r.password_hash || undefined,
+        salt: r.salt || undefined,
+        telegramId: r.telegram_id || undefined,
+        telegramUsername: r.telegram_username || undefined,
+        status: r.status || "active",
+        createdAt: new Date(r.created_at).toISOString(),
+      }));
+
+      setGlobalTeachers(teachers);
+      return teachers;
+    } catch (err) {
+      console.error("[teacherAuth] PostgreSQL dan ustozlarni yuklashda xato:", err);
+    }
+  }
+
   // 1. Upstash Redis (agar sozlangan bo'lsa)
   const redisTeachers = await redisGetTeachers();
   if (redisTeachers && redisTeachers.length > 0) {
@@ -190,6 +255,44 @@ export async function loadTeachers(): Promise<Teacher[]> {
 export async function saveTeachers(teachers: Teacher[]): Promise<void> {
   setGlobalTeachers(teachers);
 
+  // 0. PostgreSQL
+  if (isDbConnected()) {
+    try {
+      await initDatabase();
+      for (const t of teachers) {
+        await query(
+          `INSERT INTO teachers (id, name, login, subject, phone, password_hash, salt, telegram_id, telegram_username, status, created_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+           ON CONFLICT (id) DO UPDATE SET
+             name = EXCLUDED.name,
+             login = EXCLUDED.login,
+             subject = EXCLUDED.subject,
+             phone = EXCLUDED.phone,
+             password_hash = EXCLUDED.password_hash,
+             salt = EXCLUDED.salt,
+             telegram_id = EXCLUDED.telegram_id,
+             telegram_username = EXCLUDED.telegram_username,
+             status = EXCLUDED.status`,
+          [
+            t.id,
+            t.name,
+            t.login,
+            t.subject,
+            t.phone || null,
+            t.passwordHash || null,
+            t.salt || null,
+            t.telegramId || null,
+            t.telegramUsername || null,
+            t.status || "active",
+            t.createdAt,
+          ]
+        );
+      }
+    } catch (err) {
+      console.error("[teacherAuth] PostgreSQL ga ustozlarni saqlashda xato:", err);
+    }
+  }
+
   // 1. Upstash Redis ga yozish
   await redisSaveTeachers(teachers).catch(() => {});
 
@@ -211,6 +314,16 @@ export async function deleteTeacher(idOrLogin: string): Promise<boolean> {
     (t) => t.id !== idOrLogin && t.login.toLowerCase() !== clean
   );
   if (filtered.length === teachers.length) return false;
+
+  if (isDbConnected()) {
+    try {
+      await initDatabase();
+      await query("DELETE FROM teachers WHERE id = $1 OR LOWER(login) = $2", [idOrLogin, clean]);
+    } catch (err) {
+      console.error("[teacherAuth] PostgreSQL dan ustozni o'chirishda xato:", err);
+    }
+  }
+
   await saveTeachers(filtered);
   return true;
 }
@@ -218,6 +331,33 @@ export async function deleteTeacher(idOrLogin: string): Promise<boolean> {
 /** Barcha ustozlar ro'yxatini boshlang'ich toza holatga qaytarish */
 export async function resetTeachers(): Promise<Teacher[]> {
   const fresh = [...INITIAL_TEACHERS];
+  if (isDbConnected()) {
+    try {
+      await initDatabase();
+      await query("DELETE FROM teachers");
+      for (const t of fresh) {
+        await query(
+          `INSERT INTO teachers (id, name, login, subject, phone, password_hash, salt, telegram_id, telegram_username, status, created_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+          [
+            t.id,
+            t.name,
+            t.login,
+            t.subject,
+            t.phone || null,
+            t.passwordHash || null,
+            t.salt || null,
+            t.telegramId || null,
+            t.telegramUsername || null,
+            t.status || "active",
+            t.createdAt,
+          ]
+        );
+      }
+    } catch (err) {
+      console.error("[teacherAuth] PostgreSQL ni tozalashda xato:", err);
+    }
+  }
   await saveTeachers(fresh);
   return fresh;
 }
