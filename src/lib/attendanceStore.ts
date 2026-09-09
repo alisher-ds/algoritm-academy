@@ -145,6 +145,60 @@ const INITIAL_STUDENTS: Student[] = [
 let cache: AttendanceStoreData | null = null;
 let writeChain: Promise<void> = Promise.resolve();
 
+function upstashConfig(): { url: string; token: string } | null {
+  const url = process.env.UPSTASH_REDIS_REST_URL?.trim();
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN?.trim();
+  if (!url || !token) return null;
+  return { url: url.replace(/\/$/, ""), token };
+}
+
+const REDIS_ATTENDANCE_KEY = process.env.ATTENDANCE_REDIS_KEY || "algoritm:attendance";
+
+async function redisGetAttendance(): Promise<AttendanceStoreData | null> {
+  const cfg = upstashConfig();
+  if (!cfg) return null;
+  try {
+    const res = await fetch(`${cfg.url}/get/${encodeURIComponent(REDIS_ATTENDANCE_KEY)}`, {
+      headers: { Authorization: `Bearer ${cfg.token}` },
+      cache: "no-store",
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data.result) {
+      const parsed = typeof data.result === "string" ? JSON.parse(data.result) : data.result;
+      if (parsed && Array.isArray(parsed.groups) && Array.isArray(parsed.students)) {
+        return {
+          groups: parsed.groups,
+          students: parsed.students,
+          records: Array.isArray(parsed.records) ? parsed.records : [],
+        };
+      }
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+async function redisSaveAttendance(data: AttendanceStoreData): Promise<boolean> {
+  const cfg = upstashConfig();
+  if (!cfg) return false;
+  try {
+    const res = await fetch(`${cfg.url}/set/${encodeURIComponent(REDIS_ATTENDANCE_KEY)}`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${cfg.token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(JSON.stringify(data)),
+      cache: "no-store",
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 function storeFilePath(): string {
   if (process.env.ATTENDANCE_FILE) return process.env.ATTENDANCE_FILE;
   if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
@@ -270,7 +324,14 @@ async function loadData(): Promise<AttendanceStoreData> {
     }
   }
 
-  // 1. Fayl tizimi (lokal/test fallback)
+  // 1. Upstash Redis (agar sozlangan bo'lsa)
+  const redisData = await redisGetAttendance();
+  if (redisData) {
+    cache = redisData;
+    return cache;
+  }
+
+  // 2. Fayl tizimi (lokal/test fallback)
   const file = storeFilePath();
   try {
     const raw = await fs.readFile(file, "utf8");
@@ -352,7 +413,10 @@ async function persistData(data: AttendanceStoreData): Promise<void> {
     }
   }
 
-  // 1. Fayl tizimiga yozish
+  // 1. Upstash Redis ga yozish (agar sozlangan bo'lsa)
+  await redisSaveAttendance(data).catch(() => {});
+
+  // 2. Fayl tizimiga yozish
   const file = storeFilePath();
   writeChain = writeChain
     .catch(() => undefined)

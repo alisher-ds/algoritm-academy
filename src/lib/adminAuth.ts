@@ -167,9 +167,38 @@ export function isSameOrigin(req: Request): boolean {
   if (!source) return true;
   try {
     const src = new URL(source);
-    const host = req.headers.get("x-forwarded-host") || req.headers.get("host");
-    if (!host) return true;
-    return src.host === host;
+    const rawHost = req.headers.get("x-forwarded-host") || req.headers.get("host");
+    if (!rawHost) return true;
+
+    // x-forwarded-host bir nechta proksi orqali vergul bilan ajratilgan bo'lishi mumkin
+    const hostCandidates = rawHost.split(",").map((h) => h.trim().toLowerCase());
+    const srcHost = src.host.toLowerCase();
+    const srcHostname = src.hostname.toLowerCase();
+
+    // 1. To'g'ridan-to'g'ri host yoki port bilan solishtirish
+    for (const cand of hostCandidates) {
+      if (cand === srcHost || cand === srcHostname) return true;
+      const candWithoutPort = cand.split(":")[0];
+      if (candWithoutPort === srcHostname) return true;
+    }
+
+    // 2. Saytning rasmiy domeni bilan solishtirish
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+    if (siteUrl) {
+      try {
+        const parsedSite = new URL(siteUrl);
+        if (parsedSite.host.toLowerCase() === srcHost || parsedSite.hostname.toLowerCase() === srcHostname) {
+          return true;
+        }
+      } catch {}
+    }
+
+    // 3. Telegram WebApp ichidan kelayotgan so'rovlar
+    if (srcHostname === "web.telegram.org" || srcHostname.endsWith(".telegram.org")) {
+      return true;
+    }
+
+    return false;
   } catch {
     return false;
   }
