@@ -98,7 +98,7 @@ Boshqa skriptlar:
 ## Testlar va CI
 
 ```bash
-npm test          # vitest (auth, attendanceAuth, leadStore, rate-limit, telefon, API route'lar — 121 ta test)
+npm test          # vitest (auth, attendanceAuth, leadStore, rate-limit, telefon, API route'lar — 122 ta test)
 npm run typecheck # tsc --noEmit
 npm run lint      # eslint (0 xato, 0 ogohlantirish)
 ```
