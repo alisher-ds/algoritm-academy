@@ -171,6 +171,8 @@ export async function GET(req: Request) {
     return NextResponse.json({
       success: true,
       authenticated: false,
+      storageBackend: isDbConnected() ? "postgres" : process.env.UPSTASH_REDIS_REST_URL ? "redis" : "file",
+      isEphemeral: isEphemeralTeacherStorage(),
     });
   } catch (error) {
     console.error("[Teacher Auth API GET Error]:", error);
