@@ -46,6 +46,7 @@ export function getPool(): Pool | null {
     return g.__algoritm_db_pool__;
   }
 
+  console.log("[Database]: Connecting to PostgreSQL database pool...");
   const isLocalhost = dbUrl.includes("localhost") || dbUrl.includes("127.0.0.1");
 
   const config: PoolConfig = {
