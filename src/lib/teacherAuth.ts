@@ -158,10 +158,13 @@ function getStoragePath(): string {
     : path.join(process.cwd(), ".data", "teachers.json");
 }
 
-export async function loadTeachers(): Promise<Teacher[]> {
-  const cached = getGlobalTeachers();
-  if (cached) return cached;
+let teacherFileMtime = 0;
 
+export function isEphemeralTeacherStorage(): boolean {
+  return !isDbConnected() && !upstashConfig() && Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+}
+
+export async function loadTeachers(): Promise<Teacher[]> {
   // 0. PostgreSQL (Supabase / Neon / Vercel Postgres)
   if (isDbConnected()) {
     try {
@@ -247,9 +250,15 @@ export async function loadTeachers(): Promise<Teacher[]> {
   // 2. Mahalliy yoki vaqtinchalik fayl tizimi
   const filePath = getStoragePath();
   try {
+    const stat = await fs.stat(filePath);
+    const cached = getGlobalTeachers();
+    if (cached && stat.mtimeMs === teacherFileMtime) {
+      return cached;
+    }
     const raw = await fs.readFile(filePath, "utf8");
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) {
+      teacherFileMtime = stat.mtimeMs;
       setGlobalTeachers(parsed);
       return parsed;
     }
@@ -317,6 +326,8 @@ export async function saveTeachers(teachers: Teacher[]): Promise<void> {
   try {
     await fs.mkdir(path.dirname(filePath), { recursive: true });
     await fs.writeFile(filePath, JSON.stringify(teachers, null, 2), "utf8");
+    const stat = await fs.stat(filePath).catch(() => null);
+    teacherFileMtime = stat?.mtimeMs || Date.now();
     // Kesh faqat diskdagi yozuv muvaffaqiyatli bo'lgach yangilanadi.
     setGlobalTeachers(teachers);
   } catch (err) {

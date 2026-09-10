@@ -28,12 +28,16 @@ export function storageBackend(): "postgres" | "redis" | "file" {
   return upstashConfig() ? "redis" : "file";
 }
 
+export function isEphemeralStorage(): boolean {
+  return storageBackend() === "file" && Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+}
+
 /** Serverless muhitda fayl saqlash ma'lumot yo'qolishiga olib keladi — bir marta ogohlantiramiz. */
 let warned = false;
 function warnEphemeral() {
   if (warned) return;
   warned = true;
-  if (storageBackend() === "file" && (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME)) {
+  if (isEphemeralStorage()) {
     console.warn(
       "[leadStore] DIQQAT: serverless muhitda JSON fayl saqlash vaqtinchalik — arizalar yo'qolishi mumkin. " +
         "DATABASE_URL (Supabase/Neon) yoki UPSTASH_REDIS_REST_URL ni o'rnating."
@@ -107,7 +111,13 @@ async function redisWrite(leads: Lead[]): Promise<void> {
 // ─────────────────────────────── Fayl backend ───────────────────────────────
 
 let fileCache: Lead[] | null = null;
+let fileMtime = 0;
 let writeChain: Promise<void> = Promise.resolve();
+
+export function __resetLeadCache(): void {
+  fileCache = null;
+  fileMtime = 0;
+}
 
 function leadsFilePath(): string {
   if (process.env.LEADS_FILE) return process.env.LEADS_FILE;
@@ -128,6 +138,8 @@ async function filePersist(leads: Lead[]): Promise<void> {
         const tmp = `${file}.${process.pid}.${Date.now()}.tmp`;
         await fs.writeFile(tmp, JSON.stringify(leads, null, 2), "utf8");
         await fs.rename(tmp, file);
+        const stat = await fs.stat(file).catch(() => null);
+        fileMtime = stat?.mtimeMs || Date.now();
       } catch (err) {
         // Faqat xotirada saqlab, HTTP 201 qaytarish ma'lumot yo'qolishiga olib
         // keladi. Fayl backend tanlangan bo'lsa, bu haqiqiy saqlash xatosidir.
@@ -140,18 +152,23 @@ async function filePersist(leads: Lead[]): Promise<void> {
 }
 
 async function fileRead(): Promise<Lead[]> {
-  if (fileCache) return fileCache;
   const file = leadsFilePath();
   try {
+    const stat = await fs.stat(file);
+    if (fileCache && stat.mtimeMs === fileMtime) {
+      return fileCache;
+    }
     const raw = await fs.readFile(file, "utf8");
     const parsed = JSON.parse(raw);
     fileCache = Array.isArray(parsed) ? (parsed as Lead[]) : [];
+    fileMtime = stat.mtimeMs;
     return fileCache;
   } catch (err: unknown) {
     const code = (err as { code?: string })?.code;
     // Faqat fayl hali mavjud bo'lmasa bo'sh ro'yxat qaytaramiz (yangi tizim)
     if (code === "ENOENT") {
       fileCache = [];
+      fileMtime = 0;
       return fileCache;
     }
     // Disk, ruxsat (EACCES) yoki fayl tizimi xatosi bo'lsa, xatoni yutib bazani bo'sh deb hisoblash

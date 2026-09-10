@@ -7,6 +7,8 @@ import {
   listLeadsPage,
   updateLead,
   updateLeadsBatch,
+  storageBackend,
+  isEphemeralStorage,
 } from "@/lib/leadStore";
 import { normalizeUzPhone } from "@/lib/phone";
 import { isAuthed, isSameOrigin } from "@/lib/adminAuth";
@@ -145,6 +147,8 @@ export async function GET(req: Request) {
       offset: page.offset,
       hasMore: page.hasMore,
       stats: page.stats,
+      backend: storageBackend(),
+      isEphemeral: isEphemeralStorage(),
     },
     200,
     { "Cache-Control": "no-store" }

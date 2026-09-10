@@ -215,9 +215,13 @@ function storeFilePath(): string {
   return path.join(process.cwd(), ".data", "attendance_data.json");
 }
 
-async function loadData(): Promise<AttendanceStoreData> {
-  if (cache) return cache;
+let attendanceFileMtime = 0;
 
+export function isEphemeralAttendanceStorage(): boolean {
+  return !isDbConnected() && !upstashConfig() && Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+}
+
+async function loadData(): Promise<AttendanceStoreData> {
   // 0. PostgreSQL (Supabase / Neon / Vercel Postgres)
   if (isDbConnected()) {
     try {
@@ -355,9 +359,14 @@ async function loadData(): Promise<AttendanceStoreData> {
   // 2. Fayl tizimi (lokal/test fallback)
   const file = storeFilePath();
   try {
+    const stat = await fs.stat(file);
+    if (cache && stat.mtimeMs === attendanceFileMtime) {
+      return cache;
+    }
     const raw = await fs.readFile(file, "utf8");
     const parsed = JSON.parse(raw);
     if (parsed && Array.isArray(parsed.groups) && Array.isArray(parsed.students)) {
+      attendanceFileMtime = stat.mtimeMs;
       cache = {
         groups: parsed.groups,
         students: parsed.students,
@@ -457,6 +466,8 @@ async function persistData(data: AttendanceStoreData): Promise<void> {
         const tmp = file + "." + process.pid + "." + Date.now() + ".tmp";
         await fs.writeFile(tmp, JSON.stringify(data, null, 2), "utf8");
         await fs.rename(tmp, file);
+        const stat = await fs.stat(file).catch(() => null);
+        attendanceFileMtime = stat?.mtimeMs || Date.now();
       } catch (err) {
         console.error("[attendanceStore] Diskka yozib bo'lmadi:", err);
         throw new Error("Davomat ma'lumotlarini saqlab bo'lmadi");

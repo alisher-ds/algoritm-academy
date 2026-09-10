@@ -15,10 +15,12 @@ import {
   getAuthenticatedTeacher,
   findTeacherByTelegram,
   bindTeacherTelegram,
+  isEphemeralTeacherStorage,
   TEACHER_AUTH_COOKIE,
   TEACHER_SESSION_TTL,
   type TeacherStatus,
 } from "@/lib/teacherAuth";
+import { isDbConnected } from "@/lib/db";
 import { listGroups, listStudents } from "@/lib/attendanceStore";
 import { verifyTelegramWebAppData } from "@/lib/telegramAuth";
 import { isAuthed, isSameOrigin } from "@/lib/adminAuth";
@@ -104,11 +106,16 @@ export async function GET(req: Request) {
         };
       });
 
+      const pendingTeachers = adminList.filter((t) => t.status === "pending");
       return NextResponse.json({
         success: true,
         authenticated: false,
         isAdmin: true,
         teachers: adminList,
+        pendingCount: pendingTeachers.length,
+        pendingTeachers,
+        storageBackend: isDbConnected() ? "postgres" : process.env.UPSTASH_REDIS_REST_URL ? "redis" : "file",
+        isEphemeral: isEphemeralTeacherStorage(),
       });
     }
 

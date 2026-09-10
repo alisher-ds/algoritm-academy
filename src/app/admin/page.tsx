@@ -25,6 +25,7 @@ import {
   ChevronRight,
   Calendar,
   Bookmark,
+  Database,
 } from "lucide-react";
 import {
   STATUS_LABELS,
@@ -78,7 +79,62 @@ export default function AdminPage() {
   const [bulkBusy, setBulkBusy] = useState(false);
   const [adminSection, setAdminSection] = useState<"leads" | "davomat">("leads");
 
+  // Baza (Storage) holati va kutilayotgan ustozlar
+  const [storageInfo, setStorageInfo] = useState<{ backend: string; isEphemeral: boolean } | null>(null);
+  const [pendingTeachers, setPendingTeachers] = useState<
+    Array<{ id: string; name: string; login: string; subject: string; phone?: string; createdAt: string }>
+  >([]);
+  const [pendingCount, setPendingCount] = useState(0);
+  const [showDbGuideModal, setShowDbGuideModal] = useState(false);
+  const [approvingTeacherId, setApprovingTeacherId] = useState<string | null>(null);
+
   const PAGE_SIZE = 200;
+
+  const fetchPendingTeachers = useCallback(async () => {
+    try {
+      const res = await fetch("/api/teachers/auth?scope=admin", { cache: "no-store" });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data?.success) {
+        if (typeof data.pendingCount === "number") setPendingCount(data.pendingCount);
+        if (Array.isArray(data.pendingTeachers)) setPendingTeachers(data.pendingTeachers);
+        if (data.storageBackend) {
+          setStorageInfo({
+            backend: data.storageBackend,
+            isEphemeral: Boolean(data.isEphemeral),
+          });
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const handleQuickApproveTeacher = async (teacherId: string) => {
+    setApprovingTeacherId(teacherId);
+    try {
+      const res = await fetch("/api/teachers/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "admin-update-status",
+          teacherId,
+          status: "active",
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setNotice("✅ Ustoz hisobi muvaffaqiyatli tasdiqlandi!");
+        await fetchPendingTeachers();
+      } else {
+        setNotice(`❌ Xatolik: ${data?.error || "Tasdiqlab bo'lmadi"}`);
+      }
+    } catch {
+      setNotice("Serverga ulanishda xatolik");
+    } finally {
+      setApprovingTeacherId(null);
+    }
+  };
 
   const fetchLeads = useCallback(
     async (
@@ -106,6 +162,12 @@ export default function AdminPage() {
           setHasMore(Boolean(data.hasMore));
           if (data.stats) {
             setStats(data.stats);
+          }
+          if (data.backend) {
+            setStorageInfo({
+              backend: data.backend,
+              isEphemeral: Boolean(data.isEphemeral),
+            });
           }
           setLastRefreshed(new Date());
           return data.leads;
@@ -212,14 +274,18 @@ export default function AdminPage() {
 
   useEffect(() => {
     (async () => {
-      const freshLeads = await fetchLeads("", "hammasi", "hammasi", "hammasi");
+      const [freshLeads] = await Promise.all([
+        fetchLeads("", "hammasi", "hammasi", "hammasi"),
+        fetchPendingTeachers(),
+      ]);
       if (freshLeads) {
         setAuthState("tayyor");
+        migrateLocalLeads(freshLeads);
       } else {
         setAuthState("login");
       }
     })();
-  }, [fetchLeads]);
+  }, [fetchLeads, fetchPendingTeachers, migrateLocalLeads]);
 
   useEffect(() => {
     if (authState !== "tayyor") return;
@@ -659,9 +725,34 @@ export default function AdminPage() {
           </div>
 
           <div className="flex items-center gap-2.5 flex-wrap">
+            {/* Saqlash bazasi holati */}
+            {storageInfo && (
+              storageInfo.isEphemeral ? (
+                <button
+                  onClick={() => setShowDbGuideModal(true)}
+                  className="px-3.5 py-2 rounded-full bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs font-bold border border-amber-500/40 transition flex items-center gap-1.5 animate-pulse cursor-pointer shadow-sm"
+                  title="Vercel vaqtinchalik xotira — Doimiy baza ulash kerak"
+                >
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Vaqtinchalik (/tmp) — Baza Ulang</span>
+                </button>
+              ) : (
+                <span
+                  className="px-3.5 py-2 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-semibold border border-emerald-500/20 flex items-center gap-1.5"
+                  title={`Doimiy ma'lumotlar bazasi: ${storageInfo.backend}`}
+                >
+                  <Database className="w-3.5 h-3.5 text-emerald-400" />
+                  <span className="capitalize">{storageInfo.backend === "postgres" ? "PostgreSQL Ulangan" : `${storageInfo.backend} Ulangan`}</span>
+                </span>
+              )
+            )}
+
             {/* Jonli yangilash tugmasi */}
             <button
-              onClick={() => fetchLeads()}
+              onClick={() => {
+                fetchLeads();
+                fetchPendingTeachers();
+              }}
               disabled={isRefreshing}
               className="px-3.5 py-2 rounded-full bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-xs font-semibold border border-white/10 transition flex items-center gap-1.5"
               title="Ro'yxatni yangilash"
@@ -689,6 +780,73 @@ export default function AdminPage() {
           </div>
         </div>
 
+        {/* Serverless Ephemeral Storage Ogohlantirish Banneri */}
+        {storageInfo?.isEphemeral && (
+          <div className="mb-6 p-4 rounded-2xl bg-amber-500/10 border-2 border-amber-500/30 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 animate-in fade-in duration-300">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-6 h-6 text-amber-400 shrink-0 mt-0.5" />
+              <div>
+                <h3 className="text-sm font-bold text-amber-200">
+                  ⚠️ Serverless vaqtinchalik xotira (/tmp) rejimi faol — Arizalar va ustozlar xotiradan o&apos;chib ketishi mumkin!
+                </h3>
+                <p className="text-xs text-amber-300/80 mt-1">
+                  Sayt Vercel serverless muhitida ishlamoqda, lekin doimiy baza (<b>DATABASE_URL</b>) ulanmagan. Har safar Vercel serveri qayta yonganda (cold start) yangi ro&apos;yxatdan o&apos;tgan ustozlar va arizalar o&apos;chib ketadi. Ma&apos;lumotlarni bir umrga doimiy saqlash uchun Vercel Postgres yoki Supabase bazasini ulang.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowDbGuideModal(true)}
+              className="px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black shrink-0 transition shadow-lg cursor-pointer flex items-center gap-1.5"
+            >
+              <Database className="w-4 h-4" />
+              <span>2 Daqiqada Baza Ulanish Qo&apos;llanmasi</span>
+            </button>
+          </div>
+        )}
+
+        {/* Yangi Ustozlar Tasdiqlash Kutilmoqda Banneri */}
+        {pendingTeachers.length > 0 && (
+          <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-amber-500/15 via-brand-500/10 to-blue-500/10 border-2 border-amber-400/40 shadow-xl">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-3">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping" />
+                <h3 className="text-sm font-black text-amber-300 uppercase tracking-wide">
+                  🔔 {pendingCount} ta yangi ustoz ro&apos;yxatdan o&apos;tdi va tasdiqlashingizni kutmoqda:
+                </h3>
+              </div>
+              <button
+                onClick={() => setAdminSection("davomat")}
+                className="text-xs text-brand-400 hover:text-brand-300 font-bold underline cursor-pointer"
+              >
+                Ustozlar bo&apos;limiga o&apos;tish &rarr;
+              </button>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {pendingTeachers.map((t) => (
+                <div key={t.id} className="p-3 rounded-xl bg-slate-900/90 border border-white/10 flex items-center justify-between gap-3 shadow">
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-white truncate">{t.name}</p>
+                    <p className="text-[11px] text-slate-400 truncate">{t.subject} &bull; <span className="font-mono text-slate-300">{t.login}</span></p>
+                    {t.phone && <p className="text-[10px] text-slate-500">{t.phone}</p>}
+                  </div>
+                  <button
+                    onClick={() => handleQuickApproveTeacher(t.id)}
+                    disabled={approvingTeacherId === t.id}
+                    className="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 text-xs font-black shrink-0 transition shadow flex items-center gap-1 cursor-pointer"
+                  >
+                    {approvingTeacherId === t.id ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                    )}
+                    <span>Tasdiqlash</span>
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Asosiy Modullar Switcher */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white/5 border border-white/10 p-2 rounded-2xl mb-8">
           <div className="flex items-center gap-2">
@@ -706,7 +864,7 @@ export default function AdminPage() {
 
             <button
               onClick={() => setAdminSection("davomat")}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs transition cursor-pointer ${
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs transition cursor-pointer relative ${
                 adminSection === "davomat"
                   ? "bg-brand-500 text-slate-950 shadow-md font-extrabold"
                   : "text-slate-300 hover:text-white hover:bg-white/5"
@@ -714,6 +872,11 @@ export default function AdminPage() {
             >
               <Users className="w-4 h-4" />
               <span>Davomat, Guruhlar & Moliya</span>
+              {pendingCount > 0 && (
+                <span className="ml-1 px-1.5 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black animate-pulse">
+                  {pendingCount} yangi!
+                </span>
+              )}
             </button>
           </div>
 
@@ -1533,6 +1696,82 @@ export default function AdminPage() {
               >
                 <LogOut className="w-4 h-4" />
                 Chiqish
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Doimiy Ma'lumotlar Bazasi Ulanish Qo'llanmasi Modali */}
+      {showDbGuideModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto">
+          <div className="bg-slate-900 border border-brand-500/30 rounded-3xl p-6 sm:p-8 max-w-2xl w-full shadow-2xl text-left space-y-5 my-8 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-brand-500/10 border border-brand-500/20 flex items-center justify-center text-brand-400">
+                  <Database className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">Doimiy Ma&apos;lumotlar Bazasini Ulash</h3>
+                  <p className="text-xs text-slate-400">Arizalar va ustozlar xotiradan o&apos;chib ketmasligi uchun</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowDbGuideModal(false)}
+                className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300 leading-relaxed">
+              💡 <b>Nega bu kerak?</b> Saytingiz Vercel serverless platformasida ishlaydi. Serverless-da fayl tizimi (/tmp) vaqtinchalik bo&apos;lib, server har safar uxlaganda yoki yangilanganda barcha fayllarni tozalaydi. Barcha o&apos;quvchilar, arizalar va ustozlarni bir umrga xavfsiz saqlash uchun quyidagi <b>bepul</b> usullardan birini tanlang:
+            </div>
+
+            <div className="space-y-4 text-xs text-slate-300">
+              {/* Variant 1: Vercel Marketplace (Eng osoni - 1 daqiqa) */}
+              <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-white text-sm flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-full bg-brand-500 text-slate-950 font-black flex items-center justify-center text-[11px]">1</span>
+                    Vercel Neon Postgres (Eng osoni — 1 daqiqa)
+                  </span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-bold">Tavsiya etiladi</span>
+                </div>
+                <ol className="list-decimal list-inside space-y-1.5 text-slate-300 pl-1 leading-relaxed">
+                  <li><b>vercel.com</b> ga kiring va <b>algoritm-ecosystem</b> loyihangizni oching.</li>
+                  <li>Yuqoridagi <b>Storage</b> tabiga bosing.</li>
+                  <li><b>Create Database</b> tugmasini bosib, <b>Neon Postgres</b> (yoki Postgres) ni tanlang.</li>
+                  <li><b>Connect to Project</b> tugmasini bosing.</li>
+                </ol>
+                <div className="p-2.5 rounded-xl bg-slate-950/80 border border-white/10 text-[11px] text-emerald-300">
+                  🎉 <b>Bo&apos;ldi!</b> Vercel o&apos;zi avtomatik <code>POSTGRES_URL</code> va <code>DATABASE_URL</code> ni ulaydi. Kodimiz bazani darhol taniydi va barcha jadvallarni (leads, teachers, attendance) avtomatik yaratadi!
+                </div>
+              </div>
+
+              {/* Variant 2: Supabase (Bepul 500MB) */}
+              <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2.5">
+                <span className="font-bold text-white text-sm flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full bg-slate-700 text-white font-bold flex items-center justify-center text-[11px]">2</span>
+                  Supabase (Tashqi bepul PostgreSQL)
+                </span>
+                <ol className="list-decimal list-inside space-y-1.5 text-slate-300 pl-1 leading-relaxed">
+                  <li><b>supabase.com</b> da bepul ro&apos;yxatdan o&apos;tib, yangi loyiha (New Project) oching.</li>
+                  <li><b>Project Settings</b> &rarr; <b>Database</b> &rarr; <b>Connection string (URI)</b> dan URL manzilni nusxalang.</li>
+                  <li>Vercel-da loyihangiz sozlamalariga kiring: <b>Settings &rarr; Environment Variables</b>.</li>
+                  <li>Yangi o&apos;zgaruvchi qo&apos;shing: Nom: <code>DATABASE_URL</code>, Qiymat: nusxalangan URI.</li>
+                  <li>Loyihangizni qayta deploy (Redeploy) qiling.</li>
+                </ol>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <button
+                type="button"
+                onClick={() => setShowDbGuideModal(false)}
+                className="px-5 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-400 text-slate-950 font-black text-xs transition cursor-pointer"
+              >
+                Tushunarli, yopish
               </button>
             </div>
           </div>
