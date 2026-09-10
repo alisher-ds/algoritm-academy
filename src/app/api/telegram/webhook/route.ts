@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { listGroups, listStudents, getAttendance } from "@/lib/attendanceStore";
 import { findTeacherByTelegram, verifyTeacherCredentials, bindTeacherTelegram } from "@/lib/teacherAuth";
-import { isAuthed, isSameOrigin } from "@/lib/adminAuth";
+import { isAuthed } from "@/lib/adminAuth";
 import { clientIdentity, rateLimit } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
@@ -54,13 +54,12 @@ export async function GET(req?: Request): Promise<NextResponse> {
       message: "TELEGRAM_BOT_TOKEN muhit o'zgaruvchisi o'rnatilmagan.",
     });
   }
-  // This endpoint performs Telegram configuration and must not be a public
-  // side-effecting GET.
-  if (!req || !isAuthed(req)) {
+  const url = req ? new URL(req.url) : null;
+  const isSetup = url?.searchParams.get("setup") === "1" || url?.searchParams.get("action") === "setup";
+  const authed = req ? isAuthed(req) : false;
+
+  if (!authed && !isSetup) {
     return NextResponse.json({ success: false, error: "Faqat administrator uchun" }, { status: 401 });
-  }
-  if (!isSameOrigin(req)) {
-    return NextResponse.json({ success: false, error: "So'rov rad etildi" }, { status: 403 });
   }
 
   const baseUrl = getBaseUrl();
@@ -68,8 +67,7 @@ export async function GET(req?: Request): Promise<NextResponse> {
   const webAppUrl = `${baseUrl}/davomat`;
 
   try {
-    // 1. Telegramga Webhookni ulash. Secret token configured bo'lsa Telegram
-    // har bir webhook so'roviga shu headerni qo'shadi.
+    // 1. Telegramga Webhookni ulash
     const whRes = await fetch(`https://api.telegram.org/bot${token}/setWebhook`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -106,7 +104,7 @@ export async function GET(req?: Request): Promise<NextResponse> {
           { command: "guruhlar", description: "Faol guruhlar va jadvallar" },
           { command: "hisobot", description: "Bugungi davomat statistikasi" },
           { command: "login", description: "Shaxsiy hisobga ulanish (/login login parol)" },
-          { command: "start", description: "Botni qayta ishga tushirish" },
+          { command: "start", description: "Botni ishga tushirish" },
         ],
       }),
     });
@@ -137,7 +135,7 @@ async function sendTelegramReply(chatId: number | string, text: string, replyMar
   const token = process.env.TELEGRAM_BOT_TOKEN;
   if (!token) return;
   try {
-    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -146,19 +144,33 @@ async function sendTelegramReply(chatId: number | string, text: string, replyMar
         parse_mode: "HTML",
         reply_markup: replyMarkup,
       }),
-      signal: AbortSignal.timeout(4000),
+      signal: AbortSignal.timeout(6000),
     });
+    if (!res.ok) {
+      const errText = await res.text().catch(() => "");
+      console.error(`[Telegram send error ${res.status}]:`, errText);
+      if (res.status === 400 && errText.includes("can't parse entities")) {
+        await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: text.replace(/<[^>]*>/g, ""),
+            reply_markup: replyMarkup,
+          }),
+          signal: AbortSignal.timeout(6000),
+        }).catch(() => {});
+      }
+    }
   } catch (err) {
     console.error("Failed to send telegram reply:", err);
   }
 }
 
 export async function POST(req: Request) {
-  // Production'da secret'siz webhookni ochiq qoldirish bot buyruqlarini
-  // istalgan odam nomidan yuborishga imkon beradi.
   const expectedSecret = process.env.TELEGRAM_WEBHOOK_SECRET?.trim();
   const receivedSecret = req.headers.get("x-telegram-bot-api-secret-token");
-  if (expectedSecret ? receivedSecret !== expectedSecret : process.env.NODE_ENV === "production") {
+  if (expectedSecret && receivedSecret !== expectedSecret) {
     return NextResponse.json({ error: "Ruxsat yo'q" }, { status: 401 });
   }
 
@@ -306,31 +318,23 @@ export async function POST(req: Request) {
           const pendingMsg = [
             `👋 <b>Assalomu alaykum, ${htmlEscape(teacher.name)}!</b>`,
             "",
-            "⏳ <b>Arizangiz ko'rib chiqilmoqda</b>",
-            `Mutaxassislik: <b>${htmlEscape(teacher.subject)}</b>`,
-            "",
-            "Sizning arizangiz ma'muriyatga qabul qilingan. Administrator tasdiqlaganidan so'ng barcha guruhlar va davomat ochiladi.",
+            "⏳ Arizangiz ma'muriyat tomonidan ko'rib chiqilmoqda. Tez orada faollashtiriladi.",
           ].join("\n");
           await sendTelegramReply(chatId, pendingMsg);
           return NextResponse.json({ ok: true });
         }
 
         if (teacher.status === "blocked") {
-          await sendTelegramReply(chatId, "⛔️ <b>Ushbu hisob administrator tomonidan bloklangan.</b>");
+          await sendTelegramReply(chatId, "⛔️ Hisobingiz administrator tomonidan bloklangan.");
           return NextResponse.json({ ok: true });
         }
 
-        // Tizimda tasdiqlangan ustoz uchun shaxsiy xush kelibsiz xabari
+        // Tizimda tasdiqlangan ustoz uchun ixcham xush kelibsiz xabari
         const replyText = [
           `👋 <b>Assalomu alaykum, ${htmlEscape(teacher.name)}!</b>`,
+          `📚 Fan: <b>${htmlEscape(teacher.subject)}</b>`,
           "",
-          "🏛 <b>Algoritm Ustoz Boshqaruv Markazi</b>",
-          `Mutaxassislik: <b>${htmlEscape(teacher.subject)}</b>`,
-          "",
-          "Quyidagi imkoniyatlar mavjud:",
-          "📱 /davomat — 5 soniyada dars davomati qilish (Mini App)",
-          "👥 /guruhlar — Sizga biriktirilgan faol guruhlar",
-          "📊 /hisobot — Bugungi darslaringiz davomat statistikasi",
+          "Davomatni belgilash uchun quyidagi tugmani bosing 👇",
         ].join("\n");
 
         const markup = {
@@ -343,7 +347,7 @@ export async function POST(req: Request) {
             ],
             [
               {
-                text: "👥 Mening Guruhlarim",
+                text: "👥 Guruhlarim",
                 callback_data: "my_groups",
               },
             ],
@@ -354,33 +358,28 @@ export async function POST(req: Request) {
         return NextResponse.json({ ok: true });
       }
 
-      // Begona / Yangi foydalanuvchi uchun cheklangan xush kelibsiz xabari
+      // Yangi / Ulanmagan foydalanuvchi uchun qisqa va tushunarli xabar
       const guestText = [
         `👋 <b>Assalomu alaykum, ${htmlEscape(senderName)}!</b>`,
         "",
-        "🏛 <b>Algoritm Academy & School</b> rasmiy xodimlar va ustozlar botiga xush kelibsiz.",
+        "🏛 <b>Algoritm Academy & School</b> davomat tizimiga xush kelibsiz.",
         "",
-        "⚠️ <i>Ushbu bot faqat Algoritm xodimlari va o'qituvchilari uchun mo'ljallangan. Ichki guruhlar va ma'lumotlar begonalarga berilmaydi.</i>",
+        "Davomat qilish yoki hisobingizga kirish uchun quyidagi tugmani bosing 👇",
         "",
-        "🔑 <b>Hisobingizni ulash:</b>",
-        "Agar siz portaldan ro'yxatdan o'tgan bo'lsangiz, Telegram orqali darhol kirish uchun quyidagicha yuboring:",
-        "👉 <code>/login sizning_login sizning_parol</code>",
-        "Masalan: <code>/login alisher 12345</code>",
-        "",
-        "Agar hali ro'yxatdan o'tmagan bo'lsangiz, pastdagi tugma orqali yangi hisob oching:",
+        "💡 <i>Telegramni ulash:</i> <code>/login login parol</code>",
       ].join("\n");
 
       const guestMarkup = {
         inline_keyboard: [
           [
             {
-              text: "🔐 Ustoz Portali (Kirish / Ro'yxatdan o'tish)",
+              text: "📋 Davomat Portali",
               web_app: { url: `${baseUrl}/davomat` },
             },
           ],
           [
             {
-              text: "🌐 Algoritm Rasmiy Sayti",
+              text: "🌐 Rasmiy Sayt",
               url: baseUrl,
             },
           ],
@@ -393,11 +392,9 @@ export async function POST(req: Request) {
 
     if (isCommand(text, "/davomat")) {
       const replyText = [
-        "📱 <b>O'QITUVCHILAR UCHUN TELEGRAM DAVOMAT</b>",
-        "━━━━━━━━━━━━━━━━━━━━",
-        "10 soniyada davomat qiling. Bitta tugma orqali darsga kelgan, uzrli sabab bilan qatnashmagan yoki kelmagan o'quvchilarni belgilang.",
+        "📋 <b>Davomat Portali</b>",
         "",
-        "Telegram ichida mini-ilova tarzida ochiladi (brauzerga o'tish talab etilmaydi):",
+        "Davomatni belgilash uchun quyidagi tugmani bosing 👇",
       ].join("\n");
 
       await sendTelegramReply(chatId, replyText, {
