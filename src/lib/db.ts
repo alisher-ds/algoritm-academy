@@ -10,12 +10,27 @@ interface GlobalDbScope {
 }
 
 function getDatabaseUrl(): string | null {
-  const url =
+  const explicit =
     process.env.DATABASE_URL?.trim() ||
     process.env.POSTGRES_URL?.trim() ||
     process.env.POSTGRES_PRISMA_URL?.trim() ||
+    process.env.STORAGE_URL?.trim() ||
+    process.env.STORAGE_POSTGRES_URL?.trim() ||
+    process.env.STORAGE_PRISMA_URL?.trim() ||
+    process.env.NEON_DATABASE_URL?.trim() ||
     process.env.SUPABASE_DATABASE_URL?.trim();
-  return url || null;
+  if (explicit) return explicit;
+
+  // Har qanday Vercel prefiksi (masalan STORAGE_URL, NEON_URL va h.k.) avtomatik aniqlanadi
+  for (const [key, value] of Object.entries(process.env)) {
+    if (
+      typeof value === "string" &&
+      (value.startsWith("postgres://") || value.startsWith("postgresql://"))
+    ) {
+      return value.trim();
+    }
+  }
+  return null;
 }
 
 export function isDbConnected(): boolean {
