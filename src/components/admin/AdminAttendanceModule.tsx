@@ -286,7 +286,7 @@ export default function AdminAttendanceModule() {
 
   // Ustozni o'chirish
   const handleDeleteTeacher = async (teacher: AdminTeacherItem) => {
-    if (!window.confirm(`⚠️ DIQQAT: ${teacher.name} ustozni butunlay o'chirib tashlamoqchimisiz?`)) return;
+    if (!window.confirm(`DIQQAT: ${teacher.name} ustozni butunlay o'chirib tashlamoqchimisiz?`)) return;
 
     setTeacherActionLoading(teacher.id);
     try {
@@ -309,6 +309,31 @@ export default function AdminAttendanceModule() {
       alert("Aloqa xatosi");
     } finally {
       setTeacherActionLoading(null);
+    }
+  };
+
+  // Barcha ro'yxatdan o'tgan ustozlarni tozalab, boshlang'ich toza holatga keltirish
+  const handleResetAllTeachers = async () => {
+    if (!window.confirm("Barcha ro'yxatdan o'tgan yangi ustozlarni tozalab, faqat rasmiy asosiy ustozlar ro'yxatini qoldirmoqchimisiz?")) return;
+    setLoading(true);
+    try {
+      const res = await fetch("/api/teachers/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "reset-teachers" }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert("Ustozlar ro'yxati toza boshlang'ich holatga keltirildi!");
+        void fetchTeachers();
+        void fetchGroups();
+      } else {
+        alert(data.error || "Xatolik yuz berdi");
+      }
+    } catch {
+      alert("Server bilan aloqa xatosi");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -671,7 +696,7 @@ export default function AdminAttendanceModule() {
             <GraduationCap className="w-3.5 h-3.5" />
             <span>Ustozlar Jamoasi ({teacherList.length})</span>
             {pendingTeachersCount > 0 && (
-              <span className="ml-1 px-1.5 py-0.5 text-[10px] rounded-full bg-amber-400 text-slate-950 font-black animate-pulse">
+              <span className="ml-1 px-1.5 py-0.5 text-[10px] rounded-full bg-amber-400 text-slate-950 font-bold">
                 {pendingTeachersCount}
               </span>
             )}
@@ -1064,7 +1089,7 @@ export default function AdminAttendanceModule() {
                 </p>
                 <p
                   className={`text-2xl font-black font-mono mt-0.5 ${
-                    pendingTeachersCount > 0 ? "text-amber-400 animate-pulse" : "text-slate-400"
+                    pendingTeachersCount > 0 ? "text-amber-400" : "text-slate-400"
                   }`}
                 >
                   {pendingTeachersCount}
@@ -1111,6 +1136,14 @@ export default function AdminAttendanceModule() {
                 title="Yangilash"
               >
                 <RefreshCw className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => void handleResetAllTeachers()}
+                className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-rose-500/20 text-slate-300 hover:text-rose-300 text-xs font-semibold border border-white/10 transition flex items-center gap-1.5 cursor-pointer"
+                title="Barcha ro'yxatdan o'tganlarni tozalab, boshlang'ich toza holatga keltirish"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Tozalash (Reset)</span>
               </button>
               <button
                 onClick={() => setShowAddTeacherModal(true)}
@@ -1171,8 +1204,9 @@ export default function AdminAttendanceModule() {
 
                           <td className="py-3.5 px-4">
                             {t.hasTelegram ? (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-sky-500/15 text-sky-300 border border-sky-500/20 text-[11px] font-medium">
-                                <span>📱 Ulangan</span>
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-sky-500/15 text-sky-300 border border-sky-500/20 text-[11px] font-medium">
+                                <span className="w-1.5 h-1.5 rounded-full bg-sky-400 inline-block" />
+                                <span>Ulangan</span>
                                 {t.telegramUsername && <span>(@{t.telegramUsername})</span>}
                               </span>
                             ) : (
@@ -1193,7 +1227,7 @@ export default function AdminAttendanceModule() {
 
                           <td className="py-3.5 px-4 text-center">
                             {isPending && (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-black uppercase tracking-wider animate-pulse">
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-bold uppercase tracking-wider">
                                 <span>Kutilmoqda</span>
                               </span>
                             )}
@@ -1592,14 +1626,14 @@ export default function AdminAttendanceModule() {
                     onChange={(e) => setAddTeacherStatus(e.target.value as "active" | "pending")}
                     className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/15 text-white focus:outline-none focus:border-brand-400"
                   >
-                    <option value="active">🟢 Faol (Active)</option>
-                    <option value="pending">🟡 Kutilmoqda (Pending)</option>
+                    <option value="active">Faol (Active)</option>
+                    <option value="pending">Kutilmoqda (Pending)</option>
                   </select>
                 </div>
               </div>
 
               <p className="text-[11px] text-slate-400 bg-white/5 p-2.5 rounded-xl border border-white/5">
-                💡 Ustoz ushbu login va parol orqali saytdagi <b>/davomat</b> portaliga yoki Telegram botdagi <b>/login</b> orqali tizimga kira oladi.
+                Ustoz ushbu login va parol orqali saytdagi <b>/davomat</b> portaliga yoki Telegram botdagi <b>/login</b> orqali tizimga kira oladi.
               </p>
 
               <div className="pt-3 flex items-center justify-end gap-2">
@@ -1661,7 +1695,7 @@ export default function AdminAttendanceModule() {
               </div>
 
               <p className="text-[11px] text-slate-400 bg-white/5 p-2.5 rounded-xl border border-white/5">
-                🔒 Yangi parol o'rnatilgach, ustoz darhol yangi parol bilan kirishi mumkin bo'ladi.
+                Yangi parol o&apos;rnatilgach, ustoz darhol yangi parol bilan kirishi mumkin bo&apos;ladi.
               </p>
 
               <div className="pt-3 flex items-center justify-end gap-2">
