@@ -81,12 +81,19 @@ export default function DavomatTeacherPage() {
   const [telegramUser, setTelegramUser] = useState<TelegramUser | null>(null);
 
   // Login formasi holati
-  const [authTab, setAuthTab] = useState<"login" | "register">("login");
+  const [authTab, setAuthTab] = useState<"login" | "register" | "reset">("login");
   const [loginInput, setLoginInput] = useState("");
   const [passwordInput, setPasswordInput] = useState("");
   const [authError, setAuthError] = useState("");
   const [pendingNotice, setPendingNotice] = useState<string | null>(null);
   const [authSubmitting, setAuthSubmitting] = useState(false);
+
+  // Parol tiklash / yangilash holati
+  const [resetIdentifier, setResetIdentifier] = useState("");
+  const [resetPhone, setResetPhone] = useState("+998 ");
+  const [resetNewPassword, setResetNewPassword] = useState("");
+  const [resetConfirmPassword, setResetConfirmPassword] = useState("");
+  const [resetSuccessNotice, setResetSuccessNotice] = useState<string | null>(null);
 
   // Yangi hisob yaratish / Ro'yxatdan o'tish holati
   const [regName, setRegName] = useState("");
@@ -549,6 +556,62 @@ export default function DavomatTeacherPage() {
     }
   };
 
+  const handleResetSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetIdentifier.trim() || !resetPhone.trim() || !resetNewPassword) {
+      setAuthError("Iltimos, login (yoki telefon), telefon raqami va yangi parolni to'ldiring.");
+      return;
+    }
+    if (resetNewPassword.length < 4) {
+      setAuthError("Yangi parol kamida 4 ta belgidan iborat bo'lishi kerak");
+      return;
+    }
+    if (resetNewPassword !== resetConfirmPassword) {
+      setAuthError("Kiritilgan parollar bir-biriga mos kelmadi");
+      return;
+    }
+
+    setAuthSubmitting(true);
+    setAuthError("");
+    setResetSuccessNotice(null);
+    try {
+      const res = await fetch("/api/teachers/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "set-password",
+          teacherId: resetIdentifier.trim(),
+          login: resetIdentifier.trim(),
+          phone: resetPhone.trim(),
+          password: resetNewPassword,
+          confirmPassword: resetConfirmPassword,
+          telegramInitData: window.Telegram?.WebApp?.initData || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        if (data.token && typeof window !== "undefined") {
+          localStorage.setItem("algoritm_teacher_token", data.token);
+        }
+        if (data.teacher && typeof window !== "undefined") {
+          localStorage.setItem("algoritm_teacher_profile", JSON.stringify(data.teacher));
+          setCurrentTeacher(data.teacher);
+        }
+        setResetIdentifier("");
+        setResetPhone("+998 ");
+        setResetNewPassword("");
+        setResetConfirmPassword("");
+        await checkSession();
+      } else {
+        setAuthError(data.error || "Parolni yangilashda xatolik yuz berdi");
+      }
+    } catch {
+      setAuthError("Serverga ulanishda xatolik");
+    } finally {
+      setAuthSubmitting(false);
+    }
+  };
+
   const handleAddGroup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newGroupName.trim() || !currentTeacher) return;
@@ -765,37 +828,61 @@ export default function DavomatTeacherPage() {
             </p>
           </div>
 
-          {/* Tab Tanlash (Kirish vs Parol O'rnatish) */}
-          <div className="grid grid-cols-2 p-1 bg-slate-950/80 rounded-2xl border border-white/5 text-xs font-bold">
+          {/* Tab Tanlash (Kirish vs Ro'yxatdan O'tish vs Parol Tiklash) */}
+          <div className="grid grid-cols-3 p-1 bg-slate-950/80 rounded-2xl border border-white/5 text-[11px] font-bold">
             <button
               onClick={() => {
                 setAuthTab("login");
                 setAuthError("");
+                setResetSuccessNotice(null);
               }}
-              className={`py-2.5 rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 ${
+              className={`py-2 rounded-xl transition cursor-pointer flex items-center justify-center gap-1 ${
                 authTab === "login"
-                  ? "bg-brand-500 text-slate-950 shadow-md"
+                  ? "bg-brand-500 text-slate-950 shadow-md font-extrabold"
                   : "text-slate-400 hover:text-white"
               }`}
             >
-              <KeyRound className="w-3.5 h-3.5" />
-              <span>Tizimga Kirish</span>
+              <KeyRound className="w-3 h-3" />
+              <span>Kirish</span>
             </button>
             <button
               onClick={() => {
                 setAuthTab("register");
                 setAuthError("");
+                setResetSuccessNotice(null);
               }}
-              className={`py-2.5 rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 ${
+              className={`py-2 rounded-xl transition cursor-pointer flex items-center justify-center gap-1 ${
                 authTab === "register"
-                  ? "bg-brand-500 text-slate-950 shadow-md"
+                  ? "bg-brand-500 text-slate-950 shadow-md font-extrabold"
                   : "text-slate-400 hover:text-white"
               }`}
             >
-              <UserPlus className="w-3.5 h-3.5" />
-              <span>Ro'yxatdan O'tish</span>
+              <UserPlus className="w-3 h-3" />
+              <span>Yangi Hisob</span>
+            </button>
+            <button
+              onClick={() => {
+                setAuthTab("reset");
+                setAuthError("");
+                setResetIdentifier(loginInput.trim());
+              }}
+              className={`py-2 rounded-xl transition cursor-pointer flex items-center justify-center gap-1 ${
+                authTab === "reset"
+                  ? "bg-amber-500 text-slate-950 shadow-md font-extrabold"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              <KeyRound className="w-3 h-3" />
+              <span>Parol Tiklash</span>
             </button>
           </div>
+
+          {resetSuccessNotice && (
+            <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs flex items-start gap-2.5">
+              <Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+              <div className="leading-relaxed">{resetSuccessNotice}</div>
+            </div>
+          )}
 
           {pendingNotice && (
             <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs flex items-start gap-2.5">
@@ -852,6 +939,10 @@ export default function DavomatTeacherPage() {
                 />
               </div>
 
+              <div className="p-2.5 rounded-xl bg-white/5 border border-white/5 text-[11px] text-slate-400 text-center leading-relaxed">
+                💡 Boshlang&apos;ich ustozlar uchun standart parol: <b className="text-amber-400 font-mono">algoritm123</b>
+              </div>
+
               <button
                 type="submit"
                 disabled={authSubmitting}
@@ -866,6 +957,20 @@ export default function DavomatTeacherPage() {
                   </>
                 )}
               </button>
+
+              <div className="text-center pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthTab("reset");
+                    setResetIdentifier(loginInput.trim());
+                    setAuthError("");
+                  }}
+                  className="text-brand-400 hover:text-brand-300 text-[11px] underline cursor-pointer"
+                >
+                  Parolni unutdingizmi yoki o&apos;zgartirmoqchimisiz?
+                </button>
+              </div>
             </form>
           )}
 
@@ -974,6 +1079,88 @@ export default function DavomatTeacherPage() {
                 ) : (
                   <>
                     <span>Ro'yxatdan O'tish va Kirish</span>
+                    <Check className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+            </form>
+          )}
+
+          {/* TAB 3: PAROLNI TIKLASH / YANGILASH */}
+          {authTab === "reset" && (
+            <form onSubmit={handleResetSubmit} className="space-y-3.5">
+              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-300">
+                🔐 <b>Parolni yangilash / o&apos;rnatish:</b> Ustoz loginingiz va ro&apos;yxatdan o&apos;tgan telefon raqamingizni tasdiqlab, yangi parol o&apos;rnating.
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                  Ustoz Logini yoki Telefon Raqami *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="masalan: aziz yoki alisher"
+                  value={resetIdentifier}
+                  onChange={(e) => setResetIdentifier(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-2xl bg-slate-950 border border-white/10 text-white text-xs placeholder:text-slate-600 focus:outline-none focus:border-brand-500 transition"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                  Tasdiqlash Uchun Telefon Raqamingiz *
+                </label>
+                <input
+                  type="tel"
+                  required
+                  placeholder="+998 90 123 45 67"
+                  value={resetPhone}
+                  onChange={(e) => setResetPhone(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-2xl bg-slate-950 border border-white/10 text-white text-xs placeholder:text-slate-600 focus:outline-none focus:border-brand-500 transition font-mono"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                    Yangi Parol *
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    placeholder="Kamida 4 ta belgi"
+                    value={resetNewPassword}
+                    onChange={(e) => setResetNewPassword(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-2xl bg-slate-950 border border-white/10 text-white text-xs placeholder:text-slate-600 focus:outline-none focus:border-brand-500 transition"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                    Parolni Tasdiqlang *
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    placeholder="Qayta kiriting"
+                    value={resetConfirmPassword}
+                    onChange={(e) => setResetConfirmPassword(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-2xl bg-slate-950 border border-white/10 text-white text-xs placeholder:text-slate-600 focus:outline-none focus:border-brand-500 transition"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={authSubmitting}
+                className="w-full py-3.5 px-4 rounded-2xl bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 transition cursor-pointer mt-2"
+              >
+                {authSubmitting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    <span>Yangi Parolni Saqlash va Kirish</span>
                     <Check className="w-4 h-4" />
                   </>
                 )}

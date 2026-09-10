@@ -23,7 +23,11 @@ export interface Teacher {
 export const TEACHER_AUTH_COOKIE = "algoritm_teacher_session";
 export const TEACHER_SESSION_TTL = 60 * 60 * 24 * 30; // 30 kun
 
-// Boshlang'ich ustozlar ro'yxati
+export const DEFAULT_TEACHER_PASSWORD = "algoritm123";
+export const DEFAULT_TEACHER_SALT = "a1b2c3d4e5f60718293a4b5c6d7e8f90";
+export const DEFAULT_TEACHER_HASH = "2d871b447c385a9e2b17c5c9a0417c7dded286c82bd2a43cb7d6afe5b477972a8a31f46ba4579d689359fff8ef08572fdd1b003880e92e0a7c0cf710251cc2ac";
+
+// Boshlang'ich ustozlar ro'yxati (standart boshlang'ich parol: algoritm123)
 export const INITIAL_TEACHERS: Teacher[] = [
   {
     id: "tm-aziz",
@@ -31,6 +35,8 @@ export const INITIAL_TEACHERS: Teacher[] = [
     login: "aziz",
     subject: "Matematika & SAT Math",
     phone: "+998901234501",
+    passwordHash: DEFAULT_TEACHER_HASH,
+    salt: DEFAULT_TEACHER_SALT,
     createdAt: "2026-09-01T00:00:00.000Z",
     status: "active",
   },
@@ -40,6 +46,8 @@ export const INITIAL_TEACHERS: Teacher[] = [
     login: "jasur",
     subject: "Ingliz Tili · IELTS",
     phone: "+998901234502",
+    passwordHash: DEFAULT_TEACHER_HASH,
+    salt: DEFAULT_TEACHER_SALT,
     createdAt: "2026-09-01T00:00:00.000Z",
     status: "active",
   },
@@ -49,6 +57,8 @@ export const INITIAL_TEACHERS: Teacher[] = [
     login: "oxunjon",
     subject: "Digital SAT",
     phone: "+998901234503",
+    passwordHash: DEFAULT_TEACHER_HASH,
+    salt: DEFAULT_TEACHER_SALT,
     createdAt: "2026-09-01T00:00:00.000Z",
     status: "active",
   },
@@ -58,6 +68,8 @@ export const INITIAL_TEACHERS: Teacher[] = [
     login: "adham",
     subject: "Prezident Maktabi & Mantiq",
     phone: "+998901234504",
+    passwordHash: DEFAULT_TEACHER_HASH,
+    salt: DEFAULT_TEACHER_SALT,
     createdAt: "2026-09-01T00:00:00.000Z",
     status: "active",
   },
@@ -67,6 +79,8 @@ export const INITIAL_TEACHERS: Teacher[] = [
     login: "shohista",
     subject: "Boshlang'ich Rus Sinf",
     phone: "+998901234505",
+    passwordHash: DEFAULT_TEACHER_HASH,
+    salt: DEFAULT_TEACHER_SALT,
     createdAt: "2026-09-01T00:00:00.000Z",
     status: "active",
   },
@@ -76,6 +90,8 @@ export const INITIAL_TEACHERS: Teacher[] = [
     login: "bobur",
     subject: "Asoschi & SAT Math",
     phone: "+998901234506",
+    passwordHash: DEFAULT_TEACHER_HASH,
+    salt: DEFAULT_TEACHER_SALT,
     createdAt: "2026-09-01T00:00:00.000Z",
     status: "active",
   },
@@ -218,19 +234,40 @@ export async function loadTeachers(): Promise<Teacher[]> {
         return [];
       }
 
-      const teachers: Teacher[] = rows.map((r) => ({
-        id: r.id,
-        name: r.name,
-        login: r.login,
-        subject: r.subject,
-        phone: r.phone || undefined,
-        passwordHash: r.password_hash || undefined,
-        salt: r.salt || undefined,
-        telegramId: r.telegram_id || undefined,
-        telegramUsername: r.telegram_username || undefined,
-        status: r.status || "active",
-        createdAt: new Date(r.created_at).toISOString(),
-      }));
+      let needsDbSave = false;
+      const teachers: Teacher[] = rows.map((r) => {
+        const hasPw = Boolean(r.password_hash && r.salt);
+        if (!hasPw) needsDbSave = true;
+        return {
+          id: r.id,
+          name: r.name,
+          login: r.login,
+          subject: r.subject,
+          phone: r.phone || undefined,
+          passwordHash: r.password_hash || DEFAULT_TEACHER_HASH,
+          salt: r.salt || DEFAULT_TEACHER_SALT,
+          telegramId: r.telegram_id || undefined,
+          telegramUsername: r.telegram_username || undefined,
+          status: r.status || "active",
+          createdAt: new Date(r.created_at).toISOString(),
+        };
+      });
+
+      if (needsDbSave) {
+        // Avtomatik ravishda bazadagi bo'sh parolli ustozlarga standart parolni yozib qo'yamiz
+        void (async () => {
+          try {
+            for (const t of teachers) {
+              await query(
+                "UPDATE teachers SET password_hash = $1, salt = $2 WHERE id = $3 AND (password_hash IS NULL OR salt IS NULL)",
+                [t.passwordHash, t.salt, t.id]
+              );
+            }
+          } catch (e) {
+            console.warn("[teacherAuth] Standart parollarni DB ga yangilashda xato:", e);
+          }
+        })();
+      }
 
       setGlobalTeachers(teachers);
       return teachers;
@@ -243,8 +280,19 @@ export async function loadTeachers(): Promise<Teacher[]> {
   // 1. Upstash Redis (agar sozlangan bo'lsa)
   const redisTeachers = await redisGetTeachers();
   if (redisTeachers !== null) {
-    setGlobalTeachers(redisTeachers);
-    return redisTeachers;
+    let modified = false;
+    const updated = redisTeachers.map((t) => {
+      if (!t.passwordHash || !t.salt) {
+        modified = true;
+        return { ...t, passwordHash: DEFAULT_TEACHER_HASH, salt: DEFAULT_TEACHER_SALT };
+      }
+      return t;
+    });
+    if (modified) {
+      void redisSaveTeachers(updated).catch(() => {});
+    }
+    setGlobalTeachers(updated);
+    return updated;
   }
 
   // 2. Mahalliy yoki vaqtinchalik fayl tizimi
@@ -259,8 +307,19 @@ export async function loadTeachers(): Promise<Teacher[]> {
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) {
       teacherFileMtime = stat.mtimeMs;
-      setGlobalTeachers(parsed);
-      return parsed;
+      let modified = false;
+      const updated = parsed.map((t: Teacher) => {
+        if (!t.passwordHash || !t.salt) {
+          modified = true;
+          return { ...t, passwordHash: DEFAULT_TEACHER_HASH, salt: DEFAULT_TEACHER_SALT };
+        }
+        return t;
+      });
+      if (modified) {
+        void saveTeachers(updated).catch(() => {});
+      }
+      setGlobalTeachers(updated);
+      return updated;
     }
   } catch {
     // Fayl mavjud emas bo'lsa boshlang'ich ma'lumotlar ishlatiladi
@@ -444,6 +503,7 @@ export interface RegisterTeacherInput {
   password: string;
   telegramId?: string | number;
   telegramUsername?: string;
+  status?: TeacherStatus;
 }
 
 /** Yangi ustozning mustaqil ro'yxatdan o'tishi */
@@ -489,7 +549,7 @@ export async function registerTeacher(input: RegisterTeacherInput): Promise<{ te
     telegramId: input.telegramId ? String(input.telegramId) : undefined,
     telegramUsername: input.telegramUsername ? input.telegramUsername.replace(/^@/, "") : undefined,
     createdAt: new Date().toISOString(),
-    status: "pending", // Mustaqil ro'yxatdan o'tgan ustoz admin tasdiqlashi kutilmoqda holatida bo'ladi
+    status: input.status || "pending",
   };
 
   teachers.push(newTeacher);
@@ -627,11 +687,32 @@ export async function verifyTeacherCredentials(
 
   // Agar ustoz hali parol o'rnatmagan bo'lsa
   if (!teacher.passwordHash || !teacher.salt) {
+    if (plainPassword === DEFAULT_TEACHER_PASSWORD) {
+      const index = teachers.findIndex((t) => t.id === teacher.id);
+      if (index !== -1) {
+        const newSalt = randomBytes(16).toString("hex");
+        teachers[index] = { ...teachers[index], passwordHash: hashPassword(plainPassword, newSalt), salt: newSalt };
+        await saveTeachers(teachers);
+        return sanitizeTeacher(teachers[index]);
+      }
+    }
     return null;
   }
 
   const verification = verifyPasswordHash(plainPassword, teacher.salt, teacher.passwordHash);
-  if (!verification.valid) return null;
+  if (!verification.valid) {
+    // Agar kiritilgan parol standart algoritm123 bo'lsa va ustoz paroli hali o'rnatilmagan bo'lsa
+    if (plainPassword === DEFAULT_TEACHER_PASSWORD && (!teacher.passwordHash || !teacher.salt)) {
+      const index = teachers.findIndex((t) => t.id === teacher.id);
+      if (index !== -1) {
+        const newSalt = randomBytes(16).toString("hex");
+        teachers[index] = { ...teachers[index], passwordHash: hashPassword(plainPassword, newSalt), salt: newSalt };
+        await saveTeachers(teachers);
+        return sanitizeTeacher(teachers[index]);
+      }
+    }
+    return null;
+  }
 
   if (verification.needsUpgrade) {
     const index = teachers.findIndex((t) => t.id === teacher.id);

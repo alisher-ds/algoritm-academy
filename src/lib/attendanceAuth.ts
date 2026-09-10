@@ -17,18 +17,17 @@ export interface AttendanceAuthContext {
  * Admin (algoritm_admin cookie) yoki Ustoz (token / cookie) ekanligini tekshiradi.
  */
 export async function getAttendanceAuthContext(req: Request): Promise<AttendanceAuthContext> {
-  // 1. Admin tekshiruvi
-  if (isAuthed(req)) {
+  const teacher = await getAuthenticatedTeacher(req);
+  const admin = isAuthed(req);
+
+  if (teacher) {
+    return { isAuthenticated: true, isAdmin: admin, teacher };
+  }
+
+  if (admin) {
     return { isAuthenticated: true, isAdmin: true, teacher: null };
   }
 
-  // 2. Ustoz tekshiruvi (Bearer token yoki cookie orqali)
-  const teacher = await getAuthenticatedTeacher(req);
-  if (teacher) {
-    return { isAuthenticated: true, isAdmin: false, teacher };
-  }
-
-  // 3. Autentifikatsiyadan o'tmagan
   return { isAuthenticated: false, isAdmin: false, teacher: null };
 }
 

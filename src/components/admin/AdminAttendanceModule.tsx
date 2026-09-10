@@ -23,6 +23,7 @@ import {
   Trash2,
   Ban,
   RefreshCw,
+  Pencil,
 } from "lucide-react";
 import type {
   Group,
@@ -82,13 +83,33 @@ export default function AdminAttendanceModule() {
   const [addTeacherSubject, setAddTeacherSubject] = useState("");
   const [addTeacherPhone, setAddTeacherPhone] = useState("+998 ");
   const [addTeacherLogin, setAddTeacherLogin] = useState("");
-  const [addTeacherPassword, setAddTeacherPassword] = useState("");
+  const [addTeacherPassword, setAddTeacherPassword] = useState("algoritm123");
   const [addTeacherStatus, setAddTeacherStatus] = useState<"active" | "pending">("active");
 
   // Ustoz parolini yangilash modal
   const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
   const [resetTeacherTarget, setResetTeacherTarget] = useState<AdminTeacherItem | null>(null);
   const [newTeacherPassword, setNewTeacherPassword] = useState("");
+
+  // Ustoz ma'lumotlarini tahrirlash modal
+  const [showEditTeacherModal, setShowEditTeacherModal] = useState(false);
+  const [editTeacherTarget, setEditTeacherTarget] = useState<AdminTeacherItem | null>(null);
+  const [editTeacherName, setEditTeacherName] = useState("");
+  const [editTeacherSubject, setEditTeacherSubject] = useState("");
+  const [editTeacherPhone, setEditTeacherPhone] = useState("");
+  const [editTeacherLogin, setEditTeacherLogin] = useState("");
+
+  // Guruhni tahrirlash modal
+  const [showEditGroupModal, setShowEditGroupModal] = useState(false);
+  const [editGroupTarget, setEditGroupTarget] = useState<Group | null>(null);
+  const [editGroupName, setEditGroupName] = useState("");
+  const [editGroupSubject, setEditGroupSubject] = useState("");
+  const [editGroupTeacherId, setEditGroupTeacherId] = useState("");
+  const [editGroupTeacherName, setEditGroupTeacherName] = useState("");
+  const [editGroupDays, setEditGroupDays] = useState<string>("dush-chor-juma");
+  const [editGroupTime, setEditGroupTime] = useState("");
+  const [editGroupRoom, setEditGroupRoom] = useState("");
+  const [editGroupPrice, setEditGroupPrice] = useState("");
 
   const [newGroupDays, setNewGroupDays] = useState<string>("dush-chor-juma");
   const [newGroupTime, setNewGroupTime] = useState("14:00 - 15:30");
@@ -348,6 +369,91 @@ export default function AdminAttendanceModule() {
         void fetchTeachers();
       } else {
         alert(data.error || "Parolni yangilashda xato");
+      }
+    } catch {
+      alert("Aloqa xatosi");
+    }
+  };
+
+  // Ustoz ma'lumotlarini tahrirlash (ism, fan, login, telefon)
+  const handleUpdateTeacher = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editTeacherTarget) return;
+    try {
+      const res = await fetch("/api/teachers/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "admin-update-teacher",
+          teacherId: editTeacherTarget.id,
+          name: editTeacherName.trim(),
+          subject: editTeacherSubject.trim(),
+          phone: editTeacherPhone.trim(),
+          login: editTeacherLogin.trim().toLowerCase(),
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setShowEditTeacherModal(false);
+        setEditTeacherTarget(null);
+        void fetchTeachers();
+      } else {
+        alert(data.error || "Ustozni tahrirlashda xatolik");
+      }
+    } catch {
+      alert("Aloqa xatosi");
+    }
+  };
+
+  // Guruhni tahrirlash (ustoz, vaqt, xona, narx va h.k.)
+  const handleUpdateGroup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editGroupTarget) return;
+    try {
+      const res = await fetch("/api/groups", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: editGroupTarget.id,
+          name: editGroupName.trim(),
+          subject: editGroupSubject.trim(),
+          teacherId: editGroupTeacherId,
+          teacherName: editGroupTeacherName,
+          days: editGroupDays,
+          time: editGroupTime.trim(),
+          room: editGroupRoom.trim(),
+          monthlyPrice: Number(editGroupPrice) || 450000,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setShowEditGroupModal(false);
+        setEditGroupTarget(null);
+        void fetchGroups();
+        void fetchTeachers();
+      } else {
+        alert(data.error || "Guruhni yangilashda xatolik");
+      }
+    } catch {
+      alert("Aloqa xatosi");
+    }
+  };
+
+  // Guruhni o'chirish
+  const handleDeleteGroup = async (group: Group) => {
+    if (!window.confirm(`⚠️ DIQQAT: '${group.name}' guruhini o'chirmoqchimisiz? Guruh bilan birga o'quvchilar va davomat ham o'chiriladi.`)) return;
+    try {
+      const res = await fetch(`/api/groups?id=${group.id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (data.success) {
+        void fetchGroups();
+        void fetchStudents();
+        void fetchTeachers();
+        if (selectedGroupId === group.id) {
+          setSelectedGroupId("");
+        }
+      } else {
+        alert(data.error || "Guruhni o'chirishda xatolik");
       }
     } catch {
       alert("Aloqa xatosi");
@@ -810,13 +916,39 @@ export default function AdminAttendanceModule() {
                 </div>
 
                 <div className="pt-2 border-t border-white/5 flex items-center justify-between text-xs">
-                  <span className="text-[10px] text-slate-500">{g.lessonsPerMonth} ta dars/oy</span>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => {
+                        setEditGroupTarget(g);
+                        setEditGroupName(g.name);
+                        setEditGroupSubject(g.subject);
+                        setEditGroupTeacherId(g.teacherId || "");
+                        setEditGroupTeacherName(g.teacherName || "");
+                        setEditGroupDays(g.days);
+                        setEditGroupTime(g.time);
+                        setEditGroupRoom(g.room);
+                        setEditGroupPrice(String(g.monthlyPrice));
+                        setShowEditGroupModal(true);
+                      }}
+                      className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition cursor-pointer"
+                      title="Guruhni tahrirlash"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => void handleDeleteGroup(g)}
+                      className="p-1.5 rounded-lg bg-white/5 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition cursor-pointer"
+                      title="Guruhni o'chirish"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                   <button
                     onClick={() => {
                       setSelectedGroupId(g.id);
                       setActiveSubTab("hisob");
                     }}
-                    className="text-brand-400 hover:text-brand-300 font-bold inline-flex items-center gap-0.5"
+                    className="text-brand-400 hover:text-brand-300 font-bold inline-flex items-center gap-0.5 cursor-pointer"
                   >
                     <span>Davomatni ko'rish</span>
                     <ChevronRight className="w-3.5 h-3.5" />
@@ -944,6 +1076,17 @@ export default function AdminAttendanceModule() {
                 }`}
               >
                 <ShieldAlert className="w-5 h-5" />
+              </div>
+            </div>
+          </div>
+
+          {/* Boshlang'ich parol va ma'lumot eslatmasi */}
+          <div className="bg-brand-500/10 border border-brand-500/25 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2.5 text-brand-300">
+              <Key className="w-4 h-4 text-brand-400 shrink-0" />
+              <div>
+                <p className="font-bold text-white text-xs">Boshlang&apos;ich ustozlar uchun standart parol: <span className="text-amber-400 font-mono font-black">algoritm123</span></p>
+                <p className="text-[11px] text-slate-400 mt-0.5">Ustozlar o&apos;z logini va ushbu parol orqali <b>/davomat</b> tizimiga kirishlari mumkin. Parolni har bir ustoz qatoridagi kalit belgisi orqali yangilashingiz mumkin.</p>
               </div>
             </div>
           </div>
@@ -1102,6 +1245,22 @@ export default function AdminAttendanceModule() {
                                   Faollashtirish
                                 </button>
                               )}
+
+                              {/* Tahrirlash (Ism, Fan, Login, Tel) */}
+                              <button
+                                onClick={() => {
+                                  setEditTeacherTarget(t);
+                                  setEditTeacherName(t.name);
+                                  setEditTeacherSubject(t.subject);
+                                  setEditTeacherPhone(t.phone || "");
+                                  setEditTeacherLogin(t.login);
+                                  setShowEditTeacherModal(true);
+                                }}
+                                className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition cursor-pointer"
+                                title="Ustoz ma'lumotlarini tahrirlash"
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                              </button>
 
                               {/* Parolni tiklash / yangilash */}
                               <button
@@ -1518,6 +1677,221 @@ export default function AdminAttendanceModule() {
                   className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold shadow-md cursor-pointer"
                 >
                   Parolni Yangilash
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ──────────────── MODAL: USTOZNI TAHRIRLASH ──────────────── */}
+      {showEditTeacherModal && editTeacherTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="w-full max-w-md bg-slate-900 border border-white/15 rounded-3xl p-6 shadow-2xl text-white space-y-4">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-brand-500/20 text-brand-400 flex items-center justify-center">
+                  <Pencil className="w-4 h-4" />
+                </div>
+                <h3 className="text-sm font-bold">Ustoz Ma&apos;lumotlarini Tahrirlash</h3>
+              </div>
+              <button
+                onClick={() => setShowEditTeacherModal(false)}
+                className="text-slate-400 hover:text-white cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateTeacher} className="space-y-3 text-xs">
+              <div>
+                <label className="block font-bold text-slate-400 mb-1">Ustoz Ism-Familiyasi *</label>
+                <input
+                  type="text"
+                  required
+                  value={editTeacherName}
+                  onChange={(e) => setEditTeacherName(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/15 text-white focus:outline-none focus:border-brand-400"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-400 mb-1">Fan / Mutaxassislik *</label>
+                <input
+                  type="text"
+                  required
+                  value={editTeacherSubject}
+                  onChange={(e) => setEditTeacherSubject(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/15 text-white focus:outline-none focus:border-brand-400"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block font-bold text-slate-400 mb-1">Login *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editTeacherLogin}
+                    onChange={(e) => setEditTeacherLogin(e.target.value.toLowerCase().replace(/[^a-z0-9_.-]/g, ""))}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/15 text-white font-mono focus:outline-none focus:border-brand-400"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-400 mb-1">Telefon Raqami</label>
+                  <input
+                    type="tel"
+                    value={editTeacherPhone}
+                    onChange={(e) => setEditTeacherPhone(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/15 text-white font-mono focus:outline-none focus:border-brand-400"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-3 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowEditTeacherModal(false)}
+                  className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 font-bold cursor-pointer"
+                >
+                  Bekor qilish
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-brand-500 hover:bg-brand-400 text-slate-950 font-bold shadow-md cursor-pointer"
+                >
+                  Saqlash
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ──────────────── MODAL: GURUHNI TAHRIRLASH ──────────────── */}
+      {showEditGroupModal && editGroupTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="w-full max-w-md bg-slate-900 border border-white/15 rounded-3xl p-6 shadow-2xl text-white space-y-4">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-brand-500/20 text-brand-400 flex items-center justify-center">
+                  <Pencil className="w-4 h-4" />
+                </div>
+                <h3 className="text-sm font-bold">Guruhni Tahrirlash</h3>
+              </div>
+              <button onClick={() => setShowEditGroupModal(false)} className="text-slate-400 hover:text-white cursor-pointer">✕</button>
+            </div>
+
+            <form onSubmit={handleUpdateGroup} className="space-y-3 text-xs">
+              <div>
+                <label className="block font-bold text-slate-400 mb-1">Guruh Nomi *</label>
+                <input
+                  type="text"
+                  required
+                  value={editGroupName}
+                  onChange={(e) => setEditGroupName(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/15 text-white focus:outline-none focus:border-brand-400"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-400 mb-1">Fan Yo&apos;nalishi *</label>
+                <input
+                  type="text"
+                  required
+                  value={editGroupSubject}
+                  onChange={(e) => setEditGroupSubject(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/15 text-white focus:outline-none focus:border-brand-400"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-400 mb-1">Biriktirilgan Ustoz *</label>
+                {teacherList.length > 0 ? (
+                  <select
+                    value={editGroupTeacherId}
+                    onChange={(e) => {
+                      setEditGroupTeacherId(e.target.value);
+                      const t = teacherList.find((item) => item.id === e.target.value);
+                      if (t) setEditGroupTeacherName(t.name);
+                    }}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/15 text-white focus:outline-none focus:border-brand-400"
+                  >
+                    {teacherList.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.name} ({t.subject})
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    required
+                    value={editGroupTeacherName}
+                    onChange={(e) => setEditGroupTeacherName(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/15 text-white focus:outline-none"
+                  />
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block font-bold text-slate-400 mb-1">Dars Kunlari</label>
+                  <select
+                    value={editGroupDays}
+                    onChange={(e) => setEditGroupDays(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/15 text-white focus:outline-none"
+                  >
+                    <option value="dush-chor-juma">Dush-Chor-Juma</option>
+                    <option value="sesh-pay-shanba">Sesh-Pay-Shanba</option>
+                    <option value="har-kuni">Har kuni</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-400 mb-1">Dars Vaqti</label>
+                  <input
+                    type="text"
+                    value={editGroupTime}
+                    onChange={(e) => setEditGroupTime(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/15 text-white focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block font-bold text-slate-400 mb-1">Xona</label>
+                  <input
+                    type="text"
+                    value={editGroupRoom}
+                    onChange={(e) => setEditGroupRoom(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/15 text-white focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-400 mb-1">Oylik To&apos;lov (so&apos;m)</label>
+                  <input
+                    type="number"
+                    value={editGroupPrice}
+                    onChange={(e) => setEditGroupPrice(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-white/15 text-white focus:outline-none font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-3 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowEditGroupModal(false)}
+                  className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 font-bold cursor-pointer"
+                >
+                  Bekor qilish
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-brand-500 hover:bg-brand-400 text-slate-950 font-bold shadow-md cursor-pointer"
+                >
+                  Guruhni Yangilash
                 </button>
               </div>
             </form>

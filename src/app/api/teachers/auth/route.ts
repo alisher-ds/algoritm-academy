@@ -76,9 +76,9 @@ export async function GET(req: Request) {
     const admin = isAuthed(req);
     const wantsAdminScope = url.searchParams.get("scope") === "admin" || url.searchParams.get("admin") === "true";
 
-    // 1. Agar admin chaqirayotgan bo'lsa (yoki admin scope so'ralsa),
-    // brauzerdagi har qanday ustoz sessiyasidan qat'i nazar barcha ustozlar ro'yxatini qaytaramiz!
-    if (admin || wantsAdminScope) {
+    // 1. Agar maxsus admin scope so'ralgan bo'lsa (masalan /admin sahifasidan),
+    // admin huquqini tekshirib, barcha ustozlar ro'yxatini qaytaramiz:
+    if (wantsAdminScope) {
       if (!admin) {
         return NextResponse.json({ success: false, error: "Admin huquqi talab etiladi" }, { status: 401 });
       }
@@ -119,7 +119,7 @@ export async function GET(req: Request) {
       });
     }
 
-    // 2. Ustoz sessiyasi tekshiruvi
+    // 2. Ustoz sessiyasi tekshiruvi (Oddiy foydalanuvchi yoki davomat sahifasi)
     const currentTeacher = await getAuthenticatedTeacher(req);
 
     if (currentTeacher) {
@@ -210,10 +210,34 @@ export async function POST(req: Request) {
 
       let teacher = await verifyTeacherCredentials(String(login), String(password));
       if (!teacher) {
+        const cleanLogin = String(login).trim().toLowerCase();
+        const digits = cleanLogin.replace(/\D/g, "");
+        const allTeachers = await loadTeachers();
+        const foundTeacher = allTeachers.find((t) => {
+          if (t.login.toLowerCase() === cleanLogin) return true;
+          if (t.phone) {
+            const pDigits = t.phone.replace(/\D/g, "");
+            if (pDigits === digits || (digits.length >= 9 && pDigits.endsWith(digits.slice(-9)))) return true;
+          }
+          return false;
+        });
+
+        if (foundTeacher) {
+          return NextResponse.json(
+            {
+              success: false,
+              teacherFound: true,
+              teacherId: foundTeacher.id,
+              error: "Kiritilgan parol noto'g'ri. Standart ustoz hisoblari uchun boshlang'ich parol: algoritm123. Agar yangilamoqchi bo'lsangiz, 'Parolni tiklash' bo'limidan foydalaning.",
+            },
+            { status: 401 }
+          );
+        }
+
         return NextResponse.json(
           {
             success: false,
-            error: "Login yoki parol noto'g'ri. Agar birinchi marta kirayotgan bo'lsangiz, 'Yangi hisob ochish' bo'limidan ro'yxatdan o'ting.",
+            error: "Bunday login yoki telefonli ustoz topilmadi. Agar yangi ustoz bo'lsangiz, 'Ro'yxatdan O'tish' bo'limi orqali yangi hisob oching.",
           },
           { status: 401 }
         );
@@ -304,7 +328,19 @@ export async function POST(req: Request) {
         );
       }
 
-      const targetTeacher = (await loadTeachers()).find((t) => t.id === String(teacherId));
+      const targetIdentifier = String(teacherId || body.login || body.phone || "").trim().toLowerCase();
+      const targetDigits = targetIdentifier.replace(/\D/g, "");
+      const allTeachers = await loadTeachers();
+      const targetTeacher = allTeachers.find((t) => {
+        if (teacherId && t.id === String(teacherId)) return true;
+        if (targetIdentifier && t.login.toLowerCase() === targetIdentifier) return true;
+        if (targetDigits && t.phone) {
+          const pDigits = t.phone.replace(/\D/g, "");
+          if (pDigits === targetDigits || (targetDigits.length >= 9 && pDigits.endsWith(targetDigits.slice(-9)))) return true;
+        }
+        return false;
+      });
+
       if (!targetTeacher) {
         return NextResponse.json({ success: false, error: "Ustoz topilmadi" }, { status: 404 });
       }
@@ -313,24 +349,43 @@ export async function POST(req: Request) {
       const admin = isAuthed(req);
       const isSelf = currentTeacher?.id === targetTeacher.id;
 
-      if (targetTeacher.passwordHash) {
-        if (!admin) {
-          if (!isSelf) {
-            return NextResponse.json({ success: false, error: "Bu amal uchun ruxsat yo'q" }, { status: 403 });
-          }
+      if (!admin) {
+        if (isSelf) {
           if (
-            !oldPassword ||
-            !targetTeacher.salt ||
-            !verifyPasswordHash(String(oldPassword), targetTeacher.salt, targetTeacher.passwordHash).valid
+            targetTeacher.passwordHash &&
+            (!oldPassword ||
+              !targetTeacher.salt ||
+              !verifyPasswordHash(String(oldPassword), targetTeacher.salt, targetTeacher.passwordHash).valid)
           ) {
             return NextResponse.json({ success: false, error: "Eski parol noto'g'ri kiritildi" }, { status: 401 });
           }
-        }
-      } else {
-        const suppliedPhone = String(phone || "").replace(/\D/g, "");
-        const storedPhone = String(targetTeacher.phone || "").replace(/\D/g, "");
-        if (!admin && (!suppliedPhone || !storedPhone || suppliedPhone !== storedPhone)) {
-          return NextResponse.json({ success: false, error: "Birinchi parolni o'rnatish uchun telefon raqamini tasdiqlang" }, { status: 403 });
+        } else {
+          const suppliedPhone = String(phone || "").replace(/\D/g, "");
+          const storedPhone = String(targetTeacher.phone || "").replace(/\D/g, "");
+          const phoneVerified = Boolean(
+            suppliedPhone &&
+            storedPhone &&
+            (suppliedPhone === storedPhone ||
+              (suppliedPhone.length >= 9 && storedPhone.endsWith(suppliedPhone.slice(-9))) ||
+              (storedPhone.length >= 9 && suppliedPhone.endsWith(storedPhone.slice(-9))))
+          );
+
+          const oldPassValid = Boolean(
+            oldPassword &&
+            targetTeacher.salt &&
+            targetTeacher.passwordHash &&
+            verifyPasswordHash(String(oldPassword), targetTeacher.salt, targetTeacher.passwordHash).valid
+          );
+
+          if (!phoneVerified && !oldPassValid) {
+            return NextResponse.json(
+              {
+                success: false,
+                error: "Parolni yangilash uchun profilingizga biriktirilgan telefon raqamingizni yoki eski parolni kiriting.",
+              },
+              { status: 403 }
+            );
+          }
         }
       }
 
@@ -338,13 +393,13 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: false, error: "Telegramni biriktirish uchun ruxsat yo'q" }, { status: 403 });
       }
 
-      const updated = await setTeacherPassword(String(teacherId), String(password));
+      const updated = await setTeacherPassword(targetTeacher.id, String(password));
       if (!updated) {
         return NextResponse.json({ success: false, error: "Ustoz topilmadi" }, { status: 404 });
       }
 
       if (binding) {
-        await bindTeacherTelegram(String(teacherId), binding.id, binding.username);
+        await bindTeacherTelegram(targetTeacher.id, binding.id, binding.username);
       }
 
       const token = createTeacherToken(updated);
@@ -441,7 +496,7 @@ export async function POST(req: Request) {
 
       return NextResponse.json({
         success: true,
-        authenticated: true,
+        authenticated: false,
         isPending: true,
         teacher: regResult.teacher,
         message: "Ro'yxatdan o'tish arizangiz qabul qilindi! Administrator tasdiqlaganidan so'ng shaxsiy kabinetingiz ochiladi.",

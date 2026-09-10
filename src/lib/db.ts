@@ -22,7 +22,7 @@ function getDatabaseUrl(): string | null {
   if (explicit) return explicit;
 
   // Har qanday Vercel prefiksi (masalan STORAGE_URL, NEON_URL va h.k.) avtomatik aniqlanadi
-  for (const [key, value] of Object.entries(process.env)) {
+  for (const value of Object.values(process.env)) {
     if (
       typeof value === "string" &&
       (value.startsWith("postgres://") || value.startsWith("postgresql://"))
