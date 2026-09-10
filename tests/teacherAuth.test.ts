@@ -32,18 +32,24 @@ describe("Teacher Authentication & Role Isolation", () => {
     __resetTeacherCache();
   });
 
-  it("ustozlar ro'yxatini to'g'ri yuklaydi", async () => {
+  it("ustozlar ro'yxatini to'g'ri yuklaydi (boshlang'ich holatda bo'sh)", async () => {
     const teachers = await loadTeachers();
-    expect(teachers.length).toBeGreaterThanOrEqual(5);
-    const aziz = teachers.find((t) => t.id === "tm-aziz");
-    expect(aziz).toBeDefined();
-    expect(aziz?.name).toBe("Aziz Xolmurodov");
+    expect(teachers).toEqual([]);
   });
 
-  it("ustoz o'zi uchun yangi parol o'rnata oladi va u xavfsiz xeshlanadi", async () => {
-    const updated = await setTeacherPassword("tm-aziz", "maxfiy_parol_2026");
+  it("ustoz ro'yxatdan o'tib, yangi parol o'rnata oladi va u xavfsiz xeshlanadi", async () => {
+    const reg = await registerTeacher({
+      name: "Aziz Xolmurodov",
+      login: "aziz",
+      subject: "Matematika & SAT Math",
+      phone: "+998901234501",
+      password: "boshlangich_parol",
+    });
+    expect(reg.teacher).toBeDefined();
+
+    const updated = await setTeacherPassword(reg.teacher!.id, "maxfiy_parol_2026");
     expect(updated).toBeDefined();
-    expect(updated?.id).toBe("tm-aziz");
+    expect(updated?.id).toBe(reg.teacher!.id);
     // Sanitize qilingani uchun tashqi ob'ektda parol xeshi chiqmasligi kerak
     expect((updated as unknown as Record<string, unknown>).passwordHash).toBeUndefined();
 
@@ -58,11 +64,19 @@ describe("Teacher Authentication & Role Isolation", () => {
   });
 
   it("telefon raqam orqali ham tizimga kirish mumkin", async () => {
-    await setTeacherPassword("tm-jasur", "jasur_pass_777");
+    const reg = await registerTeacher({
+      name: "Jasur Jovliyev",
+      login: "jasur",
+      subject: "Ingliz Tili",
+      phone: "+998 90 123-45-02",
+      password: "jasur_pass_777",
+    });
+    expect(reg.teacher).toBeDefined();
+
     // Telefon raqami orqali tekshirish
     const auth = await verifyTeacherCredentials("+998 90 123-45-02", "jasur_pass_777");
     expect(auth).not.toBeNull();
-    expect(auth?.id).toBe("tm-jasur");
+    expect(auth?.id).toBe(reg.teacher!.id);
   });
 
   it("imzolangan token yaratadi va uni to'g'ri tasdiqlaydi", () => {
@@ -149,6 +163,7 @@ describe("Teacher Authentication & Role Isolation", () => {
       login: userLogin,
       subject: "Tarix",
       password: "sinov_pass_123",
+      status: "pending",
     });
     expect(reg.teacher?.status).toBe("pending");
     const teacherId = reg.teacher!.id;
@@ -224,6 +239,6 @@ describe("Teacher Authentication & Role Isolation", () => {
 
   it("resetTeachers barcha ustozlarni toza holatga qaytaradi", async () => {
     const fresh = await resetTeachers();
-    expect(fresh.length).toBeGreaterThanOrEqual(6);
+    expect(fresh.length).toBe(0);
   });
 });

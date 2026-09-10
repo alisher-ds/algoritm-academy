@@ -946,7 +946,17 @@ export default function DavomatTeacherPage() {
               </div>
 
               <div className="p-2.5 rounded-xl bg-white/5 border border-white/5 text-[11px] text-slate-400 text-center leading-relaxed">
-                💡 Boshlang&apos;ich ustozlar uchun standart parol: <b className="text-amber-400 font-mono">algoritm123</b>
+                Hali hisobingiz yo&apos;qmi?{" "}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthTab("register");
+                    setAuthError("");
+                  }}
+                  className="text-brand-400 hover:text-brand-300 font-semibold underline cursor-pointer"
+                >
+                  Ro&apos;yxatdan o&apos;tish
+                </button>
               </div>
 
               <button

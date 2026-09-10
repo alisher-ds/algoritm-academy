@@ -27,75 +27,8 @@ export const DEFAULT_TEACHER_PASSWORD = "algoritm123";
 export const DEFAULT_TEACHER_SALT = "a1b2c3d4e5f60718293a4b5c6d7e8f90";
 export const DEFAULT_TEACHER_HASH = "2d871b447c385a9e2b17c5c9a0417c7dded286c82bd2a43cb7d6afe5b477972a8a31f46ba4579d689359fff8ef08572fdd1b003880e92e0a7c0cf710251cc2ac";
 
-// Boshlang'ich ustozlar ro'yxati (standart boshlang'ich parol: algoritm123)
-export const INITIAL_TEACHERS: Teacher[] = [
-  {
-    id: "tm-aziz",
-    name: "Aziz Xolmurodov",
-    login: "aziz",
-    subject: "Matematika & SAT Math",
-    phone: "+998901234501",
-    passwordHash: DEFAULT_TEACHER_HASH,
-    salt: DEFAULT_TEACHER_SALT,
-    createdAt: "2026-09-01T00:00:00.000Z",
-    status: "active",
-  },
-  {
-    id: "tm-jasur",
-    name: "Jasur Jovliyev",
-    login: "jasur",
-    subject: "Ingliz Tili · IELTS",
-    phone: "+998901234502",
-    passwordHash: DEFAULT_TEACHER_HASH,
-    salt: DEFAULT_TEACHER_SALT,
-    createdAt: "2026-09-01T00:00:00.000Z",
-    status: "active",
-  },
-  {
-    id: "tm-oxunjon",
-    name: "Oxunjon Ozodov",
-    login: "oxunjon",
-    subject: "Digital SAT",
-    phone: "+998901234503",
-    passwordHash: DEFAULT_TEACHER_HASH,
-    salt: DEFAULT_TEACHER_SALT,
-    createdAt: "2026-09-01T00:00:00.000Z",
-    status: "active",
-  },
-  {
-    id: "tm-adham",
-    name: "Adham Sohibov",
-    login: "adham",
-    subject: "Prezident Maktabi & Mantiq",
-    phone: "+998901234504",
-    passwordHash: DEFAULT_TEACHER_HASH,
-    salt: DEFAULT_TEACHER_SALT,
-    createdAt: "2026-09-01T00:00:00.000Z",
-    status: "active",
-  },
-  {
-    id: "tm-shohista",
-    name: "Shohista Jalilovna",
-    login: "shohista",
-    subject: "Boshlang'ich Rus Sinf",
-    phone: "+998901234505",
-    passwordHash: DEFAULT_TEACHER_HASH,
-    salt: DEFAULT_TEACHER_SALT,
-    createdAt: "2026-09-01T00:00:00.000Z",
-    status: "active",
-  },
-  {
-    id: "tm-bobur",
-    name: "Bobur Xaydarov",
-    login: "bobur",
-    subject: "Asoschi & SAT Math",
-    phone: "+998901234506",
-    passwordHash: DEFAULT_TEACHER_HASH,
-    salt: DEFAULT_TEACHER_SALT,
-    createdAt: "2026-09-01T00:00:00.000Z",
-    status: "active",
-  },
-];
+// Boshlang'ich ustozlar ro'yxati (haqiqiy ustozlar o'zlari ro'yxatdan o'tib kirishlari uchun bo'sh)
+export const INITIAL_TEACHERS: Teacher[] = [];
 
 // Upstash Redis konfiguratsiyasi
 function upstashConfig(): { url: string; token: string } | null {
@@ -484,34 +417,40 @@ export async function saveTeachers(teachers: Teacher[]): Promise<void> {
       await initDatabase();
       await withTransaction(async (client) => {
         await client.query("SELECT pg_advisory_xact_lock(hashtext('algoritm-teachers'))");
-        for (const t of teachers) {
-        await client.query(
-          `INSERT INTO teachers (id, name, login, subject, phone, password_hash, salt, telegram_id, telegram_username, status, created_at)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-           ON CONFLICT (id) DO UPDATE SET
-             name = EXCLUDED.name,
-             login = EXCLUDED.login,
-             subject = EXCLUDED.subject,
-             phone = EXCLUDED.phone,
-             password_hash = EXCLUDED.password_hash,
-             salt = EXCLUDED.salt,
-             telegram_id = EXCLUDED.telegram_id,
-             telegram_username = EXCLUDED.telegram_username,
-             status = EXCLUDED.status`,
-          [
-            t.id,
-            t.name,
-            t.login,
-            t.subject,
-            t.phone || null,
-            t.passwordHash || null,
-            t.salt || null,
-            t.telegramId || null,
-            t.telegramUsername || null,
-            t.status || "active",
-            t.createdAt,
-          ]
-        );
+        if (teachers.length === 0) {
+          await client.query("DELETE FROM teachers");
+        } else {
+          const ids = teachers.map((t) => t.id);
+          await client.query("DELETE FROM teachers WHERE id NOT IN (SELECT unnest($1::text[]))", [ids]);
+          for (const t of teachers) {
+            await client.query(
+              `INSERT INTO teachers (id, name, login, subject, phone, password_hash, salt, telegram_id, telegram_username, status, created_at)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+               ON CONFLICT (id) DO UPDATE SET
+                 name = EXCLUDED.name,
+                 login = EXCLUDED.login,
+                 subject = EXCLUDED.subject,
+                 phone = EXCLUDED.phone,
+                 password_hash = EXCLUDED.password_hash,
+                 salt = EXCLUDED.salt,
+                 telegram_id = EXCLUDED.telegram_id,
+                 telegram_username = EXCLUDED.telegram_username,
+                 status = EXCLUDED.status`,
+              [
+                t.id,
+                t.name,
+                t.login,
+                t.subject,
+                t.phone || null,
+                t.passwordHash || null,
+                t.salt || null,
+                t.telegramId || null,
+                t.telegramUsername || null,
+                t.status || "active",
+                t.createdAt,
+              ]
+            );
+          }
         }
       });
     } catch (err) {

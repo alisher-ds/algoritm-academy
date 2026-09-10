@@ -6,7 +6,7 @@ import { GET as getGroups, POST as postGroups } from "../src/app/api/groups/rout
 import { GET as getStudents, POST as postStudents } from "../src/app/api/students/route";
 import { GET as getAttendance, POST as postAttendance } from "../src/app/api/attendance/route";
 import { GET as getTeacherAuth, POST as postTeacherAuth } from "../src/app/api/teachers/auth/route";
-import { createTeacherToken, setTeacherPassword } from "../src/lib/teacherAuth";
+import { createTeacherToken, registerTeacher } from "../src/lib/teacherAuth";
 import { createSessionToken, AUTH_COOKIE } from "../src/lib/adminAuth";
 import { createGroup, __resetAttendanceCache } from "../src/lib/attendanceStore";
 
@@ -188,7 +188,14 @@ describe("Security Hardening & RBAC Tests", () => {
   });
 
   it("set-password mavjud parolni o'zgartirishda eski parolni (oldPassword) talab qiladi", async () => {
-    const jasur = await setTeacherPassword("tm-jasur", "eski_parol_123");
+    const reg = await registerTeacher({
+      name: "Jasur Jovliyev",
+      login: "jasur",
+      subject: "Ingliz tili",
+      phone: "+998901234502",
+      password: "eski_parol_123",
+    });
+    const jasur = reg.teacher!;
     expect(jasur).not.toBeNull();
 
     const testIp = "192.168.99.77";
@@ -203,7 +210,7 @@ describe("Security Hardening & RBAC Tests", () => {
       },
       body: JSON.stringify({
         action: "set-password",
-        teacherId: "tm-jasur",
+        teacherId: jasur.id,
         password: "yangi_parol_456",
       }),
     });
@@ -212,7 +219,7 @@ describe("Security Hardening & RBAC Tests", () => {
     expect(resAnon.status).toBe(403);
 
     // 2. Ustoz tizimga kirgan, lekin eski parolni xato kiritganda 401 qaytishi kerak
-    const jasurToken = createTeacherToken(jasur!);
+    const jasurToken = createTeacherToken(jasur);
     const reqWrong = new Request("http://localhost:3000/api/teachers/auth", {
       method: "POST",
       headers: {
@@ -223,7 +230,7 @@ describe("Security Hardening & RBAC Tests", () => {
       },
       body: JSON.stringify({
         action: "set-password",
-        teacherId: "tm-jasur",
+        teacherId: jasur.id,
         oldPassword: "xato_eski_parol",
         password: "yangi_parol_456",
       }),
