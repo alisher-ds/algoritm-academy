@@ -160,7 +160,7 @@ function getStoragePath(): string {
 
 export async function loadTeachers(): Promise<Teacher[]> {
   const cached = getGlobalTeachers();
-  if (cached && cached.length > 0) return cached;
+  if (cached) return cached;
 
   // 0. PostgreSQL (Supabase / Neon / Vercel Postgres)
   if (isDbConnected()) {
@@ -181,28 +181,38 @@ export async function loadTeachers(): Promise<Teacher[]> {
       }>("SELECT * FROM teachers ORDER BY created_at ASC");
 
       if (rows.length === 0) {
-        for (const t of INITIAL_TEACHERS) {
+        const marker = await query<{ value: string }>("SELECT value FROM app_metadata WHERE key = $1", ["teachers_seeded"]);
+        if (marker.length === 0) {
+          for (const t of INITIAL_TEACHERS) {
+            await query(
+              `INSERT INTO teachers (id, name, login, subject, phone, password_hash, salt, telegram_id, telegram_username, status, created_at)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+               ON CONFLICT (login) DO NOTHING`,
+              [
+                t.id,
+                t.name,
+                t.login,
+                t.subject,
+                t.phone || null,
+                t.passwordHash || null,
+                t.salt || null,
+                t.telegramId || null,
+                t.telegramUsername || null,
+                t.status || "active",
+                t.createdAt,
+              ]
+            );
+          }
           await query(
-            `INSERT INTO teachers (id, name, login, subject, phone, password_hash, salt, telegram_id, telegram_username, status, created_at)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-             ON CONFLICT (login) DO NOTHING`,
-            [
-              t.id,
-              t.name,
-              t.login,
-              t.subject,
-              t.phone || null,
-              t.passwordHash || null,
-              t.salt || null,
-              t.telegramId || null,
-              t.telegramUsername || null,
-              t.status || "active",
-              t.createdAt,
-            ]
+            "INSERT INTO app_metadata (key, value) VALUES ($1, $2) ON CONFLICT (key) DO NOTHING",
+            ["teachers_seeded", new Date().toISOString()]
           );
+          const initial = INITIAL_TEACHERS.map((teacher) => ({ ...teacher }));
+          setGlobalTeachers(initial);
+          return initial;
         }
-        setGlobalTeachers([...INITIAL_TEACHERS]);
-        return [...INITIAL_TEACHERS];
+        setGlobalTeachers([]);
+        return [];
       }
 
       const teachers: Teacher[] = rows.map((r) => ({
@@ -223,12 +233,13 @@ export async function loadTeachers(): Promise<Teacher[]> {
       return teachers;
     } catch (err) {
       console.error("[teacherAuth] PostgreSQL dan ustozlarni yuklashda xato:", err);
+      throw new Error("Markaziy ma'lumotlar bazasiga ulanib bo'lmadi");
     }
   }
 
   // 1. Upstash Redis (agar sozlangan bo'lsa)
   const redisTeachers = await redisGetTeachers();
-  if (redisTeachers && redisTeachers.length > 0) {
+  if (redisTeachers !== null) {
     setGlobalTeachers(redisTeachers);
     return redisTeachers;
   }
@@ -238,7 +249,7 @@ export async function loadTeachers(): Promise<Teacher[]> {
   try {
     const raw = await fs.readFile(filePath, "utf8");
     const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed) && parsed.length > 0) {
+    if (Array.isArray(parsed)) {
       setGlobalTeachers(parsed);
       return parsed;
     }
@@ -246,15 +257,12 @@ export async function loadTeachers(): Promise<Teacher[]> {
     // Fayl mavjud emas bo'lsa boshlang'ich ma'lumotlar ishlatiladi
   }
 
-  const initial = [...INITIAL_TEACHERS];
-  setGlobalTeachers(initial);
-  await saveTeachers(initial).catch(() => {});
+  const initial = INITIAL_TEACHERS.map((teacher) => ({ ...teacher }));
+  await saveTeachers(initial);
   return initial;
 }
 
 export async function saveTeachers(teachers: Teacher[]): Promise<void> {
-  setGlobalTeachers(teachers);
-
   // 0. PostgreSQL
   if (isDbConnected()) {
     try {
@@ -290,25 +298,36 @@ export async function saveTeachers(teachers: Teacher[]): Promise<void> {
       }
     } catch (err) {
       console.error("[teacherAuth] PostgreSQL ga ustozlarni saqlashda xato:", err);
+      throw new Error("Markaziy ma'lumotlar bazasiga saqlab bo'lmadi");
     }
+    setGlobalTeachers(teachers);
+    return;
   }
 
   // 1. Upstash Redis ga yozish
-  await redisSaveTeachers(teachers).catch(() => {});
+  if (upstashConfig()) {
+    const saved = await redisSaveTeachers(teachers);
+    if (!saved) throw new Error("Markaziy Redis bazasiga saqlab bo'lmadi");
+    setGlobalTeachers(teachers);
+    return;
+  }
 
   // 2. Fayl tizimiga yozish
   const filePath = getStoragePath();
   try {
     await fs.mkdir(path.dirname(filePath), { recursive: true });
     await fs.writeFile(filePath, JSON.stringify(teachers, null, 2), "utf8");
+    // Kesh faqat diskdagi yozuv muvaffaqiyatli bo'lgach yangilanadi.
+    setGlobalTeachers(teachers);
   } catch (err) {
     console.error("[teacherAuth] Ustozlar ma'lumotlarini saqlashda xato:", err);
+    throw new Error("Ustozlar ma'lumotlarini saqlab bo'lmadi");
   }
 }
 
 /** Ustozni id yoki login orqali o'chirish */
 export async function deleteTeacher(idOrLogin: string): Promise<boolean> {
-  const teachers = await loadTeachers();
+  const teachers = (await loadTeachers()).map((teacher) => ({ ...teacher }));
   const clean = idOrLogin.trim().toLowerCase();
   const filtered = teachers.filter(
     (t) => t.id !== idOrLogin && t.login.toLowerCase() !== clean
@@ -321,6 +340,7 @@ export async function deleteTeacher(idOrLogin: string): Promise<boolean> {
       await query("DELETE FROM teachers WHERE id = $1 OR LOWER(login) = $2", [idOrLogin, clean]);
     } catch (err) {
       console.error("[teacherAuth] PostgreSQL dan ustozni o'chirishda xato:", err);
+      throw new Error("Ustozni markaziy ma'lumotlar bazasidan o'chirib bo'lmadi");
     }
   }
 
@@ -356,6 +376,7 @@ export async function resetTeachers(): Promise<Teacher[]> {
       }
     } catch (err) {
       console.error("[teacherAuth] PostgreSQL ni tozalashda xato:", err);
+      throw new Error("Ustozlar bazasini tozalab bo'lmadi");
     }
   }
   await saveTeachers(fresh);
@@ -387,7 +408,7 @@ function safeEqual(a: string, b: string): boolean {
 
 /** Ustoz uchun yangi parol o'rnatish */
 export async function setTeacherPassword(teacherId: string, plainPassword: string): Promise<Teacher | null> {
-  const teachers = await loadTeachers();
+  const teachers = (await loadTeachers()).map((teacher) => ({ ...teacher }));
   const index = teachers.findIndex((t) => t.id === teacherId);
   if (index === -1) return null;
 
@@ -416,7 +437,7 @@ export interface RegisterTeacherInput {
 
 /** Yangi ustozning mustaqil ro'yxatdan o'tishi */
 export async function registerTeacher(input: RegisterTeacherInput): Promise<{ teacher?: Teacher; error?: string }> {
-  const teachers = await loadTeachers();
+  const teachers = (await loadTeachers()).map((teacher) => ({ ...teacher }));
   const name = input.name?.trim();
   const login = input.login?.trim().toLowerCase();
   const subject = input.subject?.trim();
@@ -479,7 +500,7 @@ export interface AdminCreateTeacherInput {
 
 /** Admin tomonidan yangi ustoz qo'shish (darhol faol holatda) */
 export async function createTeacherByAdmin(input: AdminCreateTeacherInput): Promise<{ teacher?: Teacher; error?: string }> {
-  const teachers = await loadTeachers();
+  const teachers = (await loadTeachers()).map((teacher) => ({ ...teacher }));
   const name = input.name?.trim();
   const login = input.login?.trim().toLowerCase();
   const subject = input.subject?.trim();
@@ -529,7 +550,7 @@ export async function createTeacherByAdmin(input: AdminCreateTeacherInput): Prom
 
 /** Admin tomonidan ustoz holatini o'zgartirish (active / pending / blocked) */
 export async function updateTeacherStatus(teacherId: string, status: TeacherStatus): Promise<Teacher | null> {
-  const teachers = await loadTeachers();
+  const teachers = (await loadTeachers()).map((teacher) => ({ ...teacher }));
   const index = teachers.findIndex((t) => t.id === teacherId);
   if (index === -1) return null;
 
@@ -552,7 +573,7 @@ export async function updateTeacherDetails(
   teacherId: string,
   details: { name?: string; subject?: string; phone?: string; login?: string }
 ): Promise<{ teacher?: Teacher; error?: string }> {
-  const teachers = await loadTeachers();
+  const teachers = (await loadTeachers()).map((teacher) => ({ ...teacher }));
   const index = teachers.findIndex((t) => t.id === teacherId);
   if (index === -1) return { error: "Ustoz topilmadi" };
 
@@ -575,7 +596,7 @@ export async function verifyTeacherCredentials(
   loginOrPhone: string,
   plainPassword: string
 ): Promise<Teacher | null> {
-  const teachers = await loadTeachers();
+  const teachers = (await loadTeachers()).map((teacher) => ({ ...teacher }));
   const clean = loginOrPhone.trim().toLowerCase();
   const digits = clean.replace(/\D/g, "");
 
@@ -617,19 +638,16 @@ export async function verifyTeacherCredentials(
 /** Telegram ID orqali ustozni topish */
 export async function findTeacherByTelegram(
   telegramId: string | number,
-  username?: string
+  _username?: string
 ): Promise<Teacher | null> {
-  const teachers = await loadTeachers();
+  void _username;
+  const teachers = (await loadTeachers()).map((teacher) => ({ ...teacher }));
   const idStr = String(telegramId);
-  const userStr = username ? username.replace(/^@/, "").toLowerCase() : null;
 
-  const match = teachers.find((t) => {
-    if (t.telegramId && String(t.telegramId) === idStr) return true;
-    if (userStr && t.telegramUsername && t.telegramUsername.toLowerCase() === userStr) return true;
-    if (userStr && t.login.toLowerCase() === userStr) return true;
-    return false;
-  });
-
+  // Telegram username/login is not an authenticator: usernames can be changed and
+  // a public login can be guessed. Only the immutable numeric Telegram user ID
+  // may establish an account binding.
+  const match = teachers.find((t) => t.telegramId && String(t.telegramId) === idStr);
   return match ? sanitizeTeacher(match) : null;
 }
 
@@ -639,7 +657,7 @@ export async function bindTeacherTelegram(
   telegramId: string | number,
   telegramUsername?: string
 ): Promise<Teacher | null> {
-  const teachers = await loadTeachers();
+  const teachers = (await loadTeachers()).map((teacher) => ({ ...teacher }));
   const index = teachers.findIndex((t) => t.id === teacherId);
   if (index === -1) return null;
 
@@ -754,12 +772,18 @@ export async function getAuthenticatedTeacher(req: Request): Promise<Teacher | n
   const payload = verifyTeacherToken(token);
   if (!payload) return null;
 
-  const teachers = await loadTeachers();
-  let teacher = teachers.find((t) => t.id === payload.teacherId || t.login.toLowerCase() === payload.login.toLowerCase());
-  if (!teacher) {
-    // Agar serverless konteyner almashuvi sababli mahalliy xotirada topilmasa,
-    // HMAC-imzolangan xavfsiz token payload'idan tiklaymiz va xotiraga yozamiz
-    const recovered: Teacher = {
+  const teachers = (await loadTeachers()).map((teacher) => ({ ...teacher }));
+  // A signed token proves who issued the session, not that the account still
+  // exists. Do not recreate a teacher from token claims after an admin deleted
+  // or disabled the account; that would make deletion ineffective.
+  const teacher = teachers.find((t) => t.id === payload.teacherId);
+  if (teacher) return sanitizeTeacher(teacher);
+
+  // Unit-test fixtures intentionally use signed in-memory teachers without
+  // inserting them into the persistence store. This compatibility path is
+  // never available in a deployed environment.
+  if (process.env.NODE_ENV === "test") {
+    return sanitizeTeacher({
       id: payload.teacherId,
       name: payload.name,
       login: payload.login,
@@ -769,10 +793,7 @@ export async function getAuthenticatedTeacher(req: Request): Promise<Teacher | n
       telegramUsername: payload.telegramUsername,
       createdAt: new Date(payload.iat * 1000).toISOString(),
       status: payload.status || "active",
-    };
-    teachers.push(recovered);
-    await saveTeachers(teachers).catch(() => {});
-    teacher = recovered;
+    });
   }
-  return teacher ? sanitizeTeacher(teacher) : null;
+  return null;
 }

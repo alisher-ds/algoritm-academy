@@ -118,18 +118,19 @@ export async function GET(req: Request) {
   const rawType = searchParams.get("type") || undefined;
   const rawDateRange = searchParams.get("dateRange") || undefined;
 
-  const status =
-    rawStatus && (VALID_STATUSES.includes(rawStatus as LeadStatus) || rawStatus === "hammasi")
-      ? (rawStatus as LeadStatus | "hammasi")
-      : undefined;
-  const type =
-    rawType && (VALID_TYPES.includes(rawType as LeadType) || rawType === "hammasi")
-      ? (rawType as LeadType | "hammasi")
-      : undefined;
-  const dateRange =
-    rawDateRange && ["bugun", "hafta", "oy", "hammasi"].includes(rawDateRange)
-      ? (rawDateRange as "bugun" | "hafta" | "oy" | "hammasi")
-      : undefined;
+  if (rawStatus && !VALID_STATUSES.includes(rawStatus as LeadStatus) && rawStatus !== "hammasi") {
+    return json({ success: false, error: "Noto'g'ri status filtri" }, 400);
+  }
+  if (rawType && !VALID_TYPES.includes(rawType as LeadType) && rawType !== "hammasi") {
+    return json({ success: false, error: "Noto'g'ri yo'nalish filtri" }, 400);
+  }
+  if (rawDateRange && !["bugun", "hafta", "oy", "hammasi"].includes(rawDateRange)) {
+    return json({ success: false, error: "Noto'g'ri sana filtri" }, 400);
+  }
+
+  const status = rawStatus as LeadStatus | "hammasi" | undefined;
+  const type = rawType as LeadType | "hammasi" | undefined;
+  const dateRange = rawDateRange as "bugun" | "hafta" | "oy" | "hammasi" | undefined;
 
   const page = await listLeadsPage(
     Number.isFinite(offset) ? offset : 0,
@@ -247,6 +248,10 @@ export async function PATCH(req: Request) {
     const hasSingleId = typeof id === "string" && id.trim().length > 0;
     const hasBatchIds = Array.isArray(ids) && ids.length > 0;
 
+    if (hasBatchIds && (ids!.length > 200 || ids!.some((value) => typeof value !== "string" || !value.trim()))) {
+      return json({ success: false, error: "Ariza ID lar ro'yxati noto'g'ri yoki juda katta" }, 400);
+    }
+
     if (!hasSingleId && !hasBatchIds) {
       return json({ success: false, error: "Ariza ID si yoki arizalar ro'yxati kerak" }, 400);
     }
@@ -259,7 +264,10 @@ export async function PATCH(req: Request) {
       patch.status = status;
     }
     if (adminNotes !== undefined) {
-      patch.adminNotes = cleanText(String(adminNotes), 600);
+      if (typeof adminNotes !== "string") {
+        return json({ success: false, error: "Admin izohi matn bo'lishi kerak" }, 400);
+      }
+      patch.adminNotes = cleanText(adminNotes, 600);
     }
     if (patch.status === undefined && patch.adminNotes === undefined) {
       return json({ success: false, error: "Yangilash uchun maydon berilmadi" }, 400);
@@ -301,6 +309,9 @@ export async function DELETE(req: Request) {
       const ids = idsParam.split(",").map((s) => s.trim()).filter(Boolean);
       if (ids.length === 0) {
         return json({ success: false, error: "Ariza ID si kerak" }, 400);
+      }
+      if (ids.length > 200) {
+        return json({ success: false, error: "Bir so'rovda ko'pi bilan 200 ta ariza o'chiriladi" }, 400);
       }
       const result = await deleteLeadsBatch(ids);
       return json({

@@ -2,7 +2,7 @@
 // Supabase, Neon yoki Vercel Postgres uchun professional drayver.
 // Serverless muhitda connection pool bilan xavfsiz ishlaydi.
 
-import { Pool, PoolConfig } from "pg";
+import { Pool, PoolConfig, type PoolClient } from "pg";
 
 interface GlobalDbScope {
   __algoritm_db_pool__?: Pool;
@@ -63,6 +63,26 @@ export async function query<T = unknown>(text: string, params: unknown[] = []): 
   try {
     const res = await client.query(text, params);
     return res.rows as T[];
+  } finally {
+    client.release();
+  }
+}
+
+/** Bir nechta SQL amallarini atomik bajarish uchun transaction yordamchisi. */
+export async function withTransaction<T>(work: (client: PoolClient) => Promise<T>): Promise<T> {
+  const pool = getPool();
+  if (!pool) {
+    throw new Error("DATABASE_URL sozlanmagan. Ma'lumotlar bazasiga ulanib bo'lmadi.");
+  }
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const result = await work(client);
+    await client.query("COMMIT");
+    return result;
+  } catch (error) {
+    await client.query("ROLLBACK").catch(() => {});
+    throw error;
   } finally {
     client.release();
   }
@@ -155,6 +175,36 @@ export async function initDatabase(): Promise<boolean> {
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         expires_at BIGINT NOT NULL
       );
+
+      CREATE TABLE IF NOT EXISTS app_metadata (
+        key VARCHAR(128) PRIMARY KEY,
+        value TEXT NOT NULL,
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+
+      -- Old deployments may already have these tables without fields added later.
+      -- Keep the startup migration idempotent so an upgrade does not turn every
+      -- write into a 500 merely because the table pre-dates the current schema.
+      ALTER TABLE teachers ADD COLUMN IF NOT EXISTS phone VARCHAR(32);
+      ALTER TABLE teachers ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255);
+      ALTER TABLE teachers ADD COLUMN IF NOT EXISTS salt VARCHAR(64);
+      ALTER TABLE teachers ADD COLUMN IF NOT EXISTS telegram_id VARCHAR(64);
+      ALTER TABLE teachers ADD COLUMN IF NOT EXISTS telegram_username VARCHAR(64);
+      ALTER TABLE teachers ADD COLUMN IF NOT EXISTS status VARCHAR(32) NOT NULL DEFAULT 'active';
+      ALTER TABLE groups ADD COLUMN IF NOT EXISTS telegram_id VARCHAR(64);
+      ALTER TABLE groups ADD COLUMN IF NOT EXISTS telegram_username VARCHAR(64);
+      ALTER TABLE students ADD COLUMN IF NOT EXISTS parent_phone VARCHAR(32);
+      ALTER TABLE students ADD COLUMN IF NOT EXISTS status VARCHAR(32) NOT NULL DEFAULT 'faol';
+      ALTER TABLE students ADD COLUMN IF NOT EXISTS notes TEXT;
+      ALTER TABLE attendance_records ADD COLUMN IF NOT EXISTS note TEXT;
+      ALTER TABLE attendance_records ADD COLUMN IF NOT EXISTS marked_by VARCHAR(255) NOT NULL DEFAULT 'Ustoz';
+      ALTER TABLE attendance_records ADD COLUMN IF NOT EXISTS marked_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+      ALTER TABLE leads ADD COLUMN IF NOT EXISTS target_interest VARCHAR(255);
+      ALTER TABLE leads ADD COLUMN IF NOT EXISTS preferred_time VARCHAR(64);
+      ALTER TABLE leads ADD COLUMN IF NOT EXISTS notes TEXT;
+      ALTER TABLE leads ADD COLUMN IF NOT EXISTS source VARCHAR(128);
+      ALTER TABLE leads ADD COLUMN IF NOT EXISTS status VARCHAR(32) NOT NULL DEFAULT 'yangi';
+      ALTER TABLE leads ADD COLUMN IF NOT EXISTS admin_notes TEXT;
 
       CREATE INDEX IF NOT EXISTS idx_attendance_group_date ON attendance_records (group_id, date);
       CREATE INDEX IF NOT EXISTS idx_attendance_student_id ON attendance_records (student_id);

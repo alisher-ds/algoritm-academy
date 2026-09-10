@@ -12,7 +12,7 @@ import { promises as fs } from "fs";
 import os from "os";
 import path from "path";
 import type { Lead, LeadPayload, LeadStatus, LeadType } from "./leads";
-import { isDbConnected, query, initDatabase } from "./db";
+import { isDbConnected, query, initDatabase, withTransaction } from "./db";
 
 const REDIS_KEY = process.env.LEADS_REDIS_KEY || "algoritm:leads";
 
@@ -77,7 +77,9 @@ async function redisReadWithRaw(): Promise<{ raw: string | null; leads: Lead[] }
     const parsed = JSON.parse(raw);
     return { raw, leads: Array.isArray(parsed) ? (parsed as Lead[]) : [] };
   } catch {
-    return { raw: null, leads: [] };
+    // Corrupt Redis JSON must fail closed; treating it as an empty CRM would
+    // overwrite the real data on the next write.
+    throw new Error("Redis arizalar ma'lumotlari buzilgan");
   }
 }
 
@@ -127,8 +129,10 @@ async function filePersist(leads: Lead[]): Promise<void> {
         await fs.writeFile(tmp, JSON.stringify(leads, null, 2), "utf8");
         await fs.rename(tmp, file);
       } catch (err) {
-        // Serverless yoki read-only fayl tizimida kesh xotirada saqlanadi
-        console.warn("[leadStore] Fayl tizimiga yozishda ogohlantirish (kesh xotirada saqlandi):", err);
+        // Faqat xotirada saqlab, HTTP 201 qaytarish ma'lumot yo'qolishiga olib
+        // keladi. Fayl backend tanlangan bo'lsa, bu haqiqiy saqlash xatosidir.
+        console.error("[leadStore] Fayl tizimiga yozib bo'lmadi:", err);
+        throw new Error("Arizani doimiy saqlab bo'lmadi");
       }
       fileCache = leads;
     });
@@ -474,10 +478,10 @@ async function readReceipt(kHash: string): Promise<Receipt | null> {
     const raw = await redisCommand<string | null>(["GET", `${REDIS_KEY}:rcpt:${kHash}`]);
     return raw ? (JSON.parse(raw) as Receipt) : null;
   } catch (err) {
-    // Kvitansiyani o'qib bo'lmasa ariza baribir qabul qilinishi kerak —
-    // idempotentlik qulaylik, arizani yo'qotish esa yo'qotish.
+    // Idempotency tekshiruvi ishlamasa, yangi dublikat ariza yaratishdan ko'ra
+    // so'rovni vaqtincha rad etish xavfsizroq.
     console.error("[leadStore] Kvitansiyani o'qib bo'lmadi:", err);
-    return null;
+    throw new Error("Ariza takrorlanishini tekshirib bo'lmadi");
   }
 }
 
@@ -496,6 +500,7 @@ async function writeReceipt(kHash: string, receipt: Receipt): Promise<void> {
       );
     } catch (err) {
       console.error("[leadStore] PostgreSQL kvitansiyani saqlab bo'lmadi:", err);
+      throw new Error("Ariza takrorlanish kvitansiyasini saqlab bo'lmadi");
     }
     return;
   }
@@ -526,7 +531,23 @@ async function writeReceipt(kHash: string, receipt: Receipt): Promise<void> {
     ]);
   } catch (err) {
     console.error("[leadStore] Kvitansiyani saqlab bo'lmadi:", err);
+    throw new Error("Ariza takrorlanish kvitansiyasini saqlab bo'lmadi");
   }
+}
+
+async function reserveRedisReceipt(keyHash: string, receipt: Receipt): Promise<boolean> {
+  // Bu faqat qisqa muddatli in-flight lock. Durable idempotency receipt
+  // lead muvaffaqiyatli yozilgandan keyin alohida saqlanadi; aks holda process
+  // crash bo'lsa kalit 24 soatga "osilib" qolishi mumkin edi.
+  const result = await redisCommand<string>([
+    "SET",
+    `${REDIS_KEY}:lock:${keyHash}`,
+    JSON.stringify(receipt),
+    "NX",
+    "EX",
+    "60",
+  ]);
+  return result === "OK";
 }
 
 export function payloadIdentity(payload: LeadPayload): string {
@@ -545,11 +566,93 @@ function hash(value: string): string {
   return createHash("sha256").update(value).digest("hex");
 }
 
+async function postgresCreateLead(
+  payload: LeadPayload,
+  idempotencyKey?: string
+): Promise<{ lead: Lead; created: boolean }> {
+  await initDatabase();
+  return withTransaction(async (client) => {
+    const now = Date.now();
+    const keyHash = idempotencyKey ? hash(idempotencyKey) : null;
+    const payloadHash = idempotencyKey ? hash(payloadIdentity(payload)) : null;
+
+    if (keyHash && payloadHash) {
+      const receiptResult = await client.query<{
+        payload_hash: string;
+        lead_id: string;
+        expires_at: string | number;
+      }>("SELECT payload_hash, lead_id, expires_at FROM idempotency_receipts WHERE key_hash = $1 FOR UPDATE", [keyHash]);
+      const receipt = receiptResult.rows[0];
+      if (receipt && Number(receipt.expires_at) > now) {
+        if (receipt.payload_hash !== payloadHash) {
+          const error = new Error("Bu yuborish kaliti boshqa ariza uchun ishlatilgan. Formani yangilang.");
+          (error as unknown as { status: number }).status = 409;
+          throw error;
+        }
+        const existingResult = await client.query<DbLeadRow>("SELECT * FROM leads WHERE id = $1", [receipt.lead_id]);
+        if (existingResult.rows[0]) {
+          return { lead: mapDbLead(existingResult.rows[0]), created: false };
+        }
+      } else if (receipt) {
+        await client.query("DELETE FROM idempotency_receipts WHERE key_hash = $1", [keyHash]);
+      }
+    }
+
+    const duplicateResult = await client.query<DbLeadRow>(
+      `SELECT * FROM leads
+       WHERE phone = $1 AND target_interest = $2
+         AND created_at >= NOW() - INTERVAL '60 seconds'
+       ORDER BY created_at DESC LIMIT 1`,
+      [payload.phone, payload.targetInterest]
+    );
+    if (duplicateResult.rows[0]) {
+      return { lead: mapDbLead(duplicateResult.rows[0]), created: false };
+    }
+
+    const lead: Lead = {
+      ...payload,
+      id: newId(),
+      createdAt: new Date(now).toISOString(),
+      status: "yangi",
+    };
+    await client.query(
+      `INSERT INTO leads (id, name, phone, type, target_interest, preferred_time, notes, source, status, admin_notes, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+      [
+        lead.id,
+        lead.name,
+        lead.phone,
+        lead.type,
+        lead.targetInterest,
+        lead.preferredTime || null,
+        lead.notes || null,
+        lead.source || null,
+        lead.status,
+        lead.adminNotes || null,
+        lead.createdAt,
+      ]
+    );
+
+    if (keyHash && payloadHash) {
+      await client.query(
+        `INSERT INTO idempotency_receipts (key_hash, payload_hash, lead_id, created_at, expires_at)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [keyHash, payloadHash, lead.id, lead.createdAt, now + RECEIPT_TTL_MS]
+      );
+    }
+    return { lead, created: true };
+  });
+}
+
 export async function createLead(
   payload: LeadPayload,
   idempotencyKey?: string
 ): Promise<{ lead: Lead; created: boolean }> {
   return enqueueWrite(async () => {
+    if (storageBackend() === "postgres") {
+      return postgresCreateLead(payload, idempotencyKey);
+    }
+
     const leads = await readAll();
     const now = Date.now();
 
@@ -589,19 +692,53 @@ export async function createLead(
       status: "yangi",
     };
 
+    let redisReceiptStored = false;
+    let redisReceiptKeyHash: string | null = null;
     if (storageBackend() === "redis") {
-      let saved = false;
-      for (let attempt = 0; attempt < 5; attempt++) {
-        const { raw, leads: currentLeads } = await redisReadWithRaw();
-        const next = [lead, ...currentLeads];
-        const ok = await redisWriteCAS(raw, next);
-        if (ok) {
-          saved = true;
-          break;
+      if (idempotencyKey) {
+        const kHash = hash(idempotencyKey);
+        redisReceiptKeyHash = kHash;
+        const pHash = hash(payloadIdentity(payload));
+        const receipt: Receipt = {
+          payloadHash: pHash,
+          leadId: lead.id,
+          createdAt: lead.createdAt,
+          expiresAt: now + RECEIPT_TTL_MS,
+        };
+        redisReceiptStored = await reserveRedisReceipt(kHash, receipt);
+        if (!redisReceiptStored) {
+          const currentReceipt = await readReceipt(kHash);
+          if (currentReceipt?.payloadHash === pHash) {
+            const currentLeads = await redisRead();
+            const existing = currentLeads.find((item) => item.id === currentReceipt.leadId);
+            if (existing) return { lead: existing, created: false };
+          }
+          throw new Error("Ariza yuborilishi allaqachon qayta ishlanmoqda. Birozdan so'ng urinib ko'ring.");
         }
-        await new Promise((r) => setTimeout(r, 20 + Math.random() * 40));
+      }
+
+      let saved = false;
+      try {
+        for (let attempt = 0; attempt < 5; attempt++) {
+          const { raw, leads: currentLeads } = await redisReadWithRaw();
+          const next = [lead, ...currentLeads];
+          const ok = await redisWriteCAS(raw, next);
+          if (ok) {
+            saved = true;
+            break;
+          }
+          await new Promise((r) => setTimeout(r, 20 + Math.random() * 40));
+        }
+      } catch (error) {
+        if (redisReceiptStored && redisReceiptKeyHash) {
+          await redisCommand(["DEL", `${REDIS_KEY}:lock:${redisReceiptKeyHash}`]).catch(() => {});
+        }
+        throw error;
       }
       if (!saved) {
+        if (redisReceiptStored && redisReceiptKeyHash) {
+          await redisCommand(["DEL", `${REDIS_KEY}:lock:${redisReceiptKeyHash}`]).catch(() => {});
+        }
         throw new Error("Redis ma'lumotlar bazasi band. Birozdan so'ng qayta urinib ko'ring.");
       }
     } else {
@@ -619,6 +756,9 @@ export async function createLead(
         createdAt: lead.createdAt,
         expiresAt: now + RECEIPT_TTL_MS,
       });
+      if (redisReceiptStored && redisReceiptKeyHash) {
+        await redisCommand(["DEL", `${REDIS_KEY}:lock:${redisReceiptKeyHash}`]).catch(() => {});
+      }
     }
 
     return { lead, created: true };

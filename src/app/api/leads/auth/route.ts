@@ -12,6 +12,7 @@ import {
 import { clientIdentity, rateLimit } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
+const MAX_BODY_BYTES = 4 * 1024;
 
 /** POST /api/leads/auth — parolni tasdiqlaydi va imzolangan HttpOnly cookie o'rnatadi. */
 export async function POST(req: Request) {
@@ -43,11 +44,24 @@ export async function POST(req: Request) {
     );
   }
 
-  const body = await req.json().catch(() => null);
-  const password =
-    body && typeof body === "object" && typeof (body as { password?: unknown }).password === "string"
-      ? (body as { password: string }).password
-      : "";
+  const contentLength = Number(req.headers.get("content-length") || 0);
+  if (contentLength > MAX_BODY_BYTES) {
+    return NextResponse.json({ success: false, error: "So'rov hajmi juda katta" }, { status: 413 });
+  }
+  const rawBody = await req.text().catch(() => "");
+  if (rawBody.length > MAX_BODY_BYTES) {
+    return NextResponse.json({ success: false, error: "So'rov hajmi juda katta" }, { status: 413 });
+  }
+  let body: Record<string, unknown> | null = null;
+  try {
+    const parsed: unknown = JSON.parse(rawBody || "null");
+    body = parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : null;
+  } catch {
+    body = null;
+  }
+  const password = typeof body?.password === "string" ? body.password : "";
   const rememberMe =
     body && typeof body === "object" && Boolean((body as { rememberMe?: unknown }).rememberMe);
 
