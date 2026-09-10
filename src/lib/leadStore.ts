@@ -79,7 +79,8 @@ async function redisReadWithRaw(): Promise<{ raw: string | null; leads: Lead[] }
   if (!raw) return { raw: null, leads: [] };
   try {
     const parsed = JSON.parse(raw);
-    return { raw, leads: Array.isArray(parsed) ? (parsed as Lead[]) : [] };
+    if (!Array.isArray(parsed)) throw new Error("Redis arizalar ma'lumotlari buzilgan");
+    return { raw, leads: parsed as Lead[] };
   } catch {
     // Corrupt Redis JSON must fail closed; treating it as an empty CRM would
     // overwrite the real data on the next write.
@@ -160,7 +161,8 @@ async function fileRead(): Promise<Lead[]> {
     }
     const raw = await fs.readFile(file, "utf8");
     const parsed = JSON.parse(raw);
-    fileCache = Array.isArray(parsed) ? (parsed as Lead[]) : [];
+    if (!Array.isArray(parsed)) throw new Error("Arizalar fayli massivi bo'lishi kerak");
+    fileCache = parsed as Lead[];
     fileMtime = stat.mtimeMs;
     return fileCache;
   } catch (err: unknown) {
@@ -257,6 +259,47 @@ async function postgresDelete(ids: string[]): Promise<number> {
     [ids]
   );
   return Number(res[0]?.count || 0);
+}
+
+async function postgresUpdateLead(id: string, patch: { status?: LeadStatus; adminNotes?: string }): Promise<Lead | null> {
+  await initDatabase();
+  const assignments: string[] = [];
+  const values: unknown[] = [];
+  if (patch.status !== undefined) {
+    values.push(patch.status);
+    assignments.push(`status = $${values.length}`);
+  }
+  if (patch.adminNotes !== undefined) {
+    values.push(patch.adminNotes);
+    assignments.push(`admin_notes = $${values.length}`);
+  }
+  if (assignments.length === 0) return null;
+  values.push(id);
+  const rows = await withTransaction(async (client) => {
+    const result = await client.query<DbLeadRow>(
+      `UPDATE leads SET ${assignments.join(", ")} WHERE id = $${values.length} RETURNING *`,
+      values
+    );
+    return result.rows;
+  });
+  return rows[0] ? mapDbLead(rows[0]) : null;
+}
+
+async function postgresUpdateLeadsBatch(ids: string[], patch: { status?: LeadStatus; adminNotes?: string }): Promise<{ updatedCount: number }> {
+  await initDatabase();
+  if (ids.length === 0) return { updatedCount: 0 };
+  const rows = await withTransaction(async (client) => {
+    const result = await client.query<DbLeadRow>(
+      `UPDATE leads
+       SET status = COALESCE($1::varchar, status),
+           admin_notes = CASE WHEN $2::boolean THEN $3::text ELSE admin_notes END
+       WHERE id = ANY($4::varchar[])
+       RETURNING id`,
+      [patch.status ?? null, patch.adminNotes !== undefined, patch.adminNotes ?? null, ids]
+    );
+    return result.rows;
+  });
+  return { updatedCount: rows.length };
 }
 
 // ─────────────────────────────── Umumiy interfeys ───────────────────────────────
@@ -502,6 +545,17 @@ async function readReceipt(kHash: string): Promise<Receipt | null> {
   }
 }
 
+async function redisRemoveLead(leadId: string): Promise<boolean> {
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const current = await redisReadWithRaw();
+    if (!current.leads.some((lead) => lead.id === leadId)) return true;
+    const next = current.leads.filter((lead) => lead.id !== leadId);
+    if (await redisWriteCAS(current.raw, next)) return true;
+    await new Promise((resolve) => setTimeout(resolve, 20 + Math.random() * 40));
+  }
+  return false;
+}
+
 async function writeReceipt(kHash: string, receipt: Receipt): Promise<void> {
   if (storageBackend() === "postgres") {
     try {
@@ -590,6 +644,10 @@ async function postgresCreateLead(
   await initDatabase();
   return withTransaction(async (client) => {
     const now = Date.now();
+    // The process-local queue does not protect multiple server instances.
+    // Serialize the short duplicate-check/insert section in PostgreSQL so two
+    // concurrent requests cannot both pass the 60-second duplicate check.
+    await client.query("SELECT pg_advisory_xact_lock(hashtext('algoritm-leads-create'))");
     const keyHash = idempotencyKey ? hash(idempotencyKey) : null;
     const payloadHash = idempotencyKey ? hash(payloadIdentity(payload)) : null;
 
@@ -738,6 +796,20 @@ export async function createLead(
       try {
         for (let attempt = 0; attempt < 5; attempt++) {
           const { raw, leads: currentLeads } = await redisReadWithRaw();
+          // Re-check after every CAS conflict. Without this second check two
+          // concurrent requests without an Idempotency-Key could both pass the
+          // initial read and create duplicate leads.
+          const currentDuplicate = currentLeads.find((item) => {
+            if (item.phone !== payload.phone || item.targetInterest !== payload.targetInterest) return false;
+            const age = now - new Date(item.createdAt).getTime();
+            return age >= 0 && age < 60_000;
+          });
+          if (currentDuplicate) {
+            if (redisReceiptStored && redisReceiptKeyHash) {
+              await redisCommand(["DEL", `${REDIS_KEY}:lock:${redisReceiptKeyHash}`]).catch(() => {});
+            }
+            return { lead: currentDuplicate, created: false };
+          }
           const next = [lead, ...currentLeads];
           const ok = await redisWriteCAS(raw, next);
           if (ok) {
@@ -767,12 +839,25 @@ export async function createLead(
     if (idempotencyKey) {
       const kHash = hash(idempotencyKey);
       const pHash = hash(payloadIdentity(payload));
-      await writeReceipt(kHash, {
-        payloadHash: pHash,
-        leadId: lead.id,
-        createdAt: lead.createdAt,
-        expiresAt: now + RECEIPT_TTL_MS,
-      });
+      try {
+        await writeReceipt(kHash, {
+          payloadHash: pHash,
+          leadId: lead.id,
+          createdAt: lead.createdAt,
+          expiresAt: now + RECEIPT_TTL_MS,
+        });
+      } catch (error) {
+        // Do not leave a lead without its durable idempotency receipt: a later
+        // retry could create a duplicate after the short duplicate window.
+        if (storageBackend() === "redis") {
+          const removed = await redisRemoveLead(lead.id).catch(() => false);
+          if (!removed) console.error("[leadStore] Receipt xatosidan keyin leadni qaytarib bo'lmadi", lead.id);
+        }
+        if (redisReceiptStored && redisReceiptKeyHash) {
+          await redisCommand(["DEL", `${REDIS_KEY}:lock:${redisReceiptKeyHash}`]).catch(() => {});
+        }
+        throw error;
+      }
       if (redisReceiptStored && redisReceiptKeyHash) {
         await redisCommand(["DEL", `${REDIS_KEY}:lock:${redisReceiptKeyHash}`]).catch(() => {});
       }
@@ -791,6 +876,7 @@ export async function updateLead(
   id: string,
   patch: { status?: LeadStatus; adminNotes?: string }
 ): Promise<Lead | null> {
+  if (storageBackend() === "postgres") return postgresUpdateLead(id, patch);
   return enqueueWrite(() =>
     mutate<Lead | null>((leads) => {
       const idx = leads.findIndex((l) => l.id === id);
@@ -812,6 +898,7 @@ export async function updateLeadsBatch(
   ids: string[],
   patch: { status?: LeadStatus; adminNotes?: string }
 ): Promise<{ updatedCount: number }> {
+  if (storageBackend() === "postgres") return postgresUpdateLeadsBatch(ids, patch);
   const idSet = new Set(ids);
   return enqueueWrite(() =>
     mutate<{ updatedCount: number }>((leads) => {

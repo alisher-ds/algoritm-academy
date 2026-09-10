@@ -73,6 +73,9 @@ async function authFetch(input: RequestInfo | URL, init?: RequestInit): Promise<
   });
 }
 
+const OFFLINE_QUEUE_MAX_ATTEMPTS = 10;
+const OFFLINE_QUEUE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+
 export default function DavomatTeacherPage() {
   // ─── 1. Autentifikatsiya va Ustoz Holati ───
   const [currentTeacher, setCurrentTeacher] = useState<Teacher | null>(null);
@@ -159,12 +162,18 @@ export default function DavomatTeacherPage() {
     try {
       const rawQueue = localStorage.getItem("algoritm_offline_queue");
       if (!rawQueue) return;
-      const queue: Array<{ records: Array<Record<string, unknown>>; attempts?: number; nextAttemptAt?: number }> = JSON.parse(rawQueue);
+      const queue: Array<{ records: Array<Record<string, unknown>>; attempts?: number; nextAttemptAt?: number; createdAt?: number }> = JSON.parse(rawQueue);
       if (queue.length === 0) return;
 
       const remaining: typeof queue = [];
+      const now = Date.now();
       for (const item of queue) {
-        if (item.nextAttemptAt && item.nextAttemptAt > Date.now()) {
+        const attempts = Number.isInteger(item.attempts) && item.attempts! >= 0 ? item.attempts! : 0;
+        const createdAt = typeof item.createdAt === "number" ? item.createdAt : now;
+        if (!Array.isArray(item.records) || item.records.length === 0 || attempts >= OFFLINE_QUEUE_MAX_ATTEMPTS || now - createdAt > OFFLINE_QUEUE_MAX_AGE_MS) {
+          continue;
+        }
+        if (item.nextAttemptAt && item.nextAttemptAt > now) {
           remaining.push(item);
           continue;
         }
@@ -174,24 +183,21 @@ export default function DavomatTeacherPage() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ records: item.records }),
           });
-          if (res.ok) continue;
-          // A queued item must survive auth errors and temporary outages, but
-          // permanent validation/permission errors should not retry forever.
-          if (res.status >= 400 && res.status < 500 && res.status !== 401 && res.status !== 429) {
-            continue;
+          const data = await res.json().catch(() => ({}));
+          if (res.ok && data?.success) continue;
+          // Validation, permission and expired-session errors cannot become
+          // valid by retrying forever. Temporary outages and rate limits can.
+          if (res.status >= 400 && res.status < 500 && res.status !== 429) continue;
+          const nextAttempts = attempts + 1;
+          if (nextAttempts < OFFLINE_QUEUE_MAX_ATTEMPTS) {
+            remaining.push({ ...item, attempts: nextAttempts, createdAt, nextAttemptAt: Date.now() + 30_000 });
           }
-          remaining.push({
-            ...item,
-            attempts: (item.attempts || 0) + 1,
-            nextAttemptAt: Date.now() + 30_000,
-          });
-          if (res.status === 401 || res.status >= 500 || res.status === 429) break;
+          if (res.status >= 500 || res.status === 429) break;
         } catch {
-          remaining.push({
-            ...item,
-            attempts: (item.attempts || 0) + 1,
-            nextAttemptAt: Date.now() + 30_000,
-          });
+          const nextAttempts = attempts + 1;
+          if (nextAttempts < OFFLINE_QUEUE_MAX_ATTEMPTS) {
+            remaining.push({ ...item, attempts: nextAttempts, createdAt, nextAttemptAt: Date.now() + 30_000 });
+          }
           break;
         }
       }
@@ -737,15 +743,15 @@ export default function DavomatTeacherPage() {
     if (queueForRetry) {
       try {
         const rawQueue = localStorage.getItem("algoritm_offline_queue") || "[]";
-        const parsed: Array<{ records: typeof records; attempts?: number; nextAttemptAt?: number }> = JSON.parse(rawQueue);
+        const parsed: Array<{ records: typeof records; attempts?: number; nextAttemptAt?: number; createdAt?: number }> = JSON.parse(rawQueue);
         const queuedIndex = parsed.findIndex((item) =>
           item.records?.[0]?.groupId === selectedGroupId && item.records?.[0]?.date === todayStr
         );
         if (queuedIndex === -1) {
-          parsed.push({ records });
+          parsed.push({ records, createdAt: Date.now() });
         } else {
           // Keep the latest user edits instead of retrying an older draft.
-          parsed[queuedIndex] = { records, attempts: 0, nextAttemptAt: undefined };
+          parsed[queuedIndex] = { records, attempts: 0, nextAttemptAt: undefined, createdAt: Date.now() };
         }
         localStorage.setItem("algoritm_offline_queue", JSON.stringify(parsed));
         setIsOfflineSaved(true);

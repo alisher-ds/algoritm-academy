@@ -18,6 +18,7 @@ import {
   text,
 } from "@/lib/attendanceValidation";
 import type { DaySchedule, Group } from "@/lib/attendanceTypes";
+import { loadTeachers } from "@/lib/teacherAuth";
 
 export const dynamic = "force-dynamic";
 const MAX_BODY_BYTES = 16 * 1024;
@@ -26,7 +27,7 @@ async function readBody(req: Request): Promise<Record<string, unknown> | null> {
   const contentLength = Number(req.headers.get("content-length") || 0);
   if (contentLength > MAX_BODY_BYTES) return null;
   const raw = await req.text().catch(() => "");
-  if (!raw || raw.length > MAX_BODY_BYTES) return null;
+  if (!raw || new TextEncoder().encode(raw).byteLength > MAX_BODY_BYTES) return null;
   try {
     const value: unknown = JSON.parse(raw);
     return value && typeof value === "object" && !Array.isArray(value)
@@ -131,12 +132,24 @@ export async function POST(req: Request) {
     if (!body) return NextResponse.json({ success: false, error: "Noto'g'ri so'rov formati" }, { status: 400 });
 
     const teacherId = auth.isAdmin ? text(body.teacherId, 64) : auth.teacher!.id;
-    const teacherName = auth.isAdmin ? text(body.teacherName, 120) : auth.teacher!.name;
-    if (!teacherId || !teacherName) {
+    let teacherName = auth.isAdmin ? text(body.teacherName, 120) : auth.teacher!.name;
+    let teacherSubject = auth.teacher?.subject || "Umumiy fan";
+    if (!teacherId) {
+      return NextResponse.json({ success: false, error: "Ustoz ma'lumotlari majburiy" }, { status: 400 });
+    }
+    if (auth.isAdmin) {
+      const assignedTeacher = (await loadTeachers()).find((teacher) => teacher.id === teacherId);
+      if (!assignedTeacher || assignedTeacher.status !== "active") {
+        return NextResponse.json({ success: false, error: "Tanlangan ustoz mavjud emas yoki faol emas" }, { status: 400 });
+      }
+      // Never trust the display name supplied by the browser for ownership data.
+      teacherName = assignedTeacher.name;
+      teacherSubject = assignedTeacher.subject;
+    } else if (!teacherName) {
       return NextResponse.json({ success: false, error: "Ustoz ma'lumotlari majburiy" }, { status: 400 });
     }
 
-    const parsed = groupFields(body, teacherId, teacherName, auth.teacher?.subject || "Umumiy fan");
+    const parsed = groupFields(body, teacherId, teacherName, teacherSubject);
     if (parsed.error || !parsed.value) {
       return NextResponse.json({ success: false, error: parsed.error }, { status: 400 });
     }
@@ -181,12 +194,21 @@ export async function PATCH(req: Request) {
     }
 
     const teacherId = auth.isAdmin ? text(body.teacherId || existing.teacherId, 64) : existing.teacherId;
-    const teacherName = auth.isAdmin ? text(body.teacherName || existing.teacherName, 120) : existing.teacherName;
+    let teacherName = auth.isAdmin ? text(body.teacherName || existing.teacherName, 120) : existing.teacherName;
+    let teacherSubject = auth.teacher?.subject || existing.subject;
+    if (auth.isAdmin) {
+      const assignedTeacher = (await loadTeachers()).find((teacher) => teacher.id === teacherId);
+      if (!assignedTeacher || assignedTeacher.status !== "active") {
+        return NextResponse.json({ success: false, error: "Tanlangan ustoz mavjud emas yoki faol emas" }, { status: 400 });
+      }
+      teacherName = assignedTeacher.name;
+      teacherSubject = assignedTeacher.subject;
+    }
     const parsed = groupFields(
       { ...existing, ...body },
       teacherId,
       teacherName,
-      auth.teacher?.subject || existing.subject
+      teacherSubject
     );
     if (parsed.error || !parsed.value) {
       return NextResponse.json({ success: false, error: parsed.error }, { status: 400 });

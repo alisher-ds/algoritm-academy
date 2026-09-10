@@ -7,6 +7,7 @@ import { Pool, PoolConfig, type PoolClient } from "pg";
 interface GlobalDbScope {
   __algoritm_db_pool__?: Pool;
   __algoritm_db_initialized__?: boolean;
+  __algoritm_db_init_promise__?: Promise<boolean>;
 }
 
 function getDatabaseUrl(): string | null {
@@ -54,7 +55,15 @@ export function getPool(): Pool | null {
     max: 10,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 5000,
-    ssl: isLocalhost ? false : { rejectUnauthorized: false },
+    ssl: isLocalhost
+      ? false
+      : {
+          // Do not silently disable certificate verification for hosted
+          // PostgreSQL. Operators who use a private CA can provide it
+          // explicitly; disabling verification is an opt-in emergency escape hatch.
+          rejectUnauthorized: process.env.PGSSL_REJECT_UNAUTHORIZED === "false" ? false : true,
+          ...(process.env.PGSSL_CA ? { ca: process.env.PGSSL_CA } : {}),
+        },
   };
 
   const pool = new Pool(config);
@@ -113,9 +122,13 @@ export async function initDatabase(): Promise<boolean> {
 
   const g = globalThis as unknown as GlobalDbScope;
   if (g.__algoritm_db_initialized__) return true;
+  if (g.__algoritm_db_init_promise__) return g.__algoritm_db_init_promise__;
 
-  try {
-    await query(`
+  const initialization = (async () => {
+    try {
+      // pg accepts a multi-statement query here. The process-wide promise keeps
+      // concurrent cold-start requests from racing the DDL/seed migration.
+      await query(`
       CREATE TABLE IF NOT EXISTS teachers (
         id VARCHAR(64) PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
@@ -223,6 +236,8 @@ export async function initDatabase(): Promise<boolean> {
       ALTER TABLE leads ADD COLUMN IF NOT EXISTS admin_notes TEXT;
 
       CREATE INDEX IF NOT EXISTS idx_attendance_group_date ON attendance_records (group_id, date);
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_attendance_unique_student_group_date
+        ON attendance_records (group_id, student_id, date);
       CREATE INDEX IF NOT EXISTS idx_attendance_student_id ON attendance_records (student_id);
       CREATE INDEX IF NOT EXISTS idx_students_group_id ON students (group_id);
       CREATE INDEX IF NOT EXISTS idx_groups_teacher_id ON groups (teacher_id);
@@ -232,13 +247,18 @@ export async function initDatabase(): Promise<boolean> {
       CREATE INDEX IF NOT EXISTS idx_leads_phone ON leads (phone);
       CREATE INDEX IF NOT EXISTS idx_receipts_expires_at ON idempotency_receipts (expires_at);
     `);
+      g.__algoritm_db_initialized__ = true;
+      return true;
+    } catch (err) {
+      console.error("[Database Init Error]:", err);
+      return false;
+    } finally {
+      delete g.__algoritm_db_init_promise__;
+    }
+  })();
 
-    g.__algoritm_db_initialized__ = true;
-    return true;
-  } catch (err) {
-    console.error("[Database Init Error]:", err);
-    return false;
-  }
+  g.__algoritm_db_init_promise__ = initialization;
+  return initialization;
 }
 
 /** Testlar uchun hovuzni tozalash va yopish */
@@ -248,5 +268,6 @@ export async function closePool(): Promise<void> {
     await g.__algoritm_db_pool__.end().catch(() => {});
     delete g.__algoritm_db_pool__;
     delete g.__algoritm_db_initialized__;
+    delete g.__algoritm_db_init_promise__;
   }
 }

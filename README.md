@@ -57,6 +57,7 @@ Boshqa skriptlar:
    - **PostgreSQL** — `DATABASE_URL` (yoki `POSTGRES_URL`/`SUPABASE_DATABASE_URL`) o'rnatilsa, barcha modullar uchun yagona markaziy baza ishlatiladi.
    - **Upstash Redis (REST)** — `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` o'rnatilsa. Serverless (Vercel) uchun tavsiya etiladi.
    - **JSON fayl** — `LEADS_FILE` yoki `<proyekt>/.data/leads.json` (lokal/VPS uchun; atomik yozish bilan). Serverless muhitda vaqtinchalik bo'lgani uchun production uchun yaroqsiz.
+   - PostgreSQL jadvallari `src/lib/db.ts` orqali cold-start paytida idempotent yaratiladi va eski deploylar uchun kerakli ustun/indexlar migratsiya qilinadi; qo'lda o'rnatish yoki audit uchun `schema.sql` shu DDL bilan sinxron yuritiladi.
 3. Agar `TELEGRAM_BOT_TOKEN` va `TELEGRAM_CHAT_ID` o'rnatilgan bo'lsa — har bir ariza Telegram'ga bildirishnoma sifatida boradi (yuborish xatosi arizani saqlashni buzmaydi).
 4. `/admin` sahifasi arizalarni API orqali ko'radi: qidiruv, status (yangi → bog'lanildi → qabul / bekor), CSV eksport (formula-injection'dan himoyalangan).
 5. Server ishlamay qolsa (5xx / tarmoq) forma arizani `localStorage`'ga zaxiralaydi; admin birinchi kirishda ularni avtomatik serverga ko'chiradi. Validatsiya xatolari (4xx) lokalga saqlanmaydi.
@@ -97,7 +98,7 @@ Boshqa skriptlar:
 ## Testlar va CI
 
 ```bash
-npm test          # vitest (auth, attendanceAuth, leadStore, rate-limit, telefon, API route'lar — 121 ta test)
+npm test          # vitest (auth, attendanceAuth, leadStore, rate-limit, telefon, API route'lar — 122 ta test)
 npm run typecheck # tsc --noEmit
 npm run lint      # eslint (0 xato, 0 ogohlantirish)
 ```

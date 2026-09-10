@@ -61,8 +61,6 @@ export function canAccessGroup(
       auth.teacher.name &&
       group.teacherName.trim().toLowerCase() === auth.teacher.name.trim().toLowerCase()
   );
-
-  return false;
 }
 
 /**

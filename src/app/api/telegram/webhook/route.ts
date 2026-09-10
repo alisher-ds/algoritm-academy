@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { listGroups, listStudents, getAttendance } from "@/lib/attendanceStore";
 import { findTeacherByTelegram, verifyTeacherCredentials, bindTeacherTelegram } from "@/lib/teacherAuth";
-import { isAuthed } from "@/lib/adminAuth";
+import { isAuthed, isSameOrigin } from "@/lib/adminAuth";
 import { clientIdentity, rateLimit } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
@@ -58,6 +58,9 @@ export async function GET(req?: Request): Promise<NextResponse> {
   // side-effecting GET.
   if (!req || !isAuthed(req)) {
     return NextResponse.json({ success: false, error: "Faqat administrator uchun" }, { status: 401 });
+  }
+  if (!isSameOrigin(req)) {
+    return NextResponse.json({ success: false, error: "So'rov rad etildi" }, { status: 403 });
   }
 
   const baseUrl = getBaseUrl();
@@ -166,7 +169,7 @@ export async function POST(req: Request) {
 
   try {
     const raw = await req.text();
-    if (!raw || raw.length > 64 * 1024) return NextResponse.json({ error: "Noto'g'ri so'rov" }, { status: 400 });
+    if (!raw || new TextEncoder().encode(raw).byteLength > 64 * 1024) return NextResponse.json({ error: "Noto'g'ri so'rov" }, { status: 400 });
     const update = JSON.parse(raw) as TelegramUpdate;
     const callback = update.callback_query;
     const incomingMessage: TelegramMessage | null = update.message || (callback?.message
@@ -242,6 +245,10 @@ export async function POST(req: Request) {
 
       const inputLogin = parts[1];
       const inputPass = parts.slice(2).join(" ");
+      if (inputLogin.length > 64 || inputPass.length > 128) {
+        await sendTelegramReply(chatId, "❌ Login yoki parol uzunligi ruxsat etilgan chegaradan oshdi.");
+        return NextResponse.json({ ok: true });
+      }
 
       const authedTeacher = await verifyTeacherCredentials(inputLogin, inputPass);
       if (!authedTeacher) {
@@ -433,7 +440,13 @@ export async function POST(req: Request) {
       }
 
       const allGroups = await listGroups({ activeOnly: true });
-      const groups = isAdmin ? allGroups : allGroups.filter((g) => g.teacherId === teacher?.id);
+      const groups = isAdmin
+        ? allGroups
+        : allGroups.filter(
+            (g) =>
+              g.teacherId === teacher?.id ||
+              (!g.teacherId && g.teacherName && teacher?.name && g.teacherName.trim().toLowerCase() === teacher.name.trim().toLowerCase())
+          );
       const students = await listStudents({ status: "faol" });
 
       const lines = [
@@ -473,7 +486,13 @@ export async function POST(req: Request) {
       const d = new Date();
       const todayStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
       const allGroups = await listGroups({ activeOnly: true });
-      const groups = isAdmin ? allGroups : allGroups.filter((g) => g.teacherId === teacher?.id);
+      const groups = isAdmin
+        ? allGroups
+        : allGroups.filter(
+            (g) =>
+              g.teacherId === teacher?.id ||
+              (!g.teacherId && g.teacherName && teacher?.name && g.teacherName.trim().toLowerCase() === teacher.name.trim().toLowerCase())
+          );
 
       const lines = [
         `📊 <b>BUGUNGI DAVOMAT HISOBOTI (${todayStr})</b>`,

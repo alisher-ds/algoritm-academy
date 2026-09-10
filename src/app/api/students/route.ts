@@ -22,7 +22,7 @@ async function readBody(req: Request): Promise<Record<string, unknown> | null> {
   const contentLength = Number(req.headers.get("content-length") || 0);
   if (contentLength > MAX_BODY_BYTES) return null;
   const raw = await req.text().catch(() => "");
-  if (!raw || raw.length > MAX_BODY_BYTES) return null;
+  if (!raw || new TextEncoder().encode(raw).byteLength > MAX_BODY_BYTES) return null;
   try {
     const value: unknown = JSON.parse(raw);
     return value && typeof value === "object" && !Array.isArray(value)

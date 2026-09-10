@@ -49,7 +49,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: false, error: "So'rov hajmi juda katta" }, { status: 413 });
   }
   const rawBody = await req.text().catch(() => "");
-  if (rawBody.length > MAX_BODY_BYTES) {
+  if (new TextEncoder().encode(rawBody).byteLength > MAX_BODY_BYTES) {
     return NextResponse.json({ success: false, error: "So'rov hajmi juda katta" }, { status: 413 });
   }
   let body: Record<string, unknown> | null = null;
@@ -62,8 +62,7 @@ export async function POST(req: Request) {
     body = null;
   }
   const password = typeof body?.password === "string" ? body.password : "";
-  const rememberMe =
-    body && typeof body === "object" && Boolean((body as { rememberMe?: unknown }).rememberMe);
+  const rememberMe = body?.rememberMe === true;
 
   if (!verifyPassword(password)) {
     // Faqat noto'g'ri urinishlar global hisobga tushadi — to'g'ri parol bilan kirgan

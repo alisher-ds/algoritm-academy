@@ -81,7 +81,7 @@ async function readJsonBody(req: Request): Promise<Record<string, unknown> | nul
   const len = Number(req.headers.get("content-length") || 0);
   if (len > MAX_BODY_BYTES) return null;
   const text = await req.text().catch(() => "");
-  if (!text || text.length > MAX_BODY_BYTES) return null;
+  if (!text || new TextEncoder().encode(text).byteLength > MAX_BODY_BYTES) return null;
   try {
     const parsed = JSON.parse(text);
     return parsed && typeof parsed === "object" && !Array.isArray(parsed)

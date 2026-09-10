@@ -28,7 +28,7 @@ async function readBody(req: Request): Promise<Record<string, unknown> | null> {
   const contentLength = Number(req.headers.get("content-length") || 0);
   if (contentLength > MAX_BODY_BYTES) return null;
   const raw = await req.text().catch(() => "");
-  if (!raw || raw.length > MAX_BODY_BYTES) return null;
+  if (!raw || new TextEncoder().encode(raw).byteLength > MAX_BODY_BYTES) return null;
   try {
     const value: unknown = JSON.parse(raw);
     return value && typeof value === "object" && !Array.isArray(value)
@@ -95,8 +95,11 @@ export async function POST(req: Request) {
     // initData yuborilgan bo'lsa, u haqiqiy Telegram WebApp ma'lumoti bo'lishi shart.
     // Token yo'q holatda soxta initData ni shunchaki e'tiborsiz qoldirish noto'g'ri xavfsizlik signalidir.
     if (body.initData !== undefined && body.initData !== null && body.initData !== "") {
+      if (typeof body.initData !== "string") {
+        return NextResponse.json({ success: false, error: "Telegram sessiyasi formati noto'g'ri" }, { status: 400 });
+      }
       const token = process.env.TELEGRAM_BOT_TOKEN;
-      const authResult = token ? verifyTelegramWebAppData(String(body.initData), token) : { valid: false };
+      const authResult = token ? verifyTelegramWebAppData(body.initData, token) : { valid: false };
       if (!authResult.valid) {
         return NextResponse.json({ success: false, error: "Xavfsizlik xatosi: Telegram sessiyasi tasdiqlanmadi" }, { status: 401 });
       }
