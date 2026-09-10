@@ -73,6 +73,9 @@ async function authFetch(input: RequestInfo | URL, init?: RequestInit): Promise<
   });
 }
 
+const OFFLINE_QUEUE_MAX_ATTEMPTS = 10;
+const OFFLINE_QUEUE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+
 export default function DavomatTeacherPage() {
   // ─── 1. Autentifikatsiya va Ustoz Holati ───
   const [currentTeacher, setCurrentTeacher] = useState<Teacher | null>(null);
@@ -152,18 +155,50 @@ export default function DavomatTeacherPage() {
     try {
       const rawQueue = localStorage.getItem("algoritm_offline_queue");
       if (!rawQueue) return;
-      const queue: Array<{ records: Array<Record<string, unknown>> }> = JSON.parse(rawQueue);
+      const queue: Array<{ records: Array<Record<string, unknown>>; attempts?: number; nextAttemptAt?: number; createdAt?: number }> = JSON.parse(rawQueue);
       if (queue.length === 0) return;
 
+      const remaining: typeof queue = [];
+      const now = Date.now();
       for (const item of queue) {
-        await authFetch("/api/attendance", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(item),
-        });
+        const attempts = Number.isInteger(item.attempts) && item.attempts! >= 0 ? item.attempts! : 0;
+        const createdAt = typeof item.createdAt === "number" ? item.createdAt : now;
+        if (!Array.isArray(item.records) || item.records.length === 0 || attempts >= OFFLINE_QUEUE_MAX_ATTEMPTS || now - createdAt > OFFLINE_QUEUE_MAX_AGE_MS) {
+          continue;
+        }
+        if (item.nextAttemptAt && item.nextAttemptAt > now) {
+          remaining.push(item);
+          continue;
+        }
+        try {
+          const res = await authFetch("/api/attendance", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ records: item.records }),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (res.ok && data?.success) continue;
+          // Validation, permission and expired-session errors cannot become
+          // valid by retrying forever. Temporary outages and rate limits can.
+          if (res.status >= 400 && res.status < 500 && res.status !== 429) continue;
+          const nextAttempts = attempts + 1;
+          if (nextAttempts < OFFLINE_QUEUE_MAX_ATTEMPTS) {
+            remaining.push({ ...item, attempts: nextAttempts, createdAt, nextAttemptAt: Date.now() + 30_000 });
+          }
+          if (res.status >= 500 || res.status === 429) break;
+        } catch {
+          const nextAttempts = attempts + 1;
+          if (nextAttempts < OFFLINE_QUEUE_MAX_ATTEMPTS) {
+            remaining.push({ ...item, attempts: nextAttempts, createdAt, nextAttemptAt: Date.now() + 30_000 });
+          }
+          break;
+        }
       }
-      localStorage.removeItem("algoritm_offline_queue");
-    } catch {}
+      if (remaining.length > 0) localStorage.setItem("algoritm_offline_queue", JSON.stringify(remaining));
+      else localStorage.removeItem("algoritm_offline_queue");
+    } catch {
+      // Corrupted local data is left untouched so it can be recovered manually.
+    }
   }, []);
 
   useEffect(() => {
@@ -174,6 +209,7 @@ export default function DavomatTeacherPage() {
     };
     const handleOffline = () => setIsOnline(false);
 
+    void syncOfflineQueue();
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
     return () => {
@@ -417,7 +453,6 @@ export default function DavomatTeacherPage() {
     setAuthSubmitting(true);
     setAuthError("");
     try {
-      const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user || telegramUser;
       const res = await fetch("/api/teachers/auth", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -425,8 +460,7 @@ export default function DavomatTeacherPage() {
           action: "login",
           login: loginInput.trim(),
           password: passwordInput,
-          bindTelegramId: tgUser?.id ? String(tgUser.id) : undefined,
-          bindTelegramUsername: tgUser?.username || undefined,
+          telegramInitData: window.Telegram?.WebApp?.initData || undefined,
         }),
       });
       const data = await res.json();
@@ -472,7 +506,6 @@ export default function DavomatTeacherPage() {
     setAuthSubmitting(true);
     setAuthError("");
     try {
-      const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user || telegramUser;
       const res = await fetch("/api/teachers/auth", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -484,8 +517,7 @@ export default function DavomatTeacherPage() {
           login: regLogin.trim(),
           password: regPassword,
           confirmPassword: regConfirmPassword,
-          bindTelegramId: tgUser?.id ? String(tgUser.id) : undefined,
-          bindTelegramUsername: tgUser?.username || undefined,
+          telegramInitData: window.Telegram?.WebApp?.initData || undefined,
         }),
       });
       const data = await res.json();
@@ -618,37 +650,58 @@ export default function DavomatTeacherPage() {
 
     const rawInitData = typeof window !== "undefined" ? window.Telegram?.WebApp?.initData : undefined;
 
+    let queueForRetry = false;
     try {
       const res = await authFetch("/api/attendance", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ records, initData: rawInitData }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
 
       if (res.ok && data.success) {
         setSaveSuccess(true);
         try {
+          localStorage.removeItem(`draft_att_${selectedGroupId}_${todayStr}`);
           window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred?.("success");
         } catch {}
         setTimeout(() => setSaveSuccess(false), 3500);
+      } else if (res.status >= 500 || res.status === 429) {
+        queueForRetry = true;
+        setErrorNotice(data.error || "Server vaqtincha ishlamayapti");
       } else {
-        throw new Error(data.error || "Server xatosi");
+        // Validation/auth errors are not offline errors and must not be queued.
+        setErrorNotice(data.error || "Davomatni saqlab bo'lmadi");
       }
     } catch {
+      queueForRetry = true;
+    }
+
+    if (queueForRetry) {
       try {
         const rawQueue = localStorage.getItem("algoritm_offline_queue") || "[]";
-        const queue = JSON.parse(rawQueue);
-        queue.push({ records });
-        localStorage.setItem("algoritm_offline_queue", JSON.stringify(queue));
+        const parsed: Array<{ records: typeof records; attempts?: number; nextAttemptAt?: number; createdAt?: number }> = JSON.parse(rawQueue);
+        const queuedIndex = parsed.findIndex((item) =>
+          item.records?.[0]?.groupId === selectedGroupId && item.records?.[0]?.date === todayStr
+        );
+        if (queuedIndex === -1) {
+          parsed.push({ records, createdAt: Date.now() });
+        } else {
+          // Keep the latest user edits instead of retrying an older draft.
+          parsed[queuedIndex] = { records, attempts: 0, nextAttemptAt: undefined, createdAt: Date.now() };
+        }
+        localStorage.setItem("algoritm_offline_queue", JSON.stringify(parsed));
         setIsOfflineSaved(true);
         setTimeout(() => setIsOfflineSaved(false), 5000);
       } catch {
         setErrorNotice("Davomatni saqlab bo'lmadi. Internet aloqasini tekshiring.");
       }
-    } finally {
-      setSaving(false);
     }
+
+    if (queueForRetry && !isOnline) {
+      setErrorNotice("Internet yo'q — davomat qurilmada saqlandi va aloqa tiklanganda yuboriladi.");
+    }
+    setSaving(false);
   };
 
   // Yangi o'quvchi qo'shish

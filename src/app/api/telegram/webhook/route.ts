@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { listGroups, listStudents, getAttendance } from "@/lib/attendanceStore";
 import { findTeacherByTelegram, verifyTeacherCredentials, bindTeacherTelegram } from "@/lib/teacherAuth";
+import { isAuthed, isSameOrigin } from "@/lib/adminAuth";
+import { clientIdentity, rateLimit } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +14,38 @@ function getBaseUrl(): string {
   return "https://algoritm-academy.vercel.app";
 }
 
-export async function GET() {
+function htmlEscape(value: unknown): string {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;");
+}
+
+interface TelegramMessage {
+  chat: { id: number | string };
+  text?: string;
+  from?: { id?: number | string; first_name?: string; last_name?: string; username?: string };
+}
+
+interface TelegramUpdate {
+  message?: TelegramMessage;
+  callback_query?: {
+    id?: string;
+    data?: string;
+    from?: TelegramMessage["from"];
+    message?: TelegramMessage;
+  };
+}
+
+function isCommand(text: string, command: string): boolean {
+  const token = text.trim().split(/\s+/, 1)[0].toLowerCase();
+  return token === command || token.startsWith(`${command}@`);
+}
+
+export function GET(): Promise<NextResponse>;
+export function GET(req: Request): Promise<NextResponse>;
+export async function GET(req?: Request): Promise<NextResponse> {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   if (!token) {
     return NextResponse.json({
@@ -21,14 +54,32 @@ export async function GET() {
       message: "TELEGRAM_BOT_TOKEN muhit o'zgaruvchisi o'rnatilmagan.",
     });
   }
+  // This endpoint performs Telegram configuration and must not be a public
+  // side-effecting GET.
+  if (!req || !isAuthed(req)) {
+    return NextResponse.json({ success: false, error: "Faqat administrator uchun" }, { status: 401 });
+  }
+  if (!isSameOrigin(req)) {
+    return NextResponse.json({ success: false, error: "So'rov rad etildi" }, { status: 403 });
+  }
 
   const baseUrl = getBaseUrl();
   const webhookUrl = `${baseUrl}/api/telegram/webhook`;
   const webAppUrl = `${baseUrl}/davomat`;
 
   try {
-    // 1. Telegramga Webhookni ulash
-    const whRes = await fetch(`https://api.telegram.org/bot${token}/setWebhook?url=${encodeURIComponent(webhookUrl)}`);
+    // 1. Telegramga Webhookni ulash. Secret token configured bo'lsa Telegram
+    // har bir webhook so'roviga shu headerni qo'shadi.
+    const whRes = await fetch(`https://api.telegram.org/bot${token}/setWebhook`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        url: webhookUrl,
+        ...(process.env.TELEGRAM_WEBHOOK_SECRET
+          ? { secret_token: process.env.TELEGRAM_WEBHOOK_SECRET }
+          : {}),
+      }),
+    });
     const whData = await whRes.json().catch(() => ({}));
 
     // 2. Pastki chap burchakka doimiy "📋 Davomat" WebApp menyu tugmasini o'rnatish
@@ -103,33 +154,66 @@ async function sendTelegramReply(chatId: number | string, text: string, replyMar
 }
 
 export async function POST(req: Request) {
-  // Webhook secret token tekshiruvi (agar sozlagan bo'lsa)
-  const expectedSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
-  if (expectedSecret) {
-    const receivedSecret = req.headers.get("x-telegram-bot-api-secret-token");
-    if (receivedSecret !== expectedSecret) {
-      return NextResponse.json({ error: "Ruxsat yo'q" }, { status: 401 });
-    }
+  // Production'da secret'siz webhookni ochiq qoldirish bot buyruqlarini
+  // istalgan odam nomidan yuborishga imkon beradi.
+  const expectedSecret = process.env.TELEGRAM_WEBHOOK_SECRET?.trim();
+  const receivedSecret = req.headers.get("x-telegram-bot-api-secret-token");
+  if (expectedSecret ? receivedSecret !== expectedSecret : process.env.NODE_ENV === "production") {
+    return NextResponse.json({ error: "Ruxsat yo'q" }, { status: 401 });
   }
+
+  const webhookLimit = await rateLimit(`telegram:webhook:${clientIdentity(req).key}`, 120, 60);
+  if (!webhookLimit.allowed) {
+    return NextResponse.json({ error: "Juda ko'p so'rov" }, { status: 429 });
+  }
+
   try {
-    const update = await req.json();
-    const message = update?.message;
-    if (!message || !message.text) {
+    const raw = await req.text();
+    if (!raw || new TextEncoder().encode(raw).byteLength > 64 * 1024) return NextResponse.json({ error: "Noto'g'ri so'rov" }, { status: 400 });
+    const update = JSON.parse(raw) as TelegramUpdate;
+    const callback = update.callback_query;
+    const incomingMessage: TelegramMessage | null = update.message || (callback?.message
+      ? {
+          ...callback.message,
+          from: callback.from || callback.message.from,
+          text: callback.data === "my_groups" ? "/guruhlar" : String(callback.data || ""),
+        }
+      : null);
+    if (!incomingMessage || !incomingMessage.text || !incomingMessage.chat?.id) {
       return NextResponse.json({ ok: true });
     }
+    if (callback?.id) {
+      const token = process.env.TELEGRAM_BOT_TOKEN;
+      if (token) {
+        void fetch(`https://api.telegram.org/bot${token}/answerCallbackQuery`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ callback_query_id: callback.id }),
+        }).catch(() => {});
+      }
+    }
 
+    const message = incomingMessage;
     const baseUrl = getBaseUrl();
     const chatId = message.chat.id;
+    const telegramUserId = message.from?.id;
     const text = String(message.text).trim();
     const senderName = [message.from?.first_name, message.from?.last_name].filter(Boolean).join(" ") || "Foydalanuvchi";
 
-    // Qat'iy Xavfsizlik: Ushbu Telegram foydalanuvchisi Algoritm o'qituvchisimi?
-    const teacher = await findTeacherByTelegram(chatId, message.from?.username);
-    const isAdmin = Boolean(process.env.TELEGRAM_CHAT_ID && String(process.env.TELEGRAM_CHAT_ID) === String(chatId));
+    // Chat ID is a room/group ID, not an administrator identity. Never grant
+    // admin access to everyone in TELEGRAM_CHAT_ID group.
+    const adminIds = (process.env.TELEGRAM_ADMIN_IDS || "")
+      .split(",")
+      .map((id) => id.trim())
+      .filter(Boolean);
+    const isAdmin = Boolean(telegramUserId && adminIds.includes(String(telegramUserId)));
+    const teacher = telegramUserId
+      ? await findTeacherByTelegram(telegramUserId, message.from?.username)
+      : null;
     const isTeacherActive = Boolean(teacher && (!teacher.status || teacher.status === "active"));
 
     // ─── 1. Bot orqali Login va Telegram hisobni ulash ───
-    if (text.startsWith("/login") || text.startsWith("/kirish")) {
+    if (isCommand(text, "/login") || isCommand(text, "/kirish")) {
       const parts = text.split(/\s+/);
       if (parts.length < 3) {
         const usage = [
@@ -150,8 +234,21 @@ export async function POST(req: Request) {
         return NextResponse.json({ ok: true });
       }
 
+      if (!telegramUserId) {
+        return NextResponse.json({ ok: true });
+      }
+      const loginLimit = await rateLimit(`telegram:login:${telegramUserId}`, 5, 300);
+      if (!loginLimit.allowed) {
+        await sendTelegramReply(chatId, "⏳ Juda ko'p urinish qilindi. Birozdan so'ng qayta urinib ko'ring.");
+        return NextResponse.json({ ok: true });
+      }
+
       const inputLogin = parts[1];
       const inputPass = parts.slice(2).join(" ");
+      if (inputLogin.length > 64 || inputPass.length > 128) {
+        await sendTelegramReply(chatId, "❌ Login yoki parol uzunligi ruxsat etilgan chegaradan oshdi.");
+        return NextResponse.json({ ok: true });
+      }
 
       const authedTeacher = await verifyTeacherCredentials(inputLogin, inputPass);
       if (!authedTeacher) {
@@ -165,7 +262,7 @@ export async function POST(req: Request) {
       if (authedTeacher.status === "pending") {
         await sendTelegramReply(
           chatId,
-          `⏳ <b>Arizangiz ko'rib chiqilmoqda!</b>\n\nHurmatli <b>${authedTeacher.name}</b>, sizning ro'yxatdan o'tish arizangiz hozirda ma'muriyat tasdig'ini kutmoqda. Administrator tasdiqlaganidan so'ng shaxsiy kabinetingiz ochiladi.`
+          `⏳ <b>Arizangiz ko'rib chiqilmoqda!</b>\n\nHurmatli <b>${htmlEscape(authedTeacher.name)}</b>, sizning ro'yxatdan o'tish arizangiz hozirda ma'muriyat tasdig'ini kutmoqda. Administrator tasdiqlaganidan so'ng shaxsiy kabinetingiz ochiladi.`
         );
         return NextResponse.json({ ok: true });
       }
@@ -179,14 +276,14 @@ export async function POST(req: Request) {
       }
 
       // Telegram akkauntini ustozga biriktiramiz
-      const bound = await bindTeacherTelegram(authedTeacher.id, chatId, message.from?.username);
+      const bound = await bindTeacherTelegram(authedTeacher.id, telegramUserId, message.from?.username);
       const teacherName = bound?.name || authedTeacher.name;
 
       const successMsg = [
-        `🎉 <b>Tabriklaymiz, ${teacherName}!</b>`,
+        `🎉 <b>Tabriklaymiz, ${htmlEscape(teacherName)}!</b>`,
         "",
         "✅ Sizning Telegram profilingiz Algoritm Ustoz tizimiga muvaffaqiyatli ulandi!",
-        `Mutaxassislik: <b>${authedTeacher.subject}</b>`,
+        `Mutaxassislik: <b>${htmlEscape(authedTeacher.subject)}</b>`,
         "",
         "Endi siz quyidagi barcha imkoniyatlardan foydalanishingiz mumkin:",
         "📱 /davomat — 5 soniyada Davomat (Mini App)",
@@ -203,14 +300,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true });
     }
 
-    if (text === "/start") {
+    if (isCommand(text, "/start")) {
       if (teacher) {
         if (teacher.status === "pending") {
           const pendingMsg = [
-            `👋 <b>Assalomu alaykum, ${teacher.name}!</b>`,
+            `👋 <b>Assalomu alaykum, ${htmlEscape(teacher.name)}!</b>`,
             "",
             "⏳ <b>Arizangiz ko'rib chiqilmoqda</b>",
-            `Mutaxassislik: <b>${teacher.subject}</b>`,
+            `Mutaxassislik: <b>${htmlEscape(teacher.subject)}</b>`,
             "",
             "Sizning arizangiz ma'muriyatga qabul qilingan. Administrator tasdiqlaganidan so'ng barcha guruhlar va davomat ochiladi.",
           ].join("\n");
@@ -225,10 +322,10 @@ export async function POST(req: Request) {
 
         // Tizimda tasdiqlangan ustoz uchun shaxsiy xush kelibsiz xabari
         const replyText = [
-          `👋 <b>Assalomu alaykum, ${teacher.name}!</b>`,
+          `👋 <b>Assalomu alaykum, ${htmlEscape(teacher.name)}!</b>`,
           "",
           "🏛 <b>Algoritm Ustoz Boshqaruv Markazi</b>",
-          `Mutaxassislik: <b>${teacher.subject}</b>`,
+          `Mutaxassislik: <b>${htmlEscape(teacher.subject)}</b>`,
           "",
           "Quyidagi imkoniyatlar mavjud:",
           "📱 /davomat — 5 soniyada dars davomati qilish (Mini App)",
@@ -259,7 +356,7 @@ export async function POST(req: Request) {
 
       // Begona / Yangi foydalanuvchi uchun cheklangan xush kelibsiz xabari
       const guestText = [
-        `👋 <b>Assalomu alaykum, ${senderName}!</b>`,
+        `👋 <b>Assalomu alaykum, ${htmlEscape(senderName)}!</b>`,
         "",
         "🏛 <b>Algoritm Academy & School</b> rasmiy xodimlar va ustozlar botiga xush kelibsiz.",
         "",
@@ -294,7 +391,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true });
     }
 
-    if (text === "/davomat") {
+    if (isCommand(text, "/davomat")) {
       const replyText = [
         "📱 <b>O'QITUVCHILAR UCHUN TELEGRAM DAVOMAT</b>",
         "━━━━━━━━━━━━━━━━━━━━",
@@ -316,12 +413,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true });
     }
 
-    if (text === "/guruhlar") {
+    if (isCommand(text, "/guruhlar")) {
       if (!isTeacherActive && !isAdmin) {
         if (teacher && teacher.status === "pending") {
           await sendTelegramReply(
             chatId,
-            `⏳ <b>Arizangiz ko'rib chiqilmoqda</b>\n\nHurmatli <b>${teacher.name}</b>, sizning hisobingiz administrator tomonidan tasdiqlanish jarayonida. Tasdiqlangach guruhlaringiz ochiladi.`
+            `⏳ <b>Arizangiz ko'rib chiqilmoqda</b>\n\nHurmatli <b>${htmlEscape(teacher.name)}</b>, sizning hisobingiz administrator tomonidan tasdiqlanish jarayonida. Tasdiqlangach guruhlaringiz ochiladi.`
           );
           return NextResponse.json({ ok: true });
         }
@@ -343,7 +440,13 @@ export async function POST(req: Request) {
       }
 
       const allGroups = await listGroups({ activeOnly: true });
-      const groups = isAdmin ? allGroups : allGroups.filter((g) => g.teacherId === teacher?.id);
+      const groups = isAdmin
+        ? allGroups
+        : allGroups.filter(
+            (g) =>
+              g.teacherId === teacher?.id ||
+              (!g.teacherId && g.teacherName && teacher?.name && g.teacherName.trim().toLowerCase() === teacher.name.trim().toLowerCase())
+          );
       const students = await listStudents({ status: "faol" });
 
       const lines = [
@@ -356,9 +459,9 @@ export async function POST(req: Request) {
       } else {
         groups.forEach((g, idx) => {
           const stCount = students.filter((s) => s.groupId === g.id).length;
-          lines.push(`<b>${idx + 1}. ${g.name}</b> (${g.subject})`);
-          lines.push(`   👨‍🏫 Ustoz: ${g.teacherName}`);
-          lines.push(`   ⏰ Vaqt: ${g.time} (${g.days}) | ${g.room}`);
+          lines.push(`<b>${idx + 1}. ${htmlEscape(g.name)}</b> (${htmlEscape(g.subject)})`);
+          lines.push(`   👨‍🏫 Ustoz: ${htmlEscape(g.teacherName)}`);
+          lines.push(`   ⏰ Vaqt: ${htmlEscape(g.time)} (${htmlEscape(g.days)}) | ${htmlEscape(g.room)}`);
           lines.push(`   👥 O'quvchilar: <b>${stCount}</b> ta`);
           lines.push(`   💵 Oylik: ${g.monthlyPrice.toLocaleString("uz-UZ")} so\'m`);
           lines.push("");
@@ -372,7 +475,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true });
     }
 
-    if (text === "/hisobot") {
+    if (isCommand(text, "/hisobot")) {
       if (!isTeacherActive && !isAdmin) {
         await sendTelegramReply(
           chatId,
@@ -383,7 +486,13 @@ export async function POST(req: Request) {
       const d = new Date();
       const todayStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
       const allGroups = await listGroups({ activeOnly: true });
-      const groups = isAdmin ? allGroups : allGroups.filter((g) => g.teacherId === teacher?.id);
+      const groups = isAdmin
+        ? allGroups
+        : allGroups.filter(
+            (g) =>
+              g.teacherId === teacher?.id ||
+              (!g.teacherId && g.teacherName && teacher?.name && g.teacherName.trim().toLowerCase() === teacher.name.trim().toLowerCase())
+          );
 
       const lines = [
         `📊 <b>BUGUNGI DAVOMAT HISOBOTI (${todayStr})</b>`,
@@ -401,7 +510,7 @@ export async function POST(req: Request) {
           const k = recs.filter((r) => r.status === "keldi").length;
           const s = recs.filter((r) => r.status === "sababli").length;
           const km = recs.filter((r) => r.status === "kelmadi").length;
-          lines.push(`🔹 <b>${g.name}</b> (${g.teacherName}):`);
+          lines.push(`🔹 <b>${htmlEscape(g.name)}</b> (${htmlEscape(g.teacherName)}):`);
           lines.push(`   ✅ Keldi: ${k} | ⚠️ Sababli: ${s} | ❌ Kelmadi: ${km}`);
           totalMarked += recs.length;
           totalKeldi += k;

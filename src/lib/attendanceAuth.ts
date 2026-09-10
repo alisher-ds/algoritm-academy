@@ -49,19 +49,19 @@ export function canAccessGroup(
     return false;
   }
 
-  if (group.teacherId && group.teacherId === auth.teacher.id) {
-    return true;
+  if (group.teacherId) {
+    return group.teacherId === auth.teacher.id;
   }
 
-  if (
+  // Legacy records without teacherId may still use the old name binding. Never
+  // use the name fallback when a different immutable teacherId is present;
+  // otherwise deleting an account and recreating the same name could restore
+  // access to its old groups.
+  return Boolean(
     group.teacherName &&
-    auth.teacher.name &&
-    group.teacherName.trim().toLowerCase() === auth.teacher.name.trim().toLowerCase()
-  ) {
-    return true;
-  }
-
-  return false;
+      auth.teacher.name &&
+      group.teacherName.trim().toLowerCase() === auth.teacher.name.trim().toLowerCase()
+  );
 }
 
 /**

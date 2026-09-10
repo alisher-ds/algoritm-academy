@@ -17,6 +17,7 @@ import {
   bindTeacherTelegram,
   TEACHER_AUTH_COOKIE,
   TEACHER_SESSION_TTL,
+  type TeacherStatus,
 } from "@/lib/teacherAuth";
 import { listGroups, listStudents } from "@/lib/attendanceStore";
 import { verifyTelegramWebAppData } from "@/lib/telegramAuth";
@@ -24,6 +25,52 @@ import { isAuthed, isSameOrigin } from "@/lib/adminAuth";
 import { clientIdentity, rateLimit } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
+const MAX_BODY_BYTES = 32 * 1024;
+
+async function readTeacherBody(req: Request): Promise<Record<string, unknown> | null> {
+  const contentLength = Number(req.headers.get("content-length") || 0);
+  if (contentLength > MAX_BODY_BYTES) return null;
+  const raw = await req.text().catch(() => "");
+  if (!raw || new TextEncoder().encode(raw).byteLength > MAX_BODY_BYTES) return null;
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function verifiedTelegramBinding(body: Record<string, unknown>): { id: string; username?: string } | null {
+  const rawInitData = typeof body.telegramInitData === "string" ? body.telegramInitData : "";
+  if (!rawInitData) return null;
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  if (!token) return null;
+  const result = verifyTelegramWebAppData(rawInitData, token);
+  if (!result.valid || !result.user) return null;
+  return { id: String(result.user.id), username: result.user.username };
+}
+
+function telegramHtmlEscape(value: unknown): string {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;");
+}
+
+function isTeacherStatus(value: unknown): value is TeacherStatus {
+  return value === "active" || value === "pending" || value === "blocked";
+}
+
+function optionalString(value: unknown): string | undefined {
+  return typeof value === "string" ? value : undefined;
+}
+
+function isBoundedString(value: unknown, max: number): value is string {
+  return typeof value === "string" && value.length <= max;
+}
 
 export async function GET(req: Request) {
   try {
@@ -42,7 +89,7 @@ export async function GET(req: Request) {
 
       const adminList = teachers.map((t) => {
         const assignedGroups = allGroups.filter(
-          (g) => g.teacherId === t.id || (g.teacherName && g.teacherName.toLowerCase() === t.name.toLowerCase())
+          (g) => g.teacherId === t.id || (!g.teacherId && g.teacherName && g.teacherName.toLowerCase() === t.name.toLowerCase())
         );
         return {
           id: t.id,
@@ -102,7 +149,7 @@ export async function GET(req: Request) {
       // Faqat shu ustozning o'ziga tegishli guruhlari va o'quvchilari
       const allGroups = await listGroups({ activeOnly: true });
       const teacherGroups = allGroups.filter(
-        (g) => g.teacherId === currentTeacher.id || (g.teacherName && g.teacherName.toLowerCase() === currentTeacher.name.toLowerCase())
+        (g) => g.teacherId === currentTeacher.id || (!g.teacherId && g.teacherName && g.teacherName.toLowerCase() === currentTeacher.name.toLowerCase())
       );
 
       const groupIds = new Set(teacherGroups.map((g) => g.id));
@@ -130,8 +177,14 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json().catch(() => ({}));
+    const body = await readTeacherBody(req);
+    if (!body) {
+      return NextResponse.json({ success: false, error: "Noto'g'ri so'rov formati" }, { status: 400 });
+    }
     const { action } = body;
+    if (!isSameOrigin(req)) {
+      return NextResponse.json({ success: false, error: "Noto'g'ri manba" }, { status: 403 });
+    }
 
     // 1. Shaxsiy Login va Parol orqali kirish
     if (action === "login") {
@@ -144,15 +197,16 @@ export async function POST(req: Request) {
         );
       }
 
-      const { login, password, bindTelegramId, bindTelegramUsername } = body;
-      if (!login || !password) {
+      const binding = verifiedTelegramBinding(body);
+      const { login, password } = body;
+      if (!isBoundedString(login, 64) || !isBoundedString(password, 128) || !login.trim() || !password) {
         return NextResponse.json(
           { success: false, error: "Login (yoki telefon) va parolni kiriting" },
           { status: 400 }
         );
       }
 
-      let teacher = await verifyTeacherCredentials(String(login), String(password));
+      let teacher = await verifyTeacherCredentials(login, password);
       if (!teacher) {
         return NextResponse.json(
           {
@@ -186,8 +240,8 @@ export async function POST(req: Request) {
         );
       }
 
-      if (bindTelegramId) {
-        const bound = await bindTeacherTelegram(teacher.id, bindTelegramId, bindTelegramUsername);
+      if (binding) {
+        const bound = await bindTeacherTelegram(teacher.id, binding.id, binding.username);
         if (bound) teacher = bound;
       }
 
@@ -225,29 +279,37 @@ export async function POST(req: Request) {
         );
       }
 
-      const { teacherId, password, confirmPassword, oldPassword, phone, bindTelegramId, bindTelegramUsername } = body;
-      if (!teacherId || !password) {
+      const binding = verifiedTelegramBinding(body);
+      const { teacherId, password, confirmPassword, oldPassword, phone } = body;
+      if (
+        !isBoundedString(teacherId, 64) ||
+        !isBoundedString(password, 128) ||
+        (oldPassword !== undefined && !isBoundedString(oldPassword, 128)) ||
+        (phone !== undefined && !isBoundedString(phone, 32)) ||
+        !teacherId.trim() ||
+        !password
+      ) {
         return NextResponse.json(
           { success: false, error: "Ustoz va yangi parolni kiriting" },
           { status: 400 }
         );
       }
 
-      if (String(password).length < 4) {
+      if (password.length < 4) {
         return NextResponse.json(
           { success: false, error: "Parol kamida 4 ta belgidan iborat bo'lishi kerak" },
           { status: 400 }
         );
       }
 
-      if (confirmPassword && password !== confirmPassword) {
+      if (confirmPassword !== undefined && (!isBoundedString(confirmPassword, 128) || password !== confirmPassword)) {
         return NextResponse.json(
           { success: false, error: "Kiritilgan parollar bir-biriga mos kelmadi" },
           { status: 400 }
         );
       }
 
-      const targetTeacher = (await loadTeachers()).find((t) => t.id === String(teacherId));
+      const targetTeacher = (await loadTeachers()).find((t) => t.id === teacherId);
       if (!targetTeacher) {
         return NextResponse.json({ success: false, error: "Ustoz topilmadi" }, { status: 404 });
       }
@@ -264,30 +326,30 @@ export async function POST(req: Request) {
           if (
             !oldPassword ||
             !targetTeacher.salt ||
-            !verifyPasswordHash(String(oldPassword), targetTeacher.salt, targetTeacher.passwordHash).valid
+            !verifyPasswordHash(oldPassword, targetTeacher.salt, targetTeacher.passwordHash).valid
           ) {
             return NextResponse.json({ success: false, error: "Eski parol noto'g'ri kiritildi" }, { status: 401 });
           }
         }
       } else {
-        const suppliedPhone = String(phone || "").replace(/\D/g, "");
+        const suppliedPhone = (phone || "").replace(/\D/g, "");
         const storedPhone = String(targetTeacher.phone || "").replace(/\D/g, "");
         if (!admin && (!suppliedPhone || !storedPhone || suppliedPhone !== storedPhone)) {
           return NextResponse.json({ success: false, error: "Birinchi parolni o'rnatish uchun telefon raqamini tasdiqlang" }, { status: 403 });
         }
       }
 
-      if (bindTelegramId && !admin && !isSelf) {
+      if (binding && !admin && !isSelf) {
         return NextResponse.json({ success: false, error: "Telegramni biriktirish uchun ruxsat yo'q" }, { status: 403 });
       }
 
-      const updated = await setTeacherPassword(String(teacherId), String(password));
+      const updated = await setTeacherPassword(teacherId, password);
       if (!updated) {
         return NextResponse.json({ success: false, error: "Ustoz topilmadi" }, { status: 404 });
       }
 
-      if (bindTelegramId) {
-        await bindTeacherTelegram(String(teacherId), bindTelegramId, bindTelegramUsername);
+      if (binding) {
+        await bindTeacherTelegram(teacherId, binding.id, binding.username);
       }
 
       const token = createTeacherToken(updated);
@@ -324,30 +386,34 @@ export async function POST(req: Request) {
         );
       }
 
-      const { name, subject, phone, login, password, confirmPassword, bindTelegramId, bindTelegramUsername } = body;
+      const binding = verifiedTelegramBinding(body);
+      const { name, subject, phone, login, password, confirmPassword } = body;
 
-      if (!name || !subject || !login || !password) {
+      if (!isBoundedString(name, 160) || !isBoundedString(subject, 160) || !isBoundedString(login, 64) || !isBoundedString(password, 128) || !isBoundedString(confirmPassword, 128) || !name.trim() || !subject.trim() || !login.trim() || !password) {
         return NextResponse.json(
-          { success: false, error: "Barcha maydonlarni to'ldiring: Ism-familiya, fan, login va parol." },
+          { success: false, error: "Barcha maydonlarni to'ldiring: Ism-familiya, fan, login, parol va parol tasdig'i." },
           { status: 400 }
         );
       }
 
-      if (confirmPassword && password !== confirmPassword) {
+      if (password !== confirmPassword) {
         return NextResponse.json(
           { success: false, error: "Kiritilgan parollar bir-biriga mos kelmadi" },
           { status: 400 }
         );
       }
+      if (phone !== undefined && !isBoundedString(phone, 32)) {
+        return NextResponse.json({ success: false, error: "Telefon raqami noto'g'ri" }, { status: 400 });
+      }
 
       const regResult = await registerTeacher({
-        name: String(name),
-        subject: String(subject),
-        phone: phone ? String(phone) : undefined,
-        login: String(login),
-        password: String(password),
-        telegramId: bindTelegramId,
-        telegramUsername: bindTelegramUsername,
+        name,
+        subject,
+        phone: phone || undefined,
+        login,
+        password,
+        telegramId: binding?.id,
+        telegramUsername: binding?.username,
       });
 
       if (regResult.error || !regResult.teacher) {
@@ -361,10 +427,10 @@ export async function POST(req: Request) {
         const alertMsg = [
           "🔔 <b>Yangi ustoz ro'yxatdan o'tdi!</b>",
           "━━━━━━━━━━━━━━━━━━━━",
-          `👤 F.I.Sh: <b>${regResult.teacher.name}</b>`,
-          `📚 Fan / Mutaxassislik: <b>${regResult.teacher.subject}</b>`,
-          `📱 Telefon: <b>${regResult.teacher.phone || "Kiritilmagan"}</b>`,
-          `🔑 Login: <code>${regResult.teacher.login}</code>`,
+          `👤 F.I.Sh: <b>${telegramHtmlEscape(regResult.teacher.name)}</b>`,
+          `📚 Fan / Mutaxassislik: <b>${telegramHtmlEscape(regResult.teacher.subject)}</b>`,
+          `📱 Telefon: <b>${telegramHtmlEscape(regResult.teacher.phone || "Kiritilmagan")}</b>`,
+          `🔑 Login: <code>${telegramHtmlEscape(regResult.teacher.login)}</code>`,
           `⏳ Holati: <b>Tasdiqlash kutilmoqda (pending)</b>`,
           "",
           "👉 <i>Admin panel (/admin) — 'Ustozlar' bo'limi orqali ushbu hisobni tasdiqlashingiz yoki rad etishingiz mumkin.</i>",
@@ -395,7 +461,7 @@ export async function POST(req: Request) {
       const { initData } = body;
       const botToken = process.env.TELEGRAM_BOT_TOKEN;
 
-      if (!initData || !botToken) {
+      if (typeof initData !== "string" || !initData || !botToken) {
         return NextResponse.json({ success: false, error: "Telegram ma'lumotlari yetarli emas" }, { status: 400 });
       }
 
@@ -470,12 +536,26 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: false, error: "Faqat administrator uchun" }, { status: 403 });
       }
       const { name, subject, phone, login, password, status } = body;
+      if (
+        !isBoundedString(name, 160) ||
+        !isBoundedString(subject, 160) ||
+        !isBoundedString(login, 64) ||
+        !isBoundedString(password, 128) ||
+        !name.trim() ||
+        !subject.trim() ||
+        !login.trim() ||
+        !password ||
+        (phone !== undefined && !isBoundedString(phone, 32)) ||
+        (status !== undefined && !isTeacherStatus(status))
+      ) {
+        return NextResponse.json({ success: false, error: "Ustoz ma'lumotlari noto'g'ri yoki to'liq emas" }, { status: 400 });
+      }
       const resCreate = await createTeacherByAdmin({
-        name: String(name || ""),
-        subject: String(subject || ""),
-        phone: phone ? String(phone) : undefined,
-        login: String(login || ""),
-        password: String(password || ""),
+        name,
+        subject,
+        phone: phone || undefined,
+        login,
+        password,
         status: status || "active",
       });
       if (resCreate.error || !resCreate.teacher) {
@@ -489,10 +569,10 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: false, error: "Faqat administrator uchun" }, { status: 403 });
       }
       const { teacherId, status } = body;
-      if (!teacherId || !status || !["active", "pending", "blocked"].includes(status)) {
+      if (!isBoundedString(teacherId, 64) || !teacherId.trim() || !isTeacherStatus(status)) {
         return NextResponse.json({ success: false, error: "Ustoz va yangi statusni to'g'ri ko'rsating" }, { status: 400 });
       }
-      const updated = await updateTeacherStatus(String(teacherId), status);
+      const updated = await updateTeacherStatus(teacherId, status);
       if (!updated) {
         return NextResponse.json({ success: false, error: "Ustoz topilmadi" }, { status: 404 });
       }
@@ -504,10 +584,10 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: false, error: "Faqat administrator uchun" }, { status: 403 });
       }
       const { teacherId, newPassword } = body;
-      if (!teacherId || !newPassword || String(newPassword).length < 4) {
+      if (!isBoundedString(teacherId, 64) || !teacherId.trim() || !isBoundedString(newPassword, 128) || newPassword.length < 4) {
         return NextResponse.json({ success: false, error: "Yangi parol kamida 4 ta belgidan iborat bo'lishi kerak" }, { status: 400 });
       }
-      const updated = await adminResetTeacherPassword(String(teacherId), String(newPassword));
+      const updated = await adminResetTeacherPassword(teacherId, newPassword);
       if (!updated) {
         return NextResponse.json({ success: false, error: "Ustoz topilmadi" }, { status: 404 });
       }
@@ -519,10 +599,23 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: false, error: "Faqat administrator uchun" }, { status: 403 });
       }
       const { teacherId, name, subject, phone, login } = body;
-      if (!teacherId) {
+      if (!isBoundedString(teacherId, 64) || !teacherId.trim()) {
         return NextResponse.json({ success: false, error: "Ustoz tanlanmadi" }, { status: 400 });
       }
-      const resUpdate = await updateTeacherDetails(String(teacherId), { name, subject, phone, login });
+      if (
+        (name !== undefined && !isBoundedString(name, 160)) ||
+        (subject !== undefined && !isBoundedString(subject, 160)) ||
+        (phone !== undefined && !isBoundedString(phone, 32)) ||
+        (login !== undefined && !isBoundedString(login, 64))
+      ) {
+        return NextResponse.json({ success: false, error: "Ustoz ma'lumotlari noto'g'ri" }, { status: 400 });
+      }
+      const resUpdate = await updateTeacherDetails(teacherId, {
+        name: optionalString(name),
+        subject: optionalString(subject),
+        phone: optionalString(phone),
+        login: optionalString(login),
+      });
       if (resUpdate.error || !resUpdate.teacher) {
         return NextResponse.json({ success: false, error: resUpdate.error || "Tahrirlashda xato" }, { status: 400 });
       }
@@ -535,11 +628,11 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: false, error: "Bu amal faqat administrator uchun" }, { status: 403 });
       }
       const { teacherId, login } = body;
-      const target = teacherId || login;
-      if (!target) {
+      const target = teacherId ?? login;
+      if (!isBoundedString(target, 64) || !target.trim()) {
         return NextResponse.json({ success: false, error: "O'chirilishi kerak bo'lgan ustoz ko'rsatilmadi" }, { status: 400 });
       }
-      const ok = await deleteTeacher(String(target));
+      const ok = await deleteTeacher(target);
       return NextResponse.json({ success: ok, message: ok ? "Ustoz muvaffaqiyatli o'chirildi" : "Ustoz topilmadi" });
     }
 

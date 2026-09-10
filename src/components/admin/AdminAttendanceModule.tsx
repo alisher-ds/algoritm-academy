@@ -29,6 +29,7 @@ import type {
   Student,
   StudentMonthlyBilling,
 } from "@/lib/attendanceTypes";
+import { sanitizeCsvField } from "@/lib/sanitize";
 
 export interface AdminTeacherItem {
   id: string;
@@ -397,12 +398,15 @@ export default function AdminAttendanceModule() {
           lessonsPerMonth: 12,
         }),
       });
-      if (res.ok) {
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
         setShowGroupModal(false);
         setNewGroupName("");
         setNewGroupSubject("");
         setNewGroupTeacher("");
         void fetchGroups();
+      } else {
+        alert(data.error || "Guruhni yaratib bo'lmadi");
       }
     } catch {
       alert("Xatolik yuz berdi");
@@ -424,13 +428,16 @@ export default function AdminAttendanceModule() {
           status: "faol",
         }),
       });
-      if (res.ok) {
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
         setShowStudentModal(false);
         setNewStudentName("");
         setNewStudentPhone("+998 ");
         setNewStudentParent("+998 ");
         void fetchStudents();
         if (selectedGroupId) void fetchBilling(selectedGroupId, selectedMonth);
+      } else {
+        alert(data.error || "O'quvchini qo'shib bo'lmadi");
       }
     } catch {
       alert("Xatolik yuz berdi");
@@ -457,14 +464,14 @@ export default function AdminAttendanceModule() {
       const rate = b.standardLessons > 0 ? Math.round((b.attendedCount / b.standardLessons) * 100) : 0;
       return [
         idx + 1,
-        `"${b.studentName.replace(/"/g, '""')}"`,
-        `"${b.groupName.replace(/"/g, '""')}"`,
-        b.month,
+        sanitizeCsvField(b.studentName),
+        sanitizeCsvField(b.groupName),
+        sanitizeCsvField(b.month),
         b.standardLessons,
         b.attendedCount,
         b.excusedCount,
         b.unexcusedCount,
-        `${rate}%`,
+        sanitizeCsvField(`${rate}%`),
       ];
     });
 

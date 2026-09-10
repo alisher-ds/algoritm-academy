@@ -4,7 +4,7 @@
 import { promises as fs } from "fs";
 import os from "os";
 import path from "path";
-import { isDbConnected, query, initDatabase } from "./db";
+import { isDbConnected, query, initDatabase, withTransaction } from "./db";
 import type {
   Group,
   Student,
@@ -145,6 +145,14 @@ const INITIAL_STUDENTS: Student[] = [
 let cache: AttendanceStoreData | null = null;
 let writeChain: Promise<void> = Promise.resolve();
 
+function cloneStoreData(data: AttendanceStoreData): AttendanceStoreData {
+  return {
+    groups: data.groups.map((group) => ({ ...group })),
+    students: data.students.map((student) => ({ ...student })),
+    records: data.records.map((record) => ({ ...record })),
+  };
+}
+
 function upstashConfig(): { url: string; token: string } | null {
   const url = process.env.UPSTASH_REDIS_REST_URL?.trim();
   const token = process.env.UPSTASH_REDIS_REST_TOKEN?.trim();
@@ -162,41 +170,92 @@ async function redisGetAttendance(): Promise<AttendanceStoreData | null> {
       headers: { Authorization: `Bearer ${cfg.token}` },
       cache: "no-store",
     });
-    if (!res.ok) return null;
-    const data = await res.json();
-    if (data.result) {
-      const parsed = typeof data.result === "string" ? JSON.parse(data.result) : data.result;
-      if (parsed && Array.isArray(parsed.groups) && Array.isArray(parsed.students)) {
-        return {
-          groups: parsed.groups,
-          students: parsed.students,
-          records: Array.isArray(parsed.records) ? parsed.records : [],
-        };
-      }
+    if (!res.ok) throw new Error(`Redis xatosi (${res.status})`);
+    const data = (await res.json()) as { result?: unknown; error?: string };
+    if (data.error) throw new Error(data.error);
+    // null means a correctly reachable Redis key that has not been created yet.
+    if (data.result === null || data.result === undefined) return null;
+    const parsed = typeof data.result === "string" ? JSON.parse(data.result) : data.result;
+    if (!parsed || !Array.isArray((parsed as AttendanceStoreData).groups) || !Array.isArray((parsed as AttendanceStoreData).students)) {
+      throw new Error("Redis davomat ma'lumotlari buzilgan");
     }
-    return null;
-  } catch {
-    return null;
+    return {
+      groups: (parsed as AttendanceStoreData).groups,
+      students: (parsed as AttendanceStoreData).students,
+      records: Array.isArray((parsed as AttendanceStoreData).records) ? (parsed as AttendanceStoreData).records : [],
+    };
+  } catch (error) {
+    console.error("[attendanceStore] Redis dan yuklashda xato:", error);
+    // A configured Redis backend is authoritative. Never silently switch to a
+    // local file after an outage or malformed response.
+    throw new Error("Markaziy Redis bazasiga ulanib bo'lmadi");
   }
 }
 
-async function redisSaveAttendance(data: AttendanceStoreData): Promise<boolean> {
+async function redisReadWithRawAttendance(): Promise<{ raw: string | null; data: AttendanceStoreData | null }> {
   const cfg = upstashConfig();
-  if (!cfg) return false;
-  try {
-    const res = await fetch(`${cfg.url}/set/${encodeURIComponent(REDIS_ATTENDANCE_KEY)}`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${cfg.token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(JSON.stringify(data)),
-      cache: "no-store",
-    });
-    return res.ok;
-  } catch {
-    return false;
+  if (!cfg) throw new Error("Redis konfiguratsiya qilinmagan");
+  const res = await fetch(`${cfg.url}/get/${encodeURIComponent(REDIS_ATTENDANCE_KEY)}`, {
+    headers: { Authorization: `Bearer ${cfg.token}` },
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error(`Redis xatosi (${res.status})`);
+  const result = (await res.json()) as { result?: unknown; error?: string };
+  if (result.error) throw new Error(result.error);
+  if (result.result === null || result.result === undefined) return { raw: null, data: null };
+  const raw = typeof result.result === "string" ? result.result : JSON.stringify(result.result);
+  const parsed = JSON.parse(raw) as AttendanceStoreData;
+  if (!parsed || !Array.isArray(parsed.groups) || !Array.isArray(parsed.students)) {
+    throw new Error("Redis davomat ma'lumotlari buzilgan");
   }
+  return {
+    raw,
+    data: {
+      groups: parsed.groups,
+      students: parsed.students,
+      records: Array.isArray(parsed.records) ? parsed.records : [],
+    },
+  };
+}
+
+const REDIS_ATTENDANCE_CAS_SCRIPT = `
+local current = redis.call('GET', KEYS[1])
+if (ARGV[1] == '0' and not current) or (ARGV[1] == '1' and current == ARGV[2]) then
+  redis.call('SET', KEYS[1], ARGV[3])
+  return 1
+end
+return 0`;
+
+async function redisWriteAttendanceCas(raw: string | null, data: AttendanceStoreData): Promise<boolean> {
+  const cfg = upstashConfig();
+  if (!cfg) throw new Error("Redis konfiguratsiya qilinmagan");
+  const res = await fetch(cfg.url, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${cfg.token}`, "Content-Type": "application/json" },
+    body: JSON.stringify([
+      "EVAL",
+      REDIS_ATTENDANCE_CAS_SCRIPT,
+      1,
+      REDIS_ATTENDANCE_KEY,
+      raw === null ? "0" : "1",
+      raw ?? "",
+      JSON.stringify(data),
+    ]),
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error(`Redis xatosi (${res.status})`);
+  const result = (await res.json()) as { result?: number; error?: string };
+  if (result.error) throw new Error(result.error);
+  return result.result === 1;
+}
+
+async function redisSaveAttendance(data: AttendanceStoreData): Promise<boolean> {
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const current = await redisReadWithRawAttendance();
+    if (await redisWriteAttendanceCas(current.raw, data)) return true;
+    await new Promise((resolve) => setTimeout(resolve, 20 + Math.random() * 40));
+  }
+  return false;
 }
 
 function storeFilePath(): string {
@@ -208,7 +267,7 @@ function storeFilePath(): string {
 }
 
 async function loadData(): Promise<AttendanceStoreData> {
-  if (cache) return cache;
+  if (cache && !isDbConnected() && !upstashConfig()) return cache;
 
   // 0. PostgreSQL (Supabase / Neon / Vercel Postgres)
   if (isDbConnected()) {
@@ -254,27 +313,36 @@ async function loadData(): Promise<AttendanceStoreData> {
       }>("SELECT * FROM attendance_records ORDER BY date DESC, marked_at DESC");
 
       if (groupRows.length === 0) {
-        for (const g of INITIAL_GROUPS) {
+        const marker = await query<{ value: string }>("SELECT value FROM app_metadata WHERE key = $1", ["attendance_seeded"]);
+        if (marker.length === 0) {
+          for (const g of INITIAL_GROUPS) {
+            await query(
+              `INSERT INTO groups (id, name, subject, teacher_id, teacher_name, days, time, room, monthly_price, lessons_per_month, active, created_at)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+               ON CONFLICT (id) DO NOTHING`,
+              [g.id, g.name, g.subject, g.teacherId, g.teacherName, g.days, g.time, g.room, g.monthlyPrice, g.lessonsPerMonth, g.active, g.createdAt]
+            );
+          }
+          for (const s of INITIAL_STUDENTS) {
+            await query(
+              `INSERT INTO students (id, name, phone, parent_phone, group_id, status, enrolled_at)
+               VALUES ($1, $2, $3, $4, $5, $6, $7)
+               ON CONFLICT (id) DO NOTHING`,
+              [s.id, s.name, s.phone, s.parentPhone || null, s.groupId, s.status, s.enrolledAt]
+            );
+          }
           await query(
-            `INSERT INTO groups (id, name, subject, teacher_id, teacher_name, days, time, room, monthly_price, lessons_per_month, active, created_at)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-             ON CONFLICT (id) DO NOTHING`,
-            [g.id, g.name, g.subject, g.teacherId, g.teacherName, g.days, g.time, g.room, g.monthlyPrice, g.lessonsPerMonth, g.active, g.createdAt]
+            "INSERT INTO app_metadata (key, value) VALUES ($1, $2) ON CONFLICT (key) DO NOTHING",
+            ["attendance_seeded", new Date().toISOString()]
           );
+          cache = {
+            groups: INITIAL_GROUPS.map((group) => ({ ...group })),
+            students: INITIAL_STUDENTS.map((student) => ({ ...student })),
+            records: [],
+          };
+          return cache;
         }
-        for (const s of INITIAL_STUDENTS) {
-          await query(
-            `INSERT INTO students (id, name, phone, parent_phone, group_id, status, enrolled_at)
-             VALUES ($1, $2, $3, $4, $5, $6, $7)
-             ON CONFLICT (id) DO NOTHING`,
-            [s.id, s.name, s.phone, s.parentPhone || null, s.groupId, s.status, s.enrolledAt]
-          );
-        }
-        cache = {
-          groups: [...INITIAL_GROUPS],
-          students: [...INITIAL_STUDENTS],
-          records: [],
-        };
+        cache = { groups: [], students: [], records: [] };
         return cache;
       }
 
@@ -321,39 +389,72 @@ async function loadData(): Promise<AttendanceStoreData> {
       return cache;
     } catch (err) {
       console.error("[attendanceStore] PostgreSQL dan yuklashda xato:", err);
+      // DATABASE_URL is an explicit production choice. Falling back to a local
+      // file after a database outage would report successful writes that are
+      // invisible to other instances and can silently split the data set.
+      throw new Error("Markaziy ma'lumotlar bazasiga ulanib bo'lmadi");
     }
   }
 
-  // 1. Upstash Redis (agar sozlangan bo'lsa)
-  const redisData = await redisGetAttendance();
-  if (redisData) {
-    cache = redisData;
+  // 1. Upstash Redis (agar sozlangan bo'lsa). Missing key is an empty/new
+  // database, not a reason to read a local file.
+  if (upstashConfig()) {
+    const redisData = await redisGetAttendance();
+    if (redisData) {
+      cache = redisData;
+      return cache;
+    }
+    const initialData: AttendanceStoreData = {
+      groups: INITIAL_GROUPS.map((group) => ({ ...group })),
+      students: INITIAL_STUDENTS.map((student) => ({ ...student })),
+      records: [],
+    };
+    if (!(await redisSaveAttendance(initialData))) {
+      // Another cold start may have initialized the key between GET and CAS.
+      // Read that authoritative value rather than reporting a false seed error.
+      const existing = await redisGetAttendance();
+      if (existing) {
+        cache = existing;
+        return existing;
+      }
+      throw new Error("Markaziy Redis bazasiga boshlang'ich ma'lumot yozib bo'lmadi");
+    }
+    cache = initialData;
     return cache;
   }
 
   // 2. Fayl tizimi (lokal/test fallback)
+  if (process.env.NODE_ENV === "production" && (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME)) {
+    throw new Error("Production serverless muhitida DATABASE_URL yoki Redis sozlanishi shart");
+  }
   const file = storeFilePath();
   try {
     const raw = await fs.readFile(file, "utf8");
     const parsed = JSON.parse(raw);
-    if (parsed && Array.isArray(parsed.groups) && Array.isArray(parsed.students)) {
-      cache = {
-        groups: parsed.groups,
-        students: parsed.students,
-        records: Array.isArray(parsed.records) ? parsed.records : [],
-      };
-      return cache;
+    if (!parsed || !Array.isArray(parsed.groups) || !Array.isArray(parsed.students)) {
+      throw new Error("Davomat fayli noto'g'ri formatda");
     }
-  } catch {
-    // Fayl yo'q yoki boshlang'ich holat
+    cache = {
+      groups: parsed.groups,
+      students: parsed.students,
+      records: Array.isArray(parsed.records) ? parsed.records : [],
+    };
+    return cache;
+  } catch (error: unknown) {
+    const code = (error as { code?: string })?.code;
+    if (code !== "ENOENT") {
+      console.error(`[attendanceStore] Davomat faylini o'qishda xatolik (${code || "buzilgan"}):`, error);
+      throw new Error("Davomat ma'lumotlarini o'qib bo'lmadi");
+    }
   }
 
-  cache = {
-    groups: INITIAL_GROUPS,
-    students: INITIAL_STUDENTS,
+  const initialData: AttendanceStoreData = {
+    groups: INITIAL_GROUPS.map((group) => ({ ...group })),
+    students: INITIAL_STUDENTS.map((student) => ({ ...student })),
     records: [],
   };
-  await persistData(cache);
+  await persistData(initialData);
+  cache = initialData;
   return cache;
 }
 
@@ -362,8 +463,9 @@ async function persistData(data: AttendanceStoreData): Promise<void> {
   if (isDbConnected()) {
     try {
       await initDatabase();
+      await withTransaction(async (client) => {
       for (const g of data.groups) {
-        await query(
+        await client.query(
           `INSERT INTO groups (id, name, subject, teacher_id, teacher_name, days, time, room, monthly_price, lessons_per_month, active, telegram_id, telegram_username, created_at)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
            ON CONFLICT (id) DO UPDATE SET
@@ -383,7 +485,7 @@ async function persistData(data: AttendanceStoreData): Promise<void> {
         );
       }
       for (const s of data.students) {
-        await query(
+        await client.query(
           `INSERT INTO students (id, name, phone, parent_phone, group_id, status, notes, enrolled_at)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
            ON CONFLICT (id) DO UPDATE SET
@@ -397,7 +499,7 @@ async function persistData(data: AttendanceStoreData): Promise<void> {
         );
       }
       for (const r of data.records) {
-        await query(
+        await client.query(
           `INSERT INTO attendance_records (id, group_id, student_id, date, status, note, marked_by, marked_at)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
            ON CONFLICT (group_id, student_id, date) DO UPDATE SET
@@ -408,13 +510,23 @@ async function persistData(data: AttendanceStoreData): Promise<void> {
           [r.id, r.groupId, r.studentId, r.date, r.status, r.note || null, r.markedBy, r.markedAt]
         );
       }
+      });
     } catch (err) {
       console.error("[attendanceStore] PostgreSQL ga saqlashda xato:", err);
+      throw new Error("Markaziy ma'lumotlar bazasiga saqlab bo'lmadi");
     }
+    // PostgreSQL is authoritative; do not require a best-effort local mirror.
+    cache = data;
+    return;
   }
 
   // 1. Upstash Redis ga yozish (agar sozlangan bo'lsa)
-  await redisSaveAttendance(data).catch(() => {});
+  if (upstashConfig()) {
+    const saved = await redisSaveAttendance(data);
+    if (!saved) throw new Error("Markaziy Redis bazasiga saqlab bo'lmadi");
+    cache = data;
+    return;
+  }
 
   // 2. Fayl tizimiga yozish
   const file = storeFilePath();
@@ -427,11 +539,173 @@ async function persistData(data: AttendanceStoreData): Promise<void> {
         await fs.writeFile(tmp, JSON.stringify(data, null, 2), "utf8");
         await fs.rename(tmp, file);
       } catch (err) {
-        console.warn("[attendanceStore] Diskka yozishda ogohlantirish (kesh xotirada saqlandi):", err);
+        console.error("[attendanceStore] Diskka yozib bo'lmadi:", err);
+        throw new Error("Davomat ma'lumotlarini saqlab bo'lmadi");
       }
       cache = data;
     });
   await writeChain;
+}
+
+function mapDbGroupRow(row: Record<string, unknown>): Group {
+  return {
+    id: String(row.id), name: String(row.name), subject: String(row.subject),
+    teacherId: String(row.teacher_id), teacherName: String(row.teacher_name),
+    days: row.days as DaySchedule, time: String(row.time), room: String(row.room),
+    monthlyPrice: Number(row.monthly_price), lessonsPerMonth: Number(row.lessons_per_month),
+    active: Boolean(row.active), telegramId: row.telegram_id ? String(row.telegram_id) : undefined,
+    telegramUsername: row.telegram_username ? String(row.telegram_username) : undefined,
+    createdAt: new Date(String(row.created_at)).toISOString(),
+  };
+}
+
+function mapDbStudentRow(row: Record<string, unknown>): Student {
+  return {
+    id: String(row.id), name: String(row.name), phone: String(row.phone),
+    parentPhone: row.parent_phone ? String(row.parent_phone) : undefined,
+    groupId: String(row.group_id), status: row.status as StudentStatus,
+    notes: row.notes ? String(row.notes) : undefined,
+    enrolledAt: new Date(String(row.enrolled_at)).toISOString(),
+  };
+}
+
+async function postgresCreateGroup(input: Omit<Group, "id" | "createdAt"> & { id?: string }): Promise<Group> {
+  await initDatabase();
+  return withTransaction(async (client) => {
+    await client.query("SELECT pg_advisory_xact_lock(hashtext('algoritm-attendance-groups'))");
+    const id = input.id || "grp_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6);
+    const result = await client.query(`INSERT INTO groups (id,name,subject,teacher_id,teacher_name,days,time,room,monthly_price,lessons_per_month,active,created_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`, [id,input.name,input.subject,input.teacherId,input.teacherName,input.days,input.time,input.room,input.monthlyPrice,input.lessonsPerMonth,input.active !== false,new Date().toISOString()]);
+    cache = null;
+    return mapDbGroupRow(result.rows[0] as Record<string, unknown>);
+  });
+}
+
+async function postgresUpdateGroup(id: string, patch: Partial<Group>): Promise<Group | null> {
+  await initDatabase();
+  return withTransaction(async (client) => {
+    await client.query("SELECT pg_advisory_xact_lock(hashtext('algoritm-attendance-groups'))");
+    const selected = await client.query("SELECT * FROM groups WHERE id = $1 FOR UPDATE", [id]);
+    if (!selected.rows[0]) return null;
+    const row = selected.rows[0] as Record<string, unknown>;
+    const value = {
+      name: patch.name ?? row.name, subject: patch.subject ?? row.subject,
+      teacherId: patch.teacherId ?? row.teacher_id, teacherName: patch.teacherName ?? row.teacher_name,
+      days: patch.days ?? row.days, time: patch.time ?? row.time, room: patch.room ?? row.room,
+      monthlyPrice: patch.monthlyPrice ?? Number(row.monthly_price), lessonsPerMonth: patch.lessonsPerMonth ?? Number(row.lessons_per_month),
+      active: patch.active ?? Boolean(row.active),
+    };
+    const result = await client.query(`UPDATE groups SET name=$1,subject=$2,teacher_id=$3,teacher_name=$4,days=$5,time=$6,room=$7,monthly_price=$8,lessons_per_month=$9,active=$10 WHERE id=$11 RETURNING *`, [value.name,value.subject,value.teacherId,value.teacherName,value.days,value.time,value.room,value.monthlyPrice,value.lessonsPerMonth,value.active,id]);
+    cache = null;
+    return mapDbGroupRow(result.rows[0] as Record<string, unknown>);
+  });
+}
+
+async function postgresDeleteGroup(id: string): Promise<boolean> {
+  await initDatabase();
+  return withTransaction(async (client) => {
+    await client.query("SELECT pg_advisory_xact_lock(hashtext('algoritm-attendance-groups'))");
+    const result = await client.query("DELETE FROM groups WHERE id = $1", [id]);
+    cache = null;
+    return (result.rowCount || 0) > 0;
+  });
+}
+
+async function postgresCreateStudent(input: Omit<Student, "id" | "enrolledAt"> & { id?: string }): Promise<Student> {
+  await initDatabase();
+  return withTransaction(async (client) => {
+    await client.query("SELECT pg_advisory_xact_lock(hashtext('algoritm-attendance-students'))");
+    const id = input.id || "std_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6);
+    const result = await client.query(`INSERT INTO students (id,name,phone,parent_phone,group_id,status,notes,enrolled_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`, [id,input.name,input.phone,input.parentPhone || null,input.groupId,input.status,input.notes || null,new Date().toISOString()]);
+    cache = null;
+    return mapDbStudentRow(result.rows[0] as Record<string, unknown>);
+  });
+}
+
+async function postgresUpdateStudent(id: string, patch: Partial<Student>): Promise<Student | null> {
+  await initDatabase();
+  return withTransaction(async (client) => {
+    await client.query("SELECT pg_advisory_xact_lock(hashtext('algoritm-attendance-students'))");
+    const selected = await client.query("SELECT * FROM students WHERE id = $1 FOR UPDATE", [id]);
+    if (!selected.rows[0]) return null;
+    const row = selected.rows[0] as Record<string, unknown>;
+    const value = {
+      name: patch.name ?? row.name, phone: patch.phone ?? row.phone,
+      parentPhone: patch.parentPhone !== undefined ? patch.parentPhone : row.parent_phone,
+      groupId: patch.groupId ?? row.group_id, status: patch.status ?? row.status,
+      notes: patch.notes !== undefined ? patch.notes : row.notes,
+    };
+    const result = await client.query(`UPDATE students SET name=$1,phone=$2,parent_phone=$3,group_id=$4,status=$5,notes=$6 WHERE id=$7 RETURNING *`, [value.name,value.phone,value.parentPhone || null,value.groupId,value.status,value.notes || null,id]);
+    cache = null;
+    return mapDbStudentRow(result.rows[0] as Record<string, unknown>);
+  });
+}
+
+async function postgresDeleteStudent(id: string): Promise<boolean> {
+  await initDatabase();
+  return withTransaction(async (client) => {
+    await client.query("SELECT pg_advisory_xact_lock(hashtext('algoritm-attendance-students'))");
+    const result = await client.query("DELETE FROM students WHERE id = $1", [id]);
+    cache = null;
+    return (result.rowCount || 0) > 0;
+  });
+}
+
+async function postgresRecordAttendance(items: Array<Omit<AttendanceRecord, "id" | "markedAt">>): Promise<{ savedCount: number }> {
+  await initDatabase();
+  return withTransaction(async (client) => {
+    await client.query("SELECT pg_advisory_xact_lock(hashtext('algoritm-attendance-records'))");
+    const markedAt = new Date().toISOString();
+    for (const item of items) {
+      await client.query(`INSERT INTO attendance_records (id,group_id,student_id,date,status,note,marked_by,marked_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT (group_id,student_id,date) DO UPDATE SET status=EXCLUDED.status,note=EXCLUDED.note,marked_by=EXCLUDED.marked_by,marked_at=EXCLUDED.marked_at`, ["att_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6),item.groupId,item.studentId,item.date,item.status,item.note || null,item.markedBy,markedAt]);
+    }
+    cache = null;
+    return { savedCount: items.length };
+  });
+}
+
+type AttendanceMutation<T> = (data: AttendanceStoreData) => { data: AttendanceStoreData; result: T };
+let mutationChain: Promise<unknown> = Promise.resolve();
+
+function enqueueLocalMutation<T>(task: () => Promise<T>): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    mutationChain = mutationChain
+      .catch(() => undefined)
+      .then(async () => {
+        try {
+          resolve(await task());
+        } catch (error) {
+          reject(error);
+        }
+      });
+  });
+}
+
+async function mutateAttendance<T>(apply: AttendanceMutation<T>): Promise<T> {
+  if (upstashConfig()) {
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const current = await redisReadWithRawAttendance();
+      const base = current.data || {
+        groups: INITIAL_GROUPS.map((group) => ({ ...group })),
+        students: INITIAL_STUDENTS.map((student) => ({ ...student })),
+        records: [],
+      };
+      const { data, result } = apply(cloneStoreData(base));
+      if (await redisWriteAttendanceCas(current.raw, data)) {
+        cache = data;
+        return result;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 20 + Math.random() * 40));
+    }
+    throw new Error("Redis ma'lumotlar bazasi band. Birozdan so'ng qayta urinib ko'ring.");
+  }
+
+  return enqueueLocalMutation(async () => {
+    const data = cloneStoreData(await loadData());
+    const { data: next, result } = apply(data);
+    await persistData(next);
+    cache = next;
+    return result;
+  });
 }
 
 // ──────────────── Guruhlar (Groups) ────────────────
@@ -458,7 +732,16 @@ export async function getGroup(id: string): Promise<Group | null> {
 export async function createGroup(
   input: Omit<Group, "id" | "createdAt"> & { id?: string }
 ): Promise<Group> {
-  const data = await loadData();
+  if (isDbConnected()) return postgresCreateGroup(input);
+  if (!isDbConnected()) {
+    return mutateAttendance((data) => {
+      const id = input.id || "grp_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6);
+      const newGroup: Group = { ...input, active: input.active !== false, id, createdAt: new Date().toISOString() };
+      data.groups.push(newGroup);
+      return { data, result: newGroup };
+    });
+  }
+  const data = cloneStoreData(await loadData());
   const id = input.id || "grp_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6);
   const newGroup: Group = {
     ...input,
@@ -472,7 +755,17 @@ export async function createGroup(
 }
 
 export async function updateGroup(id: string, patch: Partial<Group>): Promise<Group | null> {
-  const data = await loadData();
+  if (isDbConnected()) return postgresUpdateGroup(id, patch);
+  if (!isDbConnected()) {
+    return mutateAttendance((data) => {
+      const idx = data.groups.findIndex((g) => g.id === id);
+      if (idx === -1) return { data, result: null };
+      data.groups[idx] = { ...data.groups[idx], ...patch, id };
+      return { data, result: data.groups[idx] };
+    });
+  }
+
+  const data = cloneStoreData(await loadData());
   const idx = data.groups.findIndex((g) => g.id === id);
   if (idx === -1) return null;
   data.groups[idx] = { ...data.groups[idx], ...patch, id };
@@ -481,14 +774,38 @@ export async function updateGroup(id: string, patch: Partial<Group>): Promise<Gr
 }
 
 export async function deleteGroup(id: string): Promise<boolean> {
-  const data = await loadData();
+  if (isDbConnected()) return postgresDeleteGroup(id);
+  if (!isDbConnected()) {
+    return mutateAttendance((data) => {
+      const before = data.groups.length;
+      const studentIds = new Set(data.students.filter((student) => student.groupId === id).map((student) => student.id));
+      data.groups = data.groups.filter((group) => group.id !== id);
+      if (data.groups.length === before) return { data, result: false };
+      data.students = data.students.filter((student) => student.groupId !== id);
+      data.records = data.records.filter((record) => record.groupId !== id && !studentIds.has(record.studentId));
+      return { data, result: true };
+    });
+  }
+
+  const data = cloneStoreData(await loadData());
   const before = data.groups.length;
+  const studentIds = new Set(data.students.filter((s) => s.groupId === id).map((s) => s.id));
   data.groups = data.groups.filter((g) => g.id !== id);
   if (data.groups.length !== before) {
+    // PostgreSQL ON DELETE CASCADE handles this in the database. The file/Redis
+    // backends need the same cascade explicitly; otherwise deleted groups leave
+    // orphaned students and attendance records visible in the admin panel.
+    data.students = data.students.filter((s) => s.groupId !== id);
+    data.records = data.records.filter(
+      (r) => r.groupId !== id && !studentIds.has(r.studentId)
+    );
     if (isDbConnected()) {
-      await query("DELETE FROM groups WHERE id = $1", [id]).catch((err) => {
+      try {
+        await query("DELETE FROM groups WHERE id = $1", [id]);
+      } catch (err) {
         console.error("[attendanceStore] PostgreSQL dan guruhni o'chirishda xato:", err);
-      });
+        throw new Error("Guruhni markaziy ma'lumotlar bazasidan o'chirib bo'lmadi");
+      }
     }
     await persistData(data);
     return true;
@@ -527,7 +844,16 @@ export async function getStudent(id: string): Promise<Student | null> {
 export async function createStudent(
   input: Omit<Student, "id" | "enrolledAt"> & { id?: string }
 ): Promise<Student> {
-  const data = await loadData();
+  if (isDbConnected()) return postgresCreateStudent(input);
+  if (!isDbConnected()) {
+    return mutateAttendance((data) => {
+      const id = input.id || "std_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6);
+      const student: Student = { ...input, id, enrolledAt: new Date().toISOString() };
+      data.students.push(student);
+      return { data, result: student };
+    });
+  }
+  const data = cloneStoreData(await loadData());
   const id = input.id || "std_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6);
   const newStudent: Student = {
     ...input,
@@ -540,7 +866,17 @@ export async function createStudent(
 }
 
 export async function updateStudent(id: string, patch: Partial<Student>): Promise<Student | null> {
-  const data = await loadData();
+  if (isDbConnected()) return postgresUpdateStudent(id, patch);
+  if (!isDbConnected()) {
+    return mutateAttendance((data) => {
+      const idx = data.students.findIndex((student) => student.id === id);
+      if (idx === -1) return { data, result: null };
+      data.students[idx] = { ...data.students[idx], ...patch, id };
+      return { data, result: data.students[idx] };
+    });
+  }
+
+  const data = cloneStoreData(await loadData());
   const idx = data.students.findIndex((s) => s.id === id);
   if (idx === -1) return null;
   data.students[idx] = { ...data.students[idx], ...patch, id };
@@ -549,14 +885,31 @@ export async function updateStudent(id: string, patch: Partial<Student>): Promis
 }
 
 export async function deleteStudent(id: string): Promise<boolean> {
-  const data = await loadData();
+  if (isDbConnected()) return postgresDeleteStudent(id);
+  if (!isDbConnected()) {
+    return mutateAttendance((data) => {
+      const before = data.students.length;
+      data.students = data.students.filter((student) => student.id !== id);
+      if (data.students.length === before) return { data, result: false };
+      data.records = data.records.filter((record) => record.studentId !== id);
+      return { data, result: true };
+    });
+  }
+
+  const data = cloneStoreData(await loadData());
   const before = data.students.length;
   data.students = data.students.filter((s) => s.id !== id);
   if (data.students.length !== before) {
+    // Keep the file/Redis representation consistent with the SQL foreign-key
+    // cascade and do not leave attendance rows for a removed student.
+    data.records = data.records.filter((r) => r.studentId !== id);
     if (isDbConnected()) {
-      await query("DELETE FROM students WHERE id = $1", [id]).catch((err) => {
+      try {
+        await query("DELETE FROM students WHERE id = $1", [id]);
+      } catch (err) {
         console.error("[attendanceStore] PostgreSQL dan o'quvchini o'chirishda xato:", err);
-      });
+        throw new Error("O'quvchini markaziy ma'lumotlar bazasidan o'chirib bo'lmadi");
+      }
     }
     await persistData(data);
     return true;
@@ -568,8 +921,24 @@ export async function deleteStudent(id: string): Promise<boolean> {
 export async function recordAttendance(
   items: Array<Omit<AttendanceRecord, "id" | "markedAt">>
 ): Promise<{ savedCount: number }> {
+  if (isDbConnected()) return postgresRecordAttendance(items);
+  if (!isDbConnected()) {
+    return mutateAttendance((data) => {
+      const now = new Date().toISOString();
+      for (const item of items) {
+        const existingIdx = data.records.findIndex((record) => record.groupId === item.groupId && record.studentId === item.studentId && record.date === item.date);
+        if (existingIdx !== -1) {
+          data.records[existingIdx] = { ...data.records[existingIdx], status: item.status, note: item.note ?? data.records[existingIdx].note, markedBy: item.markedBy || data.records[existingIdx].markedBy, markedAt: now };
+        } else {
+          data.records.push({ ...item, id: "att_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6), markedAt: now });
+        }
+      }
+      return { data, result: { savedCount: items.length } };
+    });
+  }
+
   if (items.length === 0) return { savedCount: 0 };
-  const data = await loadData();
+  const data = cloneStoreData(await loadData());
   const now = new Date().toISOString();
 
   let savedCount = 0;
@@ -631,8 +1000,12 @@ export async function calculateMonthlyBilling(
   const students = data.students.filter((s) => s.groupId === groupId && s.status !== "ketdi");
   const records = data.records.filter((r) => r.groupId === groupId && r.date.startsWith(month));
 
-  const standardLessons = group.lessonsPerMonth || 12;
-  const baseMonthlyPrice = group.monthlyPrice || 400000;
+  const standardLessons = Number.isInteger(group.lessonsPerMonth) && group.lessonsPerMonth > 0
+    ? group.lessonsPerMonth
+    : 12;
+  const baseMonthlyPrice = Number.isFinite(group.monthlyPrice) && group.monthlyPrice > 0
+    ? group.monthlyPrice
+    : 400000;
   const perLessonPrice = Math.round(baseMonthlyPrice / standardLessons);
 
   return students.map((std) => {
@@ -666,4 +1039,5 @@ export async function calculateMonthlyBilling(
 /** Testlar uchun xotira keshini tozalash */
 export function __resetAttendanceCache(): void {
   cache = null;
+  mutationChain = Promise.resolve();
 }

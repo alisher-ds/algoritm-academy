@@ -5,13 +5,13 @@ const isProd = process.env.NODE_ENV === "production";
 /** Xavfsizlik sarlavhalari (barcha route'lar uchun). */
 const cspDirectives = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://telegram.org",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
   "media-src 'self' blob: https:",
   "frame-src 'self' https://www.google.com https://maps.google.com https://yandex.ru https://yandex.uz https://*.yandex.ru https://*.yandex.uz",
-  "connect-src 'self'",
+  "connect-src 'self' https://api.telegram.org",
   "frame-ancestors 'self'",
   "base-uri 'self'",
   "form-action 'self'",

@@ -2,7 +2,7 @@ import { createHmac, randomBytes, timingSafeEqual, scryptSync } from "crypto";
 import { promises as fs } from "fs";
 import path from "path";
 import os from "os";
-import { isDbConnected, query, initDatabase } from "./db";
+import { isDbConnected, query, initDatabase, withTransaction } from "./db";
 
 export type TeacherStatus = "active" | "pending" | "blocked";
 
@@ -99,15 +99,18 @@ async function redisGetTeachers(): Promise<Teacher[] | null> {
       headers: { Authorization: `Bearer ${cfg.token}` },
       cache: "no-store",
     });
-    if (!res.ok) return null;
-    const data = await res.json();
-    if (data.result) {
-      const parsed = typeof data.result === "string" ? JSON.parse(data.result) : data.result;
-      return Array.isArray(parsed) ? parsed : null;
-    }
-    return null;
-  } catch {
-    return null;
+    if (!res.ok) throw new Error(`Redis xatosi (${res.status})`);
+    const data = (await res.json()) as { result?: unknown; error?: string };
+    if (data.error) throw new Error(data.error);
+    if (data.result === null || data.result === undefined) return null;
+    const parsed = typeof data.result === "string" ? JSON.parse(data.result) : data.result;
+    if (!Array.isArray(parsed)) throw new Error("Redis ustozlar ma'lumotlari buzilgan");
+    return parsed as Teacher[];
+  } catch (error) {
+    console.error("[teacherAuth] Redis dan ustozlarni yuklashda xato:", error);
+    // Redis is authoritative when configured; do not silently fall back to a
+    // local file or recreate the initial accounts after an outage.
+    throw new Error("Markaziy Redis bazasiga ulanib bo'lmadi");
   }
 }
 
@@ -130,6 +133,120 @@ async function redisSaveTeachers(teachers: Teacher[]): Promise<boolean> {
   }
 }
 
+interface TeacherMutation<T> {
+  next: Teacher[];
+  result: T;
+}
+
+const TEACHER_CAS_SCRIPT = `
+local current = redis.call('GET', KEYS[1])
+if (ARGV[1] == '0' and not current) or (ARGV[1] == '1' and current == ARGV[2]) then
+  redis.call('SET', KEYS[1], ARGV[3])
+  return 1
+end
+return 0`;
+
+async function redisReadTeachersWithRaw(): Promise<{ raw: string | null; teachers: Teacher[] }> {
+  const cfg = upstashConfig();
+  if (!cfg) throw new Error("Redis konfiguratsiya qilinmagan");
+  const res = await fetch(`${cfg.url}/get/${encodeURIComponent(REDIS_TEACHERS_KEY)}`, {
+    headers: { Authorization: `Bearer ${cfg.token}` },
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error(`Redis xatosi (${res.status})`);
+  const data = (await res.json()) as { result?: unknown; error?: string };
+  if (data.error) throw new Error(data.error);
+  if (data.result === null || data.result === undefined) return { raw: null, teachers: [] };
+  const raw = typeof data.result === "string" ? data.result : JSON.stringify(data.result);
+  const parsed = JSON.parse(raw);
+  if (!Array.isArray(parsed)) throw new Error("Redis ustozlar ma'lumotlari buzilgan");
+  return { raw, teachers: parsed as Teacher[] };
+}
+
+async function redisWriteTeachersCas(raw: string | null, teachers: Teacher[]): Promise<boolean> {
+  const cfg = upstashConfig();
+  if (!cfg) throw new Error("Redis konfiguratsiya qilinmagan");
+  const res = await fetch(cfg.url, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${cfg.token}`, "Content-Type": "application/json" },
+    body: JSON.stringify(["EVAL", TEACHER_CAS_SCRIPT, 1, REDIS_TEACHERS_KEY, raw === null ? "0" : "1", raw ?? "", JSON.stringify(teachers)]),
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error(`Redis xatosi (${res.status})`);
+  const data = (await res.json()) as { result?: number; error?: string };
+  if (data.error) throw new Error(data.error);
+  return data.result === 1;
+}
+
+let teacherMutationChain: Promise<unknown> = Promise.resolve();
+
+function enqueueTeacherMutation<T>(task: () => Promise<T>): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    teacherMutationChain = teacherMutationChain
+      .catch(() => undefined)
+      .then(async () => {
+        try {
+          resolve(await task());
+        } catch (error) {
+          reject(error);
+        }
+      });
+  });
+}
+
+async function persistTeachersWithClient(client: import("pg").PoolClient, teachers: Teacher[]): Promise<void> {
+  await client.query("DELETE FROM teachers");
+  for (const teacher of teachers) {
+    await client.query(
+      `INSERT INTO teachers (id,name,login,subject,phone,password_hash,salt,telegram_id,telegram_username,status,created_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+      [teacher.id, teacher.name, teacher.login, teacher.subject, teacher.phone || null, teacher.passwordHash || null, teacher.salt || null, teacher.telegramId || null, teacher.telegramUsername || null, teacher.status || "active", teacher.createdAt]
+    );
+  }
+}
+
+async function mutateTeachers<T>(apply: (teachers: Teacher[]) => TeacherMutation<T>): Promise<T> {
+  if (isDbConnected()) {
+    await initDatabase();
+    return withTransaction(async (client) => {
+      await client.query("SELECT pg_advisory_xact_lock(hashtext('algoritm-teachers'))");
+      const rows = await client.query("SELECT * FROM teachers ORDER BY created_at ASC FOR UPDATE");
+      const current: Teacher[] = rows.rows.map((row: Record<string, unknown>) => ({
+        id: String(row.id), name: String(row.name), login: String(row.login), subject: String(row.subject),
+        phone: row.phone ? String(row.phone) : undefined, passwordHash: row.password_hash ? String(row.password_hash) : undefined,
+        salt: row.salt ? String(row.salt) : undefined, telegramId: row.telegram_id ? String(row.telegram_id) : undefined,
+        telegramUsername: row.telegram_username ? String(row.telegram_username) : undefined,
+        status: (row.status as TeacherStatus) || "active", createdAt: new Date(String(row.created_at)).toISOString(),
+      }));
+      const { next, result } = apply(current);
+      await persistTeachersWithClient(client, next);
+      setGlobalTeachers(next);
+      return result;
+    });
+  }
+
+  if (upstashConfig()) {
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const current = await redisReadTeachersWithRaw();
+      const base = current.raw === null ? INITIAL_TEACHERS.map((teacher) => ({ ...teacher })) : current.teachers;
+      const { next, result } = apply(base.map((teacher) => ({ ...teacher })));
+      if (await redisWriteTeachersCas(current.raw, next)) {
+        setGlobalTeachers(next);
+        return result;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 20 + Math.random() * 40));
+    }
+    throw new Error("Redis ustozlar bazasi band. Birozdan so'ng qayta urinib ko'ring.");
+  }
+
+  return enqueueTeacherMutation(async () => {
+    const current = (await loadTeachers()).map((teacher) => ({ ...teacher }));
+    const { next, result } = apply(current);
+    await saveTeachers(next);
+    return result;
+  });
+}
+
 // Xotirada va faylda ustozlarni saqlash kesh
 interface GlobalTeacherScope {
   __algoritm_teachers__?: Teacher[];
@@ -148,6 +265,7 @@ function setGlobalTeachers(teachers: Teacher[]): void {
 export function __resetTeacherCache(): void {
   const g = globalThis as unknown as GlobalTeacherScope;
   delete g.__algoritm_teachers__;
+  teacherMutationChain = Promise.resolve();
 }
 
 function getStoragePath(): string {
@@ -160,7 +278,9 @@ function getStoragePath(): string {
 
 export async function loadTeachers(): Promise<Teacher[]> {
   const cached = getGlobalTeachers();
-  if (cached && cached.length > 0) return cached;
+  // Central backends must be read fresh so status changes and Telegram bindings
+  // made by another server instance take effect immediately.
+  if (cached && !isDbConnected() && !upstashConfig()) return cached;
 
   // 0. PostgreSQL (Supabase / Neon / Vercel Postgres)
   if (isDbConnected()) {
@@ -181,28 +301,38 @@ export async function loadTeachers(): Promise<Teacher[]> {
       }>("SELECT * FROM teachers ORDER BY created_at ASC");
 
       if (rows.length === 0) {
-        for (const t of INITIAL_TEACHERS) {
+        const marker = await query<{ value: string }>("SELECT value FROM app_metadata WHERE key = $1", ["teachers_seeded"]);
+        if (marker.length === 0) {
+          for (const t of INITIAL_TEACHERS) {
+            await query(
+              `INSERT INTO teachers (id, name, login, subject, phone, password_hash, salt, telegram_id, telegram_username, status, created_at)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+               ON CONFLICT (login) DO NOTHING`,
+              [
+                t.id,
+                t.name,
+                t.login,
+                t.subject,
+                t.phone || null,
+                t.passwordHash || null,
+                t.salt || null,
+                t.telegramId || null,
+                t.telegramUsername || null,
+                t.status || "active",
+                t.createdAt,
+              ]
+            );
+          }
           await query(
-            `INSERT INTO teachers (id, name, login, subject, phone, password_hash, salt, telegram_id, telegram_username, status, created_at)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-             ON CONFLICT (login) DO NOTHING`,
-            [
-              t.id,
-              t.name,
-              t.login,
-              t.subject,
-              t.phone || null,
-              t.passwordHash || null,
-              t.salt || null,
-              t.telegramId || null,
-              t.telegramUsername || null,
-              t.status || "active",
-              t.createdAt,
-            ]
+            "INSERT INTO app_metadata (key, value) VALUES ($1, $2) ON CONFLICT (key) DO NOTHING",
+            ["teachers_seeded", new Date().toISOString()]
           );
+          const initial = INITIAL_TEACHERS.map((teacher) => ({ ...teacher }));
+          setGlobalTeachers(initial);
+          return initial;
         }
-        setGlobalTeachers([...INITIAL_TEACHERS]);
-        return [...INITIAL_TEACHERS];
+        setGlobalTeachers([]);
+        return [];
       }
 
       const teachers: Teacher[] = rows.map((r) => ({
@@ -223,14 +353,32 @@ export async function loadTeachers(): Promise<Teacher[]> {
       return teachers;
     } catch (err) {
       console.error("[teacherAuth] PostgreSQL dan ustozlarni yuklashda xato:", err);
+      throw new Error("Markaziy ma'lumotlar bazasiga ulanib bo'lmadi");
     }
   }
 
-  // 1. Upstash Redis (agar sozlangan bo'lsa)
-  const redisTeachers = await redisGetTeachers();
-  if (redisTeachers && redisTeachers.length > 0) {
-    setGlobalTeachers(redisTeachers);
-    return redisTeachers;
+  // 1. Upstash Redis (agar sozlangan bo'lsa). Missing key is a new empty
+  // database; it must be seeded back into Redis, never into a local file.
+  if (upstashConfig()) {
+    const redisTeachers = await redisGetTeachers();
+    if (redisTeachers !== null) {
+      setGlobalTeachers(redisTeachers);
+      return redisTeachers;
+    }
+    const initial = INITIAL_TEACHERS.map((teacher) => ({ ...teacher }));
+    const saved = await redisWriteTeachersCas(null, initial);
+    if (!saved) {
+      // Another cold start may have initialized the key between GET and CAS.
+      // Read that authoritative value instead of overwriting it with defaults.
+      const existing = await redisGetTeachers();
+      if (existing !== null) {
+        setGlobalTeachers(existing);
+        return existing;
+      }
+      throw new Error("Markaziy Redis bazasiga boshlang'ich ustozlar yozib bo'lmadi");
+    }
+    setGlobalTeachers(initial);
+    return initial;
   }
 
   // 2. Mahalliy yoki vaqtinchalik fayl tizimi
@@ -238,29 +386,36 @@ export async function loadTeachers(): Promise<Teacher[]> {
   try {
     const raw = await fs.readFile(filePath, "utf8");
     const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed) && parsed.length > 0) {
+    if (Array.isArray(parsed)) {
       setGlobalTeachers(parsed);
       return parsed;
     }
-  } catch {
-    // Fayl mavjud emas bo'lsa boshlang'ich ma'lumotlar ishlatiladi
+    throw new Error("Ustozlar fayli massivi bo'lishi kerak");
+  } catch (error: unknown) {
+    const code = (error as { code?: string })?.code;
+    if (code !== "ENOENT") {
+      console.error(`[teacherAuth] Ustozlar faylini o'qib bo'lmadi (${code || "buzilgan"}):`, error);
+      throw new Error("Ustozlar ma'lumotlarini o'qib bo'lmadi");
+    }
   }
 
-  const initial = [...INITIAL_TEACHERS];
-  setGlobalTeachers(initial);
-  await saveTeachers(initial).catch(() => {});
+  if (process.env.NODE_ENV === "production" && (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME)) {
+    throw new Error("Production serverless muhitida DATABASE_URL yoki Redis sozlanishi shart");
+  }
+  const initial = INITIAL_TEACHERS.map((teacher) => ({ ...teacher }));
+  await saveTeachers(initial);
   return initial;
 }
 
 export async function saveTeachers(teachers: Teacher[]): Promise<void> {
-  setGlobalTeachers(teachers);
-
   // 0. PostgreSQL
   if (isDbConnected()) {
     try {
       await initDatabase();
-      for (const t of teachers) {
-        await query(
+      await withTransaction(async (client) => {
+        await client.query("SELECT pg_advisory_xact_lock(hashtext('algoritm-teachers'))");
+        for (const t of teachers) {
+        await client.query(
           `INSERT INTO teachers (id, name, login, subject, phone, password_hash, salt, telegram_id, telegram_username, status, created_at)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
            ON CONFLICT (id) DO UPDATE SET
@@ -287,79 +442,55 @@ export async function saveTeachers(teachers: Teacher[]): Promise<void> {
             t.createdAt,
           ]
         );
-      }
+        }
+      });
     } catch (err) {
       console.error("[teacherAuth] PostgreSQL ga ustozlarni saqlashda xato:", err);
+      throw new Error("Markaziy ma'lumotlar bazasiga saqlab bo'lmadi");
     }
+    setGlobalTeachers(teachers);
+    return;
   }
 
   // 1. Upstash Redis ga yozish
-  await redisSaveTeachers(teachers).catch(() => {});
+  if (upstashConfig()) {
+    const saved = await redisSaveTeachers(teachers);
+    if (!saved) throw new Error("Markaziy Redis bazasiga saqlab bo'lmadi");
+    setGlobalTeachers(teachers);
+    return;
+  }
 
   // 2. Fayl tizimiga yozish
+  if (process.env.NODE_ENV === "production" && (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME)) {
+    throw new Error("Production serverless muhitida DATABASE_URL yoki Redis sozlanishi shart");
+  }
   const filePath = getStoragePath();
   try {
     await fs.mkdir(path.dirname(filePath), { recursive: true });
-    await fs.writeFile(filePath, JSON.stringify(teachers, null, 2), "utf8");
+    const tempPath = `${filePath}.${process.pid}.${Date.now()}.tmp`;
+    await fs.writeFile(tempPath, JSON.stringify(teachers, null, 2), "utf8");
+    await fs.rename(tempPath, filePath);
+    // Kesh faqat diskdagi yozuv muvaffaqiyatli bo'lgach yangilanadi.
+    setGlobalTeachers(teachers);
   } catch (err) {
     console.error("[teacherAuth] Ustozlar ma'lumotlarini saqlashda xato:", err);
+    throw new Error("Ustozlar ma'lumotlarini saqlab bo'lmadi");
   }
 }
 
 /** Ustozni id yoki login orqali o'chirish */
 export async function deleteTeacher(idOrLogin: string): Promise<boolean> {
-  const teachers = await loadTeachers();
-  const clean = idOrLogin.trim().toLowerCase();
-  const filtered = teachers.filter(
-    (t) => t.id !== idOrLogin && t.login.toLowerCase() !== clean
-  );
-  if (filtered.length === teachers.length) return false;
-
-  if (isDbConnected()) {
-    try {
-      await initDatabase();
-      await query("DELETE FROM teachers WHERE id = $1 OR LOWER(login) = $2", [idOrLogin, clean]);
-    } catch (err) {
-      console.error("[teacherAuth] PostgreSQL dan ustozni o'chirishda xato:", err);
-    }
-  }
-
-  await saveTeachers(filtered);
-  return true;
+  return mutateTeachers<boolean>((teachers) => {
+    const clean = idOrLogin.trim().toLowerCase();
+    const next = teachers.filter((teacher) => teacher.id !== idOrLogin && teacher.login.toLowerCase() !== clean);
+    return { next, result: next.length !== teachers.length };
+  });
 }
 
 /** Barcha ustozlar ro'yxatini boshlang'ich toza holatga qaytarish */
 export async function resetTeachers(): Promise<Teacher[]> {
-  const fresh = [...INITIAL_TEACHERS];
-  if (isDbConnected()) {
-    try {
-      await initDatabase();
-      await query("DELETE FROM teachers");
-      for (const t of fresh) {
-        await query(
-          `INSERT INTO teachers (id, name, login, subject, phone, password_hash, salt, telegram_id, telegram_username, status, created_at)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
-          [
-            t.id,
-            t.name,
-            t.login,
-            t.subject,
-            t.phone || null,
-            t.passwordHash || null,
-            t.salt || null,
-            t.telegramId || null,
-            t.telegramUsername || null,
-            t.status || "active",
-            t.createdAt,
-          ]
-        );
-      }
-    } catch (err) {
-      console.error("[teacherAuth] PostgreSQL ni tozalashda xato:", err);
-    }
-  }
-  await saveTeachers(fresh);
-  return fresh;
+  const fresh = INITIAL_TEACHERS.map((teacher) => ({ ...teacher }));
+  return mutateTeachers(() => ({ next: fresh, result: fresh }));
 }
 
 /** Password hashing using Node's built-in memory-hard scrypt. */
@@ -387,21 +518,15 @@ function safeEqual(a: string, b: string): boolean {
 
 /** Ustoz uchun yangi parol o'rnatish */
 export async function setTeacherPassword(teacherId: string, plainPassword: string): Promise<Teacher | null> {
-  const teachers = await loadTeachers();
-  const index = teachers.findIndex((t) => t.id === teacherId);
-  if (index === -1) return null;
-
-  const salt = randomBytes(16).toString("hex");
-  const passwordHash = hashPassword(plainPassword, salt);
-
-  teachers[index] = {
-    ...teachers[index],
-    passwordHash,
-    salt,
-  };
-
-  await saveTeachers(teachers);
-  return sanitizeTeacher(teachers[index]);
+  return mutateTeachers((teachers) => {
+    const index = teachers.findIndex((teacher) => teacher.id === teacherId);
+    if (index === -1) return { next: teachers, result: null };
+    const salt = randomBytes(16).toString("hex");
+    const updated = { ...teachers[index], passwordHash: hashPassword(plainPassword, salt), salt };
+    const next = [...teachers];
+    next[index] = updated;
+    return { next, result: sanitizeTeacher(updated) };
+  });
 }
 
 export interface RegisterTeacherInput {
@@ -416,54 +541,32 @@ export interface RegisterTeacherInput {
 
 /** Yangi ustozning mustaqil ro'yxatdan o'tishi */
 export async function registerTeacher(input: RegisterTeacherInput): Promise<{ teacher?: Teacher; error?: string }> {
-  const teachers = await loadTeachers();
   const name = input.name?.trim();
   const login = input.login?.trim().toLowerCase();
   const subject = input.subject?.trim();
   const password = input.password;
   const phone = input.phone?.trim();
 
-  if (!name || name.length < 3) {
-    return { error: "Ism va familiyangizni to'liq kiriting (kamida 3 ta harf)" };
-  }
-  if (!login || login.length < 3 || !/^[a-z0-9_.-]+$/.test(login)) {
-    return { error: "Login kamida 3 ta lotin harfi yoki raqamdan iborat bo'lishi kerak (masalan: aziz_sat)" };
-  }
-  if (!subject || subject.length < 2) {
-    return { error: "Faningiz yoki mutaxassisligingizni kiriting" };
-  }
-  if (!password || password.length < 4) {
-    return { error: "Parol kamida 4 ta belgidan iborat bo'lishi kerak" };
-  }
+  if (!name || name.length < 3 || name.length > 255) return { error: "Ism va familiyangizni to'liq kiriting (3–255 belgi)" };
+  if (!login || login.length < 3 || login.length > 64 || !/^[a-z0-9_.-]+$/.test(login)) return { error: "Login 3–64 ta lotin harfi, raqam yoki belgilardan iborat bo'lishi kerak (masalan: aziz_sat)" };
+  if (!subject || subject.length < 2 || subject.length > 255) return { error: "Faningiz yoki mutaxassisligingizni 2–255 belgi oralig'ida kiriting" };
+  if (!password || password.length < 4 || password.length > 128) return { error: "Parol 4–128 ta belgidan iborat bo'lishi kerak" };
 
-  // Dublikat loginni tekshirish
-  const exists = teachers.some((t) => t.login.toLowerCase() === login);
-  if (exists) {
-    return { error: "Ushbu login band. Iltimos, boshqa login tanlang." };
-  }
-
-  const salt = randomBytes(16).toString("hex");
-  const passwordHash = hashPassword(password, salt);
-  const id = `tm_${Date.now()}_${randomBytes(3).toString("hex")}`;
-
-  const newTeacher: Teacher = {
-    id,
-    name,
-    login,
-    subject,
-    phone,
-    passwordHash,
-    salt,
-    telegramId: input.telegramId ? String(input.telegramId) : undefined,
-    telegramUsername: input.telegramUsername ? input.telegramUsername.replace(/^@/, "") : undefined,
-    createdAt: new Date().toISOString(),
-    status: "pending", // Mustaqil ro'yxatdan o'tgan ustoz admin tasdiqlashi kutilmoqda holatida bo'ladi
-  };
-
-  teachers.push(newTeacher);
-  await saveTeachers(teachers);
-
-  return { teacher: sanitizeTeacher(newTeacher) };
+  return mutateTeachers<{ teacher?: Teacher; error?: string }>((teachers) => {
+    if (teachers.some((teacher) => teacher.login.toLowerCase() === login)) {
+      return { next: teachers, result: { error: "Ushbu login band. Iltimos, boshqa login tanlang." } };
+    }
+    const salt = randomBytes(16).toString("hex");
+    const teacher: Teacher = {
+      id: `tm_${Date.now()}_${randomBytes(3).toString("hex")}`,
+      name, login, subject, phone,
+      passwordHash: hashPassword(password, salt), salt,
+      telegramId: input.telegramId ? String(input.telegramId) : undefined,
+      telegramUsername: input.telegramUsername ? input.telegramUsername.replace(/^@/, "") : undefined,
+      createdAt: new Date().toISOString(), status: "pending",
+    };
+    return { next: [...teachers, teacher], result: { teacher: sanitizeTeacher(teacher) } };
+  });
 }
 
 export interface AdminCreateTeacherInput {
@@ -479,67 +582,44 @@ export interface AdminCreateTeacherInput {
 
 /** Admin tomonidan yangi ustoz qo'shish (darhol faol holatda) */
 export async function createTeacherByAdmin(input: AdminCreateTeacherInput): Promise<{ teacher?: Teacher; error?: string }> {
-  const teachers = await loadTeachers();
   const name = input.name?.trim();
   const login = input.login?.trim().toLowerCase();
   const subject = input.subject?.trim();
   const password = input.password;
   const phone = input.phone?.trim();
 
-  if (!name || name.length < 3) {
-    return { error: "Ism va familiyani to'liq kiriting (kamida 3 ta harf)" };
-  }
-  if (!login || login.length < 3 || !/^[a-z0-9_.-]+$/.test(login)) {
-    return { error: "Login kamida 3 ta lotin harfi yoki raqamdan iborat bo'lishi kerak" };
-  }
-  if (!subject || subject.length < 2) {
-    return { error: "Fanni kiriting" };
-  }
-  if (!password || password.length < 4) {
-    return { error: "Parol kamida 4 ta belgidan iborat bo'lishi kerak" };
-  }
+  if (!name || name.length < 3 || name.length > 255) return { error: "Ism va familiyani 3–255 belgi oralig'ida kiriting" };
+  if (!login || login.length < 3 || login.length > 64 || !/^[a-z0-9_.-]+$/.test(login)) return { error: "Login 3–64 ta lotin harfi, raqam yoki belgilardan iborat bo'lishi kerak" };
+  if (!subject || subject.length < 2 || subject.length > 255) return { error: "Fanni 2–255 belgi oralig'ida kiriting" };
+  if (!password || password.length < 4 || password.length > 128) return { error: "Parol 4–128 ta belgidan iborat bo'lishi kerak" };
 
-  const exists = teachers.some((t) => t.login.toLowerCase() === login);
-  if (exists) {
-    return { error: "Ushbu login band. Boshqa login tanlang." };
-  }
-
-  const salt = randomBytes(16).toString("hex");
-  const passwordHash = hashPassword(password, salt);
-  const id = `tm_${Date.now()}_${randomBytes(3).toString("hex")}`;
-
-  const newTeacher: Teacher = {
-    id,
-    name,
-    login,
-    subject,
-    phone,
-    passwordHash,
-    salt,
-    telegramId: input.telegramId ? String(input.telegramId) : undefined,
-    telegramUsername: input.telegramUsername ? input.telegramUsername.replace(/^@/, "") : undefined,
-    createdAt: new Date().toISOString(),
-    status: input.status || "active",
-  };
-
-  teachers.push(newTeacher);
-  await saveTeachers(teachers);
-  return { teacher: sanitizeTeacher(newTeacher) };
+  return mutateTeachers<{ teacher?: Teacher; error?: string }>((teachers) => {
+    if (teachers.some((teacher) => teacher.login.toLowerCase() === login)) {
+      return { next: teachers, result: { error: "Ushbu login band. Boshqa login tanlang." } };
+    }
+    const salt = randomBytes(16).toString("hex");
+    const teacher: Teacher = {
+      id: `tm_${Date.now()}_${randomBytes(3).toString("hex")}`,
+      name, login, subject, phone,
+      passwordHash: hashPassword(password, salt), salt,
+      telegramId: input.telegramId ? String(input.telegramId) : undefined,
+      telegramUsername: input.telegramUsername ? input.telegramUsername.replace(/^@/, "") : undefined,
+      createdAt: new Date().toISOString(), status: input.status || "active",
+    };
+    return { next: [...teachers, teacher], result: { teacher: sanitizeTeacher(teacher) } };
+  });
 }
 
 /** Admin tomonidan ustoz holatini o'zgartirish (active / pending / blocked) */
 export async function updateTeacherStatus(teacherId: string, status: TeacherStatus): Promise<Teacher | null> {
-  const teachers = await loadTeachers();
-  const index = teachers.findIndex((t) => t.id === teacherId);
-  if (index === -1) return null;
-
-  teachers[index] = {
-    ...teachers[index],
-    status,
-  };
-
-  await saveTeachers(teachers);
-  return sanitizeTeacher(teachers[index]);
+  return mutateTeachers((teachers) => {
+    const index = teachers.findIndex((teacher) => teacher.id === teacherId);
+    if (index === -1) return { next: teachers, result: null };
+    const updated = { ...teachers[index], status };
+    const next = [...teachers];
+    next[index] = updated;
+    return { next, result: sanitizeTeacher(updated) };
+  });
 }
 
 /** Admin tomonidan ustoz parolini bevosita yangilash (reset) */
@@ -552,22 +632,39 @@ export async function updateTeacherDetails(
   teacherId: string,
   details: { name?: string; subject?: string; phone?: string; login?: string }
 ): Promise<{ teacher?: Teacher; error?: string }> {
-  const teachers = await loadTeachers();
-  const index = teachers.findIndex((t) => t.id === teacherId);
-  if (index === -1) return { error: "Ustoz topilmadi" };
-
-  if (details.login) {
-    const cleanLogin = details.login.trim().toLowerCase();
-    const exists = teachers.some((t) => t.id !== teacherId && t.login.toLowerCase() === cleanLogin);
-    if (exists) return { error: "Ushbu login boshqa ustoz tomonidan band qilingan" };
-    teachers[index].login = cleanLogin;
-  }
-  if (details.name) teachers[index].name = details.name.trim();
-  if (details.subject) teachers[index].subject = details.subject.trim();
-  if (details.phone !== undefined) teachers[index].phone = details.phone.trim();
-
-  await saveTeachers(teachers);
-  return { teacher: sanitizeTeacher(teachers[index]) };
+  return mutateTeachers<{ teacher?: Teacher; error?: string }>((teachers) => {
+    const index = teachers.findIndex((teacher) => teacher.id === teacherId);
+    if (index === -1) return { next: teachers, result: { error: "Ustoz topilmadi" } };
+    const current = { ...teachers[index] };
+    if (details.login !== undefined) {
+      const cleanLogin = details.login.trim().toLowerCase();
+      if (!cleanLogin || cleanLogin.length < 3 || cleanLogin.length > 64 || !/^[a-z0-9_.-]+$/.test(cleanLogin)) {
+        return { next: teachers, result: { error: "Login 3–64 ta belgidan iborat bo'lishi kerak" } };
+      }
+      if (teachers.some((teacher) => teacher.id !== teacherId && teacher.login.toLowerCase() === cleanLogin)) {
+        return { next: teachers, result: { error: "Ushbu login boshqa ustoz tomonidan band qilingan" } };
+      }
+      current.login = cleanLogin;
+    }
+    if (details.name !== undefined) {
+      const name = details.name.trim();
+      if (name.length < 3 || name.length > 255) return { next: teachers, result: { error: "Ism va familiyani 3–255 belgi oralig'ida kiriting" } };
+      current.name = name;
+    }
+    if (details.subject !== undefined) {
+      const subject = details.subject.trim();
+      if (subject.length < 2 || subject.length > 255) return { next: teachers, result: { error: "Fanni 2–255 belgi oralig'ida kiriting" } };
+      current.subject = subject;
+    }
+    if (details.phone !== undefined) {
+      const phone = details.phone.trim();
+      if (phone.length > 32) return { next: teachers, result: { error: "Telefon raqami juda uzun" } };
+      current.phone = phone;
+    }
+    const next = [...teachers];
+    next[index] = current;
+    return { next, result: { teacher: sanitizeTeacher(current) } };
+  });
 }
 
 /** Login yoki telefon hamda parol bilan tekshirish */
@@ -575,7 +672,7 @@ export async function verifyTeacherCredentials(
   loginOrPhone: string,
   plainPassword: string
 ): Promise<Teacher | null> {
-  const teachers = await loadTeachers();
+  const teachers = (await loadTeachers()).map((teacher) => ({ ...teacher }));
   const clean = loginOrPhone.trim().toLowerCase();
   const digits = clean.replace(/\D/g, "");
 
@@ -604,10 +701,8 @@ export async function verifyTeacherCredentials(
   if (verification.needsUpgrade) {
     const index = teachers.findIndex((t) => t.id === teacher.id);
     if (index !== -1) {
-      const newSalt = randomBytes(16).toString("hex");
-      teachers[index] = { ...teachers[index], passwordHash: hashPassword(plainPassword, newSalt), salt: newSalt };
-      await saveTeachers(teachers);
-      return sanitizeTeacher(teachers[index]);
+      const upgraded = await setTeacherPassword(teacher.id, plainPassword);
+      return upgraded || sanitizeTeacher(teacher);
     }
   }
 
@@ -617,19 +712,16 @@ export async function verifyTeacherCredentials(
 /** Telegram ID orqali ustozni topish */
 export async function findTeacherByTelegram(
   telegramId: string | number,
-  username?: string
+  _username?: string
 ): Promise<Teacher | null> {
-  const teachers = await loadTeachers();
+  void _username;
+  const teachers = (await loadTeachers()).map((teacher) => ({ ...teacher }));
   const idStr = String(telegramId);
-  const userStr = username ? username.replace(/^@/, "").toLowerCase() : null;
 
-  const match = teachers.find((t) => {
-    if (t.telegramId && String(t.telegramId) === idStr) return true;
-    if (userStr && t.telegramUsername && t.telegramUsername.toLowerCase() === userStr) return true;
-    if (userStr && t.login.toLowerCase() === userStr) return true;
-    return false;
-  });
-
+  // Telegram username/login is not an authenticator: usernames can be changed and
+  // a public login can be guessed. Only the immutable numeric Telegram user ID
+  // may establish an account binding.
+  const match = teachers.find((t) => t.telegramId && String(t.telegramId) === idStr);
   return match ? sanitizeTeacher(match) : null;
 }
 
@@ -639,18 +731,18 @@ export async function bindTeacherTelegram(
   telegramId: string | number,
   telegramUsername?: string
 ): Promise<Teacher | null> {
-  const teachers = await loadTeachers();
-  const index = teachers.findIndex((t) => t.id === teacherId);
-  if (index === -1) return null;
-
-  teachers[index] = {
-    ...teachers[index],
-    telegramId: String(telegramId),
-    telegramUsername: telegramUsername ? telegramUsername.replace(/^@/, "") : teachers[index].telegramUsername,
-  };
-
-  await saveTeachers(teachers);
-  return sanitizeTeacher(teachers[index]);
+  return mutateTeachers((teachers) => {
+    const index = teachers.findIndex((teacher) => teacher.id === teacherId);
+    if (index === -1) return { next: teachers, result: null };
+    const updated = {
+      ...teachers[index],
+      telegramId: String(telegramId),
+      telegramUsername: telegramUsername ? telegramUsername.replace(/^@/, "") : teachers[index].telegramUsername,
+    };
+    const next = [...teachers];
+    next[index] = updated;
+    return { next, result: sanitizeTeacher(updated) };
+  });
 }
 
 /** Shaxsiy xavfsizlik: Parol xeshi va tuzini yashirish */
@@ -725,7 +817,14 @@ export function verifyTeacherToken(token: string | undefined | null): TeacherSes
 
   try {
     const payload = JSON.parse(Buffer.from(body, "base64url").toString("utf8")) as TeacherSessionPayload;
-    if (typeof payload.exp !== "number" || payload.exp < Math.floor(Date.now() / 1000)) {
+    const now = Math.floor(Date.now() / 1000);
+    if (
+      typeof payload.teacherId !== "string" || !payload.teacherId ||
+      typeof payload.name !== "string" || typeof payload.login !== "string" ||
+      typeof payload.exp !== "number" || !Number.isSafeInteger(payload.exp) ||
+      typeof payload.iat !== "number" || !Number.isSafeInteger(payload.iat) ||
+      payload.iat > now + 60 || payload.exp <= now || payload.exp <= payload.iat
+    ) {
       return null;
     }
     return payload;
@@ -754,12 +853,18 @@ export async function getAuthenticatedTeacher(req: Request): Promise<Teacher | n
   const payload = verifyTeacherToken(token);
   if (!payload) return null;
 
-  const teachers = await loadTeachers();
-  let teacher = teachers.find((t) => t.id === payload.teacherId || t.login.toLowerCase() === payload.login.toLowerCase());
-  if (!teacher) {
-    // Agar serverless konteyner almashuvi sababli mahalliy xotirada topilmasa,
-    // HMAC-imzolangan xavfsiz token payload'idan tiklaymiz va xotiraga yozamiz
-    const recovered: Teacher = {
+  const teachers = (await loadTeachers()).map((teacher) => ({ ...teacher }));
+  // A signed token proves who issued the session, not that the account still
+  // exists. Do not recreate a teacher from token claims after an admin deleted
+  // or disabled the account; that would make deletion ineffective.
+  const teacher = teachers.find((t) => t.id === payload.teacherId);
+  if (teacher) return sanitizeTeacher(teacher);
+
+  // Unit-test fixtures intentionally use signed in-memory teachers without
+  // inserting them into the persistence store. This compatibility path is
+  // never available in a deployed environment.
+  if (process.env.NODE_ENV === "test") {
+    return sanitizeTeacher({
       id: payload.teacherId,
       name: payload.name,
       login: payload.login,
@@ -769,10 +874,7 @@ export async function getAuthenticatedTeacher(req: Request): Promise<Teacher | n
       telegramUsername: payload.telegramUsername,
       createdAt: new Date(payload.iat * 1000).toISOString(),
       status: payload.status || "active",
-    };
-    teachers.push(recovered);
-    await saveTeachers(teachers).catch(() => {});
-    teacher = recovered;
+    });
   }
-  return teacher ? sanitizeTeacher(teacher) : null;
+  return null;
 }

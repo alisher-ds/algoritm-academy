@@ -71,7 +71,7 @@ CREATE TABLE IF NOT EXISTS leads (
   preferred_time VARCHAR(64),
   notes TEXT,
   source VARCHAR(128),
-  status VARCHAR(32) NOT NULL DEFAULT 'yangi', -- 'yangi', 'boglangan', 'rad'
+  status VARCHAR(32) NOT NULL DEFAULT 'yangi', -- 'yangi', 'boglangan', 'qabul_qilindi', 'bekor_qilindi'
   admin_notes TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -85,8 +85,16 @@ CREATE TABLE IF NOT EXISTS idempotency_receipts (
   expires_at BIGINT NOT NULL
 );
 
--- 6. Yuqori Tezlik Uchun Indekslar (Indexes for <10ms queries)
+-- 6. Dastlabki seed/migratsiya markerlari (startup migration bilan bir xil)
+CREATE TABLE IF NOT EXISTS app_metadata (
+  key VARCHAR(128) PRIMARY KEY,
+  value TEXT NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 7. Yuqori Tezlik Uchun Indekslar (Indexes for <10ms queries)
 CREATE INDEX IF NOT EXISTS idx_attendance_group_date ON attendance_records (group_id, date);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_attendance_unique_student_group_date ON attendance_records (group_id, student_id, date);
 CREATE INDEX IF NOT EXISTS idx_attendance_student_id ON attendance_records (student_id);
 CREATE INDEX IF NOT EXISTS idx_students_group_id ON students (group_id);
 CREATE INDEX IF NOT EXISTS idx_groups_teacher_id ON groups (teacher_id);

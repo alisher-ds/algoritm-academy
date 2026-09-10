@@ -98,9 +98,21 @@ export function verifySessionToken(token: string | undefined | null): boolean {
   const [, body, sig] = parts;
   if (!safeEqual(sig, sign(body, secret))) return false;
   try {
-    const payload = JSON.parse(Buffer.from(body, "base64url").toString("utf8")) as SessionPayload;
-    if (typeof payload.exp !== "number") return false;
-    return payload.exp > Math.floor(Date.now() / 1000);
+    const payload = JSON.parse(Buffer.from(body, "base64url").toString("utf8")) as Partial<SessionPayload>;
+    const now = Math.floor(Date.now() / 1000);
+    if (
+      typeof payload.iat !== "number" ||
+      !Number.isSafeInteger(payload.iat) ||
+      typeof payload.exp !== "number" ||
+      !Number.isSafeInteger(payload.exp) ||
+      typeof payload.jti !== "string" ||
+      payload.jti.length < 16 ||
+      payload.jti.length > 128 ||
+      payload.iat > now + 60 ||
+      payload.exp <= now ||
+      payload.exp <= payload.iat
+    ) return false;
+    return true;
   } catch {
     return false;
   }
@@ -167,7 +179,12 @@ export function isSameOrigin(req: Request): boolean {
   if (!source) return true;
   try {
     const src = new URL(source);
-    const rawHost = req.headers.get("x-forwarded-host") || req.headers.get("host");
+    // Prefer the actual Host header. A client can spoof x-forwarded-host when
+    // the app is reached directly; trusting it first would let that header
+    // make an arbitrary Origin look same-site. A trusted reverse proxy should
+    // preserve the public Host header, while x-forwarded-host remains a
+    // fallback for environments that omit Host.
+    const rawHost = req.headers.get("host") || req.headers.get("x-forwarded-host");
     if (!rawHost) return true;
 
     // x-forwarded-host bir nechta proksi orqali vergul bilan ajratilgan bo'lishi mumkin

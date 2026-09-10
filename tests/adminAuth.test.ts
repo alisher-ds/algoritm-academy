@@ -100,6 +100,18 @@ describe("adminAuth", () => {
     expect(a.isSameOrigin(new Request("http://site.uz/api"))).toBe(true);
   });
 
+  it("to'g'ridan-to'g'ri so'rovda soxta x-forwarded-host ga ishonmaydi", async () => {
+    const a = await freshAuth();
+    const spoofed = new Request("http://site.uz/api", {
+      headers: {
+        host: "site.uz",
+        "x-forwarded-host": "trusted.uz",
+        origin: "https://trusted.uz",
+      },
+    });
+    expect(a.isSameOrigin(spoofed)).toBe(false);
+  });
+
   it("production'da cookie Secure bo'ladi", async () => {
     vi.stubEnv("NODE_ENV", "production");
     const a = await freshAuth();

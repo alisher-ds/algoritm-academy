@@ -16,7 +16,9 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'], channel: 'msedge' },
+      // CI installs Playwright's pinned Chromium. Do not require a host-specific
+      // Edge installation, which is absent in many dev containers.
+      use: { ...devices['Desktop Chrome'] },
     },
   ],
   webServer: process.env.E2E_BASE_URL

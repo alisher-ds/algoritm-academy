@@ -2,11 +2,12 @@
 // Supabase, Neon yoki Vercel Postgres uchun professional drayver.
 // Serverless muhitda connection pool bilan xavfsiz ishlaydi.
 
-import { Pool, PoolConfig } from "pg";
+import { Pool, PoolConfig, type PoolClient } from "pg";
 
 interface GlobalDbScope {
   __algoritm_db_pool__?: Pool;
   __algoritm_db_initialized__?: boolean;
+  __algoritm_db_init_promise__?: Promise<boolean>;
 }
 
 function getDatabaseUrl(): string | null {
@@ -38,7 +39,15 @@ export function getPool(): Pool | null {
     max: 10,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 5000,
-    ssl: isLocalhost ? false : { rejectUnauthorized: false },
+    ssl: isLocalhost
+      ? false
+      : {
+          // Do not silently disable certificate verification for hosted
+          // PostgreSQL. Operators who use a private CA can provide it
+          // explicitly; disabling verification is an opt-in emergency escape hatch.
+          rejectUnauthorized: process.env.PGSSL_REJECT_UNAUTHORIZED === "false" ? false : true,
+          ...(process.env.PGSSL_CA ? { ca: process.env.PGSSL_CA } : {}),
+        },
   };
 
   const pool = new Pool(config);
@@ -68,6 +77,26 @@ export async function query<T = unknown>(text: string, params: unknown[] = []): 
   }
 }
 
+/** Bir nechta SQL amallarini atomik bajarish uchun transaction yordamchisi. */
+export async function withTransaction<T>(work: (client: PoolClient) => Promise<T>): Promise<T> {
+  const pool = getPool();
+  if (!pool) {
+    throw new Error("DATABASE_URL sozlanmagan. Ma'lumotlar bazasiga ulanib bo'lmadi.");
+  }
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const result = await work(client);
+    await client.query("COMMIT");
+    return result;
+  } catch (error) {
+    await client.query("ROLLBACK").catch(() => {});
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 /**
  * Bo'sh bazaga jadvallarni (schema.sql) avtomatik o'rnatish
  */
@@ -77,9 +106,13 @@ export async function initDatabase(): Promise<boolean> {
 
   const g = globalThis as unknown as GlobalDbScope;
   if (g.__algoritm_db_initialized__) return true;
+  if (g.__algoritm_db_init_promise__) return g.__algoritm_db_init_promise__;
 
-  try {
-    await query(`
+  const initialization = (async () => {
+    try {
+      // pg accepts a multi-statement query here. The process-wide promise keeps
+      // concurrent cold-start requests from racing the DDL/seed migration.
+      await query(`
       CREATE TABLE IF NOT EXISTS teachers (
         id VARCHAR(64) PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
@@ -156,7 +189,39 @@ export async function initDatabase(): Promise<boolean> {
         expires_at BIGINT NOT NULL
       );
 
+      CREATE TABLE IF NOT EXISTS app_metadata (
+        key VARCHAR(128) PRIMARY KEY,
+        value TEXT NOT NULL,
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+
+      -- Old deployments may already have these tables without fields added later.
+      -- Keep the startup migration idempotent so an upgrade does not turn every
+      -- write into a 500 merely because the table pre-dates the current schema.
+      ALTER TABLE teachers ADD COLUMN IF NOT EXISTS phone VARCHAR(32);
+      ALTER TABLE teachers ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255);
+      ALTER TABLE teachers ADD COLUMN IF NOT EXISTS salt VARCHAR(64);
+      ALTER TABLE teachers ADD COLUMN IF NOT EXISTS telegram_id VARCHAR(64);
+      ALTER TABLE teachers ADD COLUMN IF NOT EXISTS telegram_username VARCHAR(64);
+      ALTER TABLE teachers ADD COLUMN IF NOT EXISTS status VARCHAR(32) NOT NULL DEFAULT 'active';
+      ALTER TABLE groups ADD COLUMN IF NOT EXISTS telegram_id VARCHAR(64);
+      ALTER TABLE groups ADD COLUMN IF NOT EXISTS telegram_username VARCHAR(64);
+      ALTER TABLE students ADD COLUMN IF NOT EXISTS parent_phone VARCHAR(32);
+      ALTER TABLE students ADD COLUMN IF NOT EXISTS status VARCHAR(32) NOT NULL DEFAULT 'faol';
+      ALTER TABLE students ADD COLUMN IF NOT EXISTS notes TEXT;
+      ALTER TABLE attendance_records ADD COLUMN IF NOT EXISTS note TEXT;
+      ALTER TABLE attendance_records ADD COLUMN IF NOT EXISTS marked_by VARCHAR(255) NOT NULL DEFAULT 'Ustoz';
+      ALTER TABLE attendance_records ADD COLUMN IF NOT EXISTS marked_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+      ALTER TABLE leads ADD COLUMN IF NOT EXISTS target_interest VARCHAR(255);
+      ALTER TABLE leads ADD COLUMN IF NOT EXISTS preferred_time VARCHAR(64);
+      ALTER TABLE leads ADD COLUMN IF NOT EXISTS notes TEXT;
+      ALTER TABLE leads ADD COLUMN IF NOT EXISTS source VARCHAR(128);
+      ALTER TABLE leads ADD COLUMN IF NOT EXISTS status VARCHAR(32) NOT NULL DEFAULT 'yangi';
+      ALTER TABLE leads ADD COLUMN IF NOT EXISTS admin_notes TEXT;
+
       CREATE INDEX IF NOT EXISTS idx_attendance_group_date ON attendance_records (group_id, date);
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_attendance_unique_student_group_date
+        ON attendance_records (group_id, student_id, date);
       CREATE INDEX IF NOT EXISTS idx_attendance_student_id ON attendance_records (student_id);
       CREATE INDEX IF NOT EXISTS idx_students_group_id ON students (group_id);
       CREATE INDEX IF NOT EXISTS idx_groups_teacher_id ON groups (teacher_id);
@@ -166,13 +231,18 @@ export async function initDatabase(): Promise<boolean> {
       CREATE INDEX IF NOT EXISTS idx_leads_phone ON leads (phone);
       CREATE INDEX IF NOT EXISTS idx_receipts_expires_at ON idempotency_receipts (expires_at);
     `);
+      g.__algoritm_db_initialized__ = true;
+      return true;
+    } catch (err) {
+      console.error("[Database Init Error]:", err);
+      return false;
+    } finally {
+      delete g.__algoritm_db_init_promise__;
+    }
+  })();
 
-    g.__algoritm_db_initialized__ = true;
-    return true;
-  } catch (err) {
-    console.error("[Database Init Error]:", err);
-    return false;
-  }
+  g.__algoritm_db_init_promise__ = initialization;
+  return initialization;
 }
 
 /** Testlar uchun hovuzni tozalash va yopish */
@@ -182,5 +252,6 @@ export async function closePool(): Promise<void> {
     await g.__algoritm_db_pool__.end().catch(() => {});
     delete g.__algoritm_db_pool__;
     delete g.__algoritm_db_initialized__;
+    delete g.__algoritm_db_init_promise__;
   }
 }

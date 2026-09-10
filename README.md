@@ -53,9 +53,11 @@ Boshqa skriptlar:
 ## Ariza (lead) tizimi qanday ishlaydi
 
 1. Saytdagi har bir forma (`LeadModal`, `LeadBannerSection`) `POST /api/leads` ga yuboradi.
-2. Arizalar ikki xil backend'da saqlanishi mumkin (avtomatik tanlanadi):
-   - **Upstash Redis (REST)** — `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` o'rnatilsa. Serverless (Vercel) uchun **majburiy**, chunki u yerda fayl tizimi vaqtinchalik.
-   - **JSON fayl** — `LEADS_FILE` yoki `<proyekt>/.data/leads.json` (lokal/VPS uchun; atomik yozish bilan).
+2. Arizalar uch xil backend'da saqlanishi mumkin (avtomatik tanlanadi):
+   - **PostgreSQL** — `DATABASE_URL` (yoki `POSTGRES_URL`/`SUPABASE_DATABASE_URL`) o'rnatilsa, barcha modullar uchun yagona markaziy baza ishlatiladi.
+   - **Upstash Redis (REST)** — `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` o'rnatilsa. Serverless (Vercel) uchun tavsiya etiladi.
+   - **JSON fayl** — `LEADS_FILE` yoki `<proyekt>/.data/leads.json` (lokal/VPS uchun; atomik yozish bilan). Serverless muhitda vaqtinchalik bo'lgani uchun production uchun yaroqsiz.
+   - PostgreSQL jadvallari `src/lib/db.ts` orqali cold-start paytida idempotent yaratiladi va eski deploylar uchun kerakli ustun/indexlar migratsiya qilinadi; qo'lda o'rnatish yoki audit uchun `schema.sql` shu DDL bilan sinxron yuritiladi.
 3. Agar `TELEGRAM_BOT_TOKEN` va `TELEGRAM_CHAT_ID` o'rnatilgan bo'lsa — har bir ariza Telegram'ga bildirishnoma sifatida boradi (yuborish xatosi arizani saqlashni buzmaydi).
 4. `/admin` sahifasi arizalarni API orqali ko'radi: qidiruv, status (yangi → bog'lanildi → qabul / bekor), CSV eksport (formula-injection'dan himoyalangan).
 5. Server ishlamay qolsa (5xx / tarmoq) forma arizani `localStorage`'ga zaxiralaydi; admin birinchi kirishda ularni avtomatik serverga ko'chiradi. Validatsiya xatolari (4xx) lokalga saqlanmaydi.
@@ -65,7 +67,7 @@ Boshqa skriptlar:
 | Himoya | Tafsilot |
 |---|---|
 | Sessiya | HMAC-SHA256 bilan **imzolangan** token (`exp` + `jti`), 12 soat amal qiladi. Parol hash'i cookie'da saqlanmaydi. |
-| Cookie | `HttpOnly`, `SameSite=Strict`, production'da `Secure`. |
+| Cookie | `HttpOnly`, `SameSite=Lax`, production'da `Secure`; o'zgartiruvchi route'lar Origin/Referer tekshiradi. |
 | Revoke | `ADMIN_SESSION_SECRET` yoki `ADMIN_PASSWORD` o'zgarsa — barcha sessiyalar bekor bo'ladi. |
 | Parol tekshiruvi | Doimiy vaqtda (timing-safe) solishtiriladi. |
 | Brute-force | `/api/leads/auth` — 15 daqiqada 8 ta urinish (IP bo'yicha) + noto'g'ri urinishlar uchun global shift. |
@@ -88,7 +90,7 @@ Boshqa skriptlar:
 |---|---|
 | Rolga asoslangan kirish (RBAC) | **Admin**: barcha guruhlar, o'quvchilar va davomat jurnallariga to'liq huquq (CRUD).<br>**Ustoz**: faqat o'ziga biriktirilgan guruhlar, ularning o'quvchilari va davomatiga ruxsat. Boshqa ustozning ma'lumotlariga so'rov yuborilsa `403 Forbidden` qaytadi. |
 | Ochiq ro'yxatni yashirish (Enumeration Protection) | `GET /api/teachers/auth` anonim foydalanuvchilarga ustozlar ro'yxatini yoki telefon raqamlarini bermaydi (faqat autentifikatsiya qilingan admin yoki ustoz o'z ma'lumotlarini oladi). |
-| Hisobni egallashdan himoya (Account Takeover) | `action: "set-password"` da eski parol (`oldPassword`) kiritilishi va HMAC/PBKDF2 hash bilan tekshirilishi majburiy (faqat tizim administratori boshqa ustoz parolini to'g'ridan-to'g'ri yangilay oladi). |
+| Hisobni egallashdan himoya (Account Takeover) | Mavjud parolni almashtirishda eski parol (`oldPassword`) majburiy va scrypt hash bilan tekshiriladi; paroli hali o'rnatilmagan boshlang'ich hisobda telefon tasdig'i kerak (admin reset qila oladi). |
 | Ustoz Sessiyasi & Token | HMAC-SHA256 bilan imzolangan token (`Bearer <token>` sarlavhasi yoki HttpOnly cookie). Telegram WebApp muhitida ham `window.Telegram.WebApp.initData` orqali xavfsiz tasdiqlanadi. |
 | Telegram Webhook Himoyasi | Telegram'dan kelayotgan barcha webhook so'rovlari `X-Telegram-Bot-Api-Secret-Token` headeri bilan tekshiriladi (`TELEGRAM_WEBHOOK_SECRET`). |
 | Rate Limiting | `login`, `register` va `set-password` harakatlari uchun IP-ga asoslangan asinxron rate-limit qo'llangan. |
@@ -96,7 +98,7 @@ Boshqa skriptlar:
 ## Testlar va CI
 
 ```bash
-npm test          # vitest (auth, attendanceAuth, leadStore, rate-limit, telefon, API route'lar — 110 ta test)
+npm test          # vitest (auth, attendanceAuth, leadStore, rate-limit, telefon, API route'lar — 121 ta test)
 npm run typecheck # tsc --noEmit
 npm run lint      # eslint (0 xato, 0 ogohlantirish)
 ```
@@ -113,7 +115,8 @@ GitHub Actions (`.github/workflows/ci.yml`): lint → typecheck → test → bui
 ```bash
 TELEGRAM_BOT_TOKEN=...           # @BotFather orqali olinadi
 TELEGRAM_CHAT_ID=...             # xabar boradigan chat/guruh ID si
-TELEGRAM_WEBHOOK_SECRET=...      # Telegram webhook xavfsizlik tokeni
+TELEGRAM_WEBHOOK_SECRET=...      # Telegram webhook xavfsizlik tokeni (production'da majburiy)
+TELEGRAM_ADMIN_IDS=...            # bot adminlarining Telegram user ID lari (vergul bilan)
 ADMIN_PASSWORD=...               # /admin paroli — production'da MAJBURIY
 ADMIN_SESSION_SECRET=...         # admin sessiya imzosi (openssl rand -hex 32)
 TEACHER_SESSION_SECRET=...       # ustoz sessiya imzosi (openssl rand -hex 32)

@@ -690,7 +690,7 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
                       key={`${member.id}-${copy}-${idx}`}
                       className="shrink-0"
                       aria-hidden={copy !== 1}
-                      {...(copy !== 1 ? { inert: "" as unknown as boolean } : {})}
+                      {...(copy !== 1 ? { inert: true } : {})}
                     >
                       {renderCard(member, `-${copy}-${idx}`)}
                     </div>

@@ -60,19 +60,31 @@ export function verifyTelegramWebAppData(
       return { valid: false, error: "Imzo (hash) mos kelmadi. Soxtalashtirilgan so'rov." };
     }
 
-    // 5. Muddati o'tganligini tekshirish (24 soat)
-    const authDate = Number(params.get("auth_date"));
+    // 5. `auth_date` is mandatory. Accepting a missing/NaN date turns a
+    // signed but replayable payload into a permanent login token.
+    const rawAuthDate = params.get("auth_date");
+    const authDate = rawAuthDate ? Number(rawAuthDate) : NaN;
     const now = Math.floor(Date.now() / 1000);
-    if (authDate && now - authDate > 86400 * 2) {
-      return { valid: false, error: "Sessiya muddati o'tgan. Iltimos botni qayta oching." };
+    const maxAge = 86400 * 2;
+    if (!Number.isSafeInteger(authDate) || authDate <= 0 || authDate > now + 60 || now - authDate > maxAge) {
+      return { valid: false, error: "Telegram sessiyasi yaroqsiz yoki muddati o'tgan. Iltimos botni qayta oching." };
     }
 
-    // 6. User ma'lumotlarini parse qilish
+    // 6. User ma'lumotlarini parse qilish va minimal shaklini tekshirish
     let user: TelegramUser | undefined;
     const rawUser = params.get("user");
     if (rawUser) {
       try {
-        user = JSON.parse(rawUser);
+        const parsed = JSON.parse(rawUser) as Partial<TelegramUser>;
+        if (typeof parsed.id === "number" && Number.isSafeInteger(parsed.id) && parsed.id > 0) {
+          user = {
+            id: parsed.id,
+            first_name: typeof parsed.first_name === "string" ? parsed.first_name : "Telegram user",
+            last_name: typeof parsed.last_name === "string" ? parsed.last_name : undefined,
+            username: typeof parsed.username === "string" ? parsed.username : undefined,
+            language_code: typeof parsed.language_code === "string" ? parsed.language_code : undefined,
+          };
+        }
       } catch {}
     }
 
