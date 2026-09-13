@@ -131,12 +131,7 @@ function TeacherAvatar({
   );
 }
 
-/**
- * Rasmiy va haqiqiy Algoritm pedagogik jamoasi.
- *
- * Modul darajasida: ilgari komponent tanasida edi va har render'da (karusel
- * pauzasi, modal ochilishi) 8 ta obyekt qaytadan yaratilardi.
- */
+/** Rasmiy Algoritm pedagogik jamoasi */
 const TEAM_MEMBERS = [
     {
       id: "tm-bobur",
@@ -537,8 +532,6 @@ export default function TeacherGrid({ onSelectTeacherForConsultation }: TeacherG
   }, [selectedMember, handleCloseModal]);
 
   const renderCard = (member: TeamMember, keySuffix: string = "") => (
-    // Ilgari bu oddiy `<div onClick>` edi — Tab bilan yuruvchi va ekran o'qigich
-    // foydalanuvchisi ustoz profilini umuman ocha olmasdi.
     <div
       key={`${member.id}${keySuffix}`}
       role="button"

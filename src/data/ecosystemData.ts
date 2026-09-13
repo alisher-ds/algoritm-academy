@@ -57,14 +57,7 @@ export interface FAQ {
   category: "maktab" | "markaz" | "umumiy";
 }
 
-/**
- * Sayt kontentining yagona manbasi.
- *
- * `satisfies` qo'llanadi (annotatsiya emas): u literal tiplarni saqlab qoladi,
- * lekin quyidagi interfeyslarga muvofiqlikni majburlaydi. Ilgari interfeyslar
- * eksport qilingan-u hech qayerda ishlatilmasdi — ya'ni kursga `mentor` qo'shishni
- * unutsangiz yoki `category` ni xato yozsangiz TypeScript indamasdi.
- */
+/** Sayt kontentining yagona ma'lumotlar modeli */
 export interface EcosystemContent {
   name: string;
   licenseNumber: string;

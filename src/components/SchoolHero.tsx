@@ -168,9 +168,7 @@ export default function SchoolHero({ onOpenLeadModal }: SchoolHeroProps) {
               className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${zIndex} ${opacity}`}
               aria-hidden={!isCurrent}
             >
-              {/* Fotosurat (Yumshoq, uzluksiz kinomatografik zoom) */}
-              {/* Birinchi slayd — sahifaning LCP elementi: darhol va yuqori prioritet bilan.
-                  Qolgan slaydlar lazy — ilgari 4 ta katta JPG bir vaqtda yuklanardi. */}
+              {/* Birinchi slayd — LCP prioriteti bilan yuklanadi */}
               <img
                 src={s.image}
                 alt=""

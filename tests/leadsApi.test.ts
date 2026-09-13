@@ -284,7 +284,7 @@ describe("/api/leads — kirish validatsiyasi", () => {
   it("soxta X-Forwarded-For bilan cheksiz ariza yuborib bo'lmaydi (global shift)", async () => {
     const { POST } = await api();
     let blocked = false;
-    // Har so'rovda YANGI soxta IP — ilgari bu per-IP chegarani butunlay aylanib o'tardi.
+    // Har so'rovda yangi soxta IP bilan test qilish
     for (let i = 0; i < 70; i++) {
       const res = await POST(
         post(

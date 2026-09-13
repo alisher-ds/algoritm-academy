@@ -22,8 +22,7 @@ export default function VideoModal({
 }: VideoModalProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  // Brauzerlar ovozli avtoijroni bloklaydi — shuning uchun ovozsiz boshlaymiz.
-  // Ilgari `autoPlay` bor edi-yu video muted emasdi, ya'ni avtoijro hech qachon ishlamasdi.
+  // Avtoijro brauzer siyosatiga muvofiq ovozsiz boshlanadi
   const [isMuted, setIsMuted] = useState(true);
   const [progress, setProgress] = useState(0);
   const [isBuffering, setIsBuffering] = useState(true);

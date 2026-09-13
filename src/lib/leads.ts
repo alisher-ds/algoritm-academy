@@ -94,12 +94,7 @@ const OUTBOX_MAX_ATTEMPTS = 10;
 /** Shu muddatdan eski ariza yuborilmaydi — u allaqachon ma'nosiz. */
 const OUTBOX_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
-/**
- * Muddati o'tgan yoki urinishlari tugagan yozuvlarni chiqarib tashlaydi.
- *
- * Ilgari bunday tozalash umuman yo'q edi: server uzoq ishlamay qolsa yozuvlar
- * foydalanuvchi brauzerida abadiy qolib, har sahifa ochilishida qayta urinardi.
- */
+/** Muddati o'tgan yoki urinishlari tugagan yozuvlarni chiqarib tashlaydi */
 function prune(items: OutboxItem[]): { keep: OutboxItem[]; dropped: number } {
   const now = Date.now();
   const keep = items.filter((it) => {

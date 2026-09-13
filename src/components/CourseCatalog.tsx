@@ -132,8 +132,7 @@ export default function CourseCatalog({ onOpenLeadModal, compact = false }: Cour
           </ScrollReveal>
         )}
 
-        {/* Qidiruv/filtr natija bermasa — bo'sh holat. Ilgari grid jimgina bo'sh
-            qolardi va foydalanuvchi sayt buzilgan deb o'ylardi. */}
+        {/* Qidiruv/filtr natija bermasa — bo'sh holat */}
         {displayCourses.length === 0 && (
           <div className="rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center">
             <Search className="mx-auto mb-3 h-8 w-8 text-slate-600" />

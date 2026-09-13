@@ -58,15 +58,7 @@ export async function rateLimit(
 ): Promise<Result> {
   if (!upstash()) return memoryLimit(key, limit, windowSeconds * 1000);
   try {
-    // Kalit oynaga bog'langan: `rl:<key>:<oyna raqami>`.
-    //
-    // Ilgari kalit doimiy edi va muddat alohida `EXPIRE ... NX` bilan
-    // qo'yilardi — uning natijasi tekshirilmasdi. Agar u bajarilmasa (tarmoq
-    // uzilishi, Redis < 7.0 da `NX` yo'qligi), kalit TTL siz qolib, hisoblagich
-    // hech qachon tiklanmasdi va foydalanuvchi ABADIY bloklanardi.
-    //
-    // Oyna raqami vaqt bilan o'zi o'zgargani uchun endi hisoblagich EXPIRE
-    // muvaffaqiyatsiz bo'lsa ham avtomatik tiklanadi.
+    // Kalit oynaga bog'langan: `rl:<key>:<oyna raqami>`
     const window = Math.floor(Date.now() / 1000 / windowSeconds);
     const redisKey = `rl:${key}:${window}`;
     const [incr] = await redisPipeline([

@@ -1,6 +1,6 @@
 # ALGORITM EKOTIZIMI (MAKTAB & AKADEMIYA) — HAQIQIY ARXIV FAKTLARI BAZASI
 
-Ushbu hujjat Algoritm Xususiy Maktabi va Algoritm Akademiyasining rasmiy arxiv xabarlari (2022–2026 yillar, telegram xabarlar raqamlari bilan) asosida Claude Cowork va Gemini Spark tomonidan tasdiqlangan va loyiha kod bazasiga 100% integratsiya qilingan haqiqiy ma'lumotlar to'plamidir.
+Ushbu hujjat Algoritm Xususiy Maktabi va Algoritm Akademiyasining rasmiy arxiv xabarlari (2022–2026 yillar) asosida to'plangan va loyiha kod bazasiga integratsiya qilingan haqiqiy ma'lumotlar to'plamidir.
 
 ---
 

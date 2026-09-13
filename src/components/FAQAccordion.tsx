@@ -74,10 +74,7 @@ export default function FAQAccordion({ categoryFilter = "hammasi" }: FAQAccordio
                     </div>
                   </button>
 
-                  {/* Javob HAR DOIM DOM'da bo'ladi va faqat vizual yashiriladi.
-                      Ilgari `{isOpen && ...}` bilan render qilinardi — natijada 12 ta
-                      javobdan faqat bittasi server HTML'iga tushardi va qolganini
-                      qidiruv tizimlari umuman ko'rmasdi. */}
+                  {/* SEO uchun javob doimo DOM'da saqlanadi */}
                   <div
                     id={`faq-answer-${idx}`}
                     role="region"

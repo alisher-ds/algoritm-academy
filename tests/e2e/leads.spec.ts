@@ -3,7 +3,7 @@ import { test, expect } from "@playwright/test";
 test.describe("Lead Modal & Form Accessibility", () => {
   test("ochilganda dialog role va aria-modal atributlariga ega bo'ladi, Escape bilan yopiladi", async ({ page }) => {
     await page.goto("/");
-    // Karusel ichidagi (vaqtincha ko'rinmas) tugma o'rniga navbar'dagi barqaror CTA.
+    // Navbar CTA tugmasi orqali modalni ochish
     await page.getByRole("button", { name: "Ariza topshirish" }).first().click();
 
     const dialog = page.getByRole("dialog");
@@ -24,12 +24,11 @@ test.describe("Lead Modal & Form Accessibility", () => {
 
     await page.route("**/api/leads", (route) => route.abort("internetdisconnected"));
 
-    // Placeholder o'rniga label — placeholder matni dizayn bilan birga o'zgaradi.
     await dialog.getByLabel(/Ism va Familiyangiz/i).fill("E2E Offline Test");
     await dialog.getByLabel(/Telefon Raqamingiz/i).fill("+998 90 123 45 67");
     await dialog.getByRole("button", { name: /Yuborish|Tasdiqlash/i }).click();
 
-    // Tasdiq ekrani + "qurilmada saqlandi" belgisi — ikkalasi ham ko'rinishi kerak.
+    // Tasdiq ekrani + "qurilmada saqlandi" belgisi
     await expect(dialog.getByRole("heading", { name: /Arizangiz Qabul Qilindi/i })).toBeVisible();
     await expect(dialog.getByText(/Qurilmangizda saqlandi/i)).toBeVisible();
   });
@@ -50,11 +49,6 @@ test.describe("Admin Panel", () => {
 test.describe("Harakatni kamaytirish rejimi", () => {
   test.use({ reducedMotion: "reduce" });
 
-  // Eslatma: hydration nomuvofiqligining O'ZI production build'da konsolga
-  // yozilmaydi (React jimgina qayta render qiladi), shuning uchun uni e2e bilan
-  // ushlab bo'lmaydi. Bu yerda tekshiriladigan narsa — kuzatiladigan xatti-harakat:
-  // harakat kamaytirilgan bo'lsa kontent darhol ko'rinishi va sanoq yakuniy
-  // qiymatda turishi kerak (`opacity: 0` da qotib qolmasin).
   test("kontent darhol ko'rinadi va sanoq yakuniy qiymatda turadi", async ({ page }) => {
     await page.goto("/");
 

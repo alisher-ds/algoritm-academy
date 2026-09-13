@@ -61,10 +61,7 @@ export const metadata: Metadata = {
   },
 };
 
-/**
- * Schema.org ma'lumotlari ECOSYSTEM_DATA dan hosil qilinadi — ilgari telefon va
- * manzil qo'lda takrorlangan edi va kontent yangilanganda schema eskirib qolardi.
- */
+/** Schema.org ma'lumotlari ECOSYSTEM_DATA dan shakllantiriladi */
 const { school, academy, contact } = ECOSYSTEM_DATA;
 
 const campusSchema = (

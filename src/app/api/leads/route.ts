@@ -52,8 +52,7 @@ function normalizeLeadBody(body: Record<string, unknown>) {
   const type: LeadType = VALID_TYPES.includes(rawType as LeadType)
     ? (rawType as LeadType)
     : "umumiy";
-  // Yo'nalish faqat rasmiy ro'yxatdan bo'lishi mumkin. Ilgari bu erkin matn edi va
-  // bot Telegram bildirishnomasiga ixtiyoriy reklama matnini joylashtira olardi.
+  // Yo'nalish faqat rasmiy ro'yxatdan qabul qilinadi.
   const rawInterest = str(body.targetInterest, 160);
   const knownInterest = LEAD_OPTIONS.find((o) => o.value === rawInterest);
   const targetInterest = knownInterest ? knownInterest.value : FALLBACK_INTEREST;
