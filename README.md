@@ -1,160 +1,58 @@
-# Algoritm Academy — Xususiy Maktab va Akademik Tayyorlov Ekotizimi
+# Algoritm Academy & School
 
-Qarshi shahridagi **Algoritm** ta'lim ekotizimining rasmiy veb-sayti:
-1-qanot — **Algoritm School** (0–11-sinf xususiy maktabi) va 2-qanot — **Algoritm Academy** o'quv markazi (PMT, Digital SAT, IELTS, Matematika Milliy Sertifikat A+, DTM).
+Qarshi shahridagi **Algoritm** ta'lim ekotizimining rasmiy veb-platformasi:
+- **Algoritm Xususiy Maktabi** (0–11 sinflar)
+- **Algoritm O'quv Markazi** (PMT, Digital SAT, IELTS, Milliy sertifikat, DTM)
+- **CRM va Davomat tizimi** (Admin boshqaruv paneli va ustozlar portali)
 
-## Texnologiyalar
+---
 
-- **Next.js 16** (App Router) + **React 19**
-- **TypeScript** (strict), **Tailwind CSS 3**, `lucide-react` ikonkalari
-- `next dev --webpack` / `next build --webpack`
+## Asosiy imkoniyatlar
+
+- **Rasmiy veb-sayt:** Maktab va markaz yo'nalishlari, kurslar katalogi, natijalar, galereya va filial manzillari.
+- **Onlayn qabul (CRM):** Sayt orqali kelib tushgan arizalar avtomatik tarzda Telegram botga/guruhga yetkaziladi va admin panelda boshqariladi.
+- **Davomat va guruhlar:** Ustozlar uchun shaxsiy kabinet, dars jadvallari, davomat belgilash va oylik hisob-kitob tizimi.
+- **Mobil moslashuvchanlik:** Barcha smartfonlar, kompyuterlar va Telegram Mini App uchun qulay dizayn.
+
+---
 
 ## Ishga tushirish
 
-```bash
-npm install
-cp .env.example .env.local   # kerakli qiymatlarni kiriting
-npm run dev                  # http://localhost:3000
-```
+1. Loyiha bog'liqliklarini o'rnatish:
+   ```bash
+   npm install
+   ```
 
-Boshqa skriptlar:
+2. Muhit parametrlarini sozlash:
+   ```bash
+   cp .env.example .env.local
+   ```
+   *(Kerakli `ADMIN_PASSWORD`, `DATABASE_URL` yoki Telegram bot parametrlarini kiriting)*
 
-| Skript | Vazifa |
-|---|---|
-| `npm run dev` | Dev-server (webpack) |
-| `npm run build` | Production build |
-| `npm run start` | Production serverni ishga tushirish |
-| `npm run lint` | ESLint tekshiruvi |
-| `npm run typecheck` | `tsc --noEmit` |
-| `npm test` | Vitest (unit + API route testlari) |
-| `npm run test:watch` | Vitest kuzatuv rejimida |
-| `npm run test:e2e` | Playwright (avval `npm run build` kerak) |
+3. Loyihani ishga tushirish:
+   ```bash
+   npm run dev
+   ```
+   Brauzerda ochish: `http://localhost:3000`
 
-## Sahifalar va API Route'lar
+---
 
-| Route | Mazmuni | Ruxsat / Himoya |
-|---|---|---|
-| `/` | Bosh sahifa: maktab + kurslar ekotizimi | Ochiq |
-| `/markaz` | O'quv markazi kurslari (PMT, SAT, IELTS, DTM) | Ochiq |
-| `/aloqa` | Manzillar, telefonlar, Telegram | Ochiq |
-| `/galereya` | Foto lavhalar | Ochiq |
-| `/admin` | **CRM & Boshqaruv** — arizalar, guruhlar, o'quvchilar va davomat | Faqat Admin (cookie sessiya) |
-| `/davomat` | **Ustozlar Portali** — guruhlar va dars davomati (Telegram Mini App yoki veb) | Ustoz / Admin (Bearer token yoki cookie) |
-| `/kurslar` | Barcha kurslar katalogi va dars jadvallari | Ochiq |
-| `/maktab` | `/` ga qayta yo'naltiradi | 307 Redirect |
-| `/api/leads` | Arizalar API si (GET/POST/PATCH/DELETE) | POST ochiq (rate-limit), qolgani Admin |
-| `/api/leads/auth`, `/api/leads/logout` | Admin kirish/chiqish | Rate-limit (8 ta/15m) |
-| `/api/teachers/auth` | Ustoz autentifikatsiyasi (login, register, set-password) | Rate-limit, timing-safe, RBAC |
-| `/api/groups` | Guruhlar boshqaruvi (CRUD) | Admin (barchasi), Ustoz (faqat o'ziniki) |
-| `/api/students` | O'quvchilar boshqaruvi (CRUD) | Admin (barchasi), Ustoz (faqat o'ziniki) |
-| `/api/attendance` | Davomat qaydnomalari | Admin (barchasi), Ustoz (faqat o'ziniki) |
-| `/api/telegram/webhook` | Telegram bot buyruqlari va Mini App webhook | `X-Telegram-Bot-Api-Secret-Token` |
+## Asosiy sahifalar
 
-## Ariza (lead) tizimi qanday ishlaydi
+- `/` — Bosh sahifa (Ekotizim taqdimoti)
+- `/maktab` — Xususiy maktab sahifasi
+- `/markaz` — O'quv markazi va natijalar
+- `/kurslar` — Barcha kurslar katalogi
+- `/aloqa` — Manzillar va bog'lanish
+- `/admin` — Boshqaruv (CRM) paneli
+- `/davomat` — Ustozlar davomat portali
 
-1. Saytdagi har bir forma (`LeadModal`, `LeadBannerSection`) `POST /api/leads` ga yuboradi.
-2. Arizalar uch xil backend'da saqlanishi mumkin (avtomatik tanlanadi):
-   - **PostgreSQL** — `DATABASE_URL` (yoki `POSTGRES_URL`/`SUPABASE_DATABASE_URL`) o'rnatilsa, barcha modullar uchun yagona markaziy baza ishlatiladi.
-   - **Upstash Redis (REST)** — `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` o'rnatilsa. Serverless (Vercel) uchun tavsiya etiladi.
-   - **JSON fayl** — `LEADS_FILE` yoki `<proyekt>/.data/leads.json` (lokal/VPS uchun; atomik yozish bilan). Serverless muhitda vaqtinchalik bo'lgani uchun production uchun yaroqsiz.
-   - PostgreSQL jadvallari `src/lib/db.ts` orqali cold-start paytida idempotent yaratiladi va eski deploylar uchun kerakli ustun/indexlar migratsiya qilinadi; qo'lda o'rnatish yoki audit uchun `schema.sql` shu DDL bilan sinxron yuritiladi.
-3. Agar `TELEGRAM_BOT_TOKEN` va `TELEGRAM_CHAT_ID` o'rnatilgan bo'lsa — har bir ariza Telegram'ga bildirishnoma sifatida boradi (yuborish xatosi arizani saqlashni buzmaydi).
-4. `/admin` sahifasi arizalarni API orqali ko'radi: qidiruv, status (yangi → bog'lanildi → qabul / bekor), CSV eksport (formula-injection'dan himoyalangan).
-5. Server ishlamay qolsa (5xx / tarmoq) forma arizani `localStorage`'ga zaxiralaydi; admin birinchi kirishda ularni avtomatik serverga ko'chiradi. Validatsiya xatolari (4xx) lokalga saqlanmaydi.
+---
 
-### Xavfsizlik
+## Asosiy buyruqlar
 
-| Himoya | Tafsilot |
-|---|---|
-| Sessiya | HMAC-SHA256 bilan **imzolangan** token (`exp` + `jti`), 12 soat amal qiladi. Parol hash'i cookie'da saqlanmaydi. |
-| Cookie | `HttpOnly`, `SameSite=Lax`, production'da `Secure`; o'zgartiruvchi route'lar Origin/Referer tekshiradi. |
-| Revoke | `ADMIN_SESSION_SECRET` yoki `ADMIN_PASSWORD` o'zgarsa — barcha sessiyalar bekor bo'ladi. |
-| Parol tekshiruvi | Doimiy vaqtda (timing-safe) solishtiriladi. |
-| Brute-force | `/api/leads/auth` — 15 daqiqada 8 ta urinish (IP bo'yicha) + noto'g'ri urinishlar uchun global shift. |
-| IP aniqlash | Proksi sarlavhalariga **faqat** `TRUSTED_IP_HEADER` o'rnatilganda yoki Vercel'da ishoniladi (ular soxtalashtirilishi mumkin). Aks holda qo'shimcha global chegara qo'llanadi — pastdagi eslatmaga qarang. |
-| Spam | `/api/leads` — 1 daqiqada 5 ta, 1 soatda 20 ta + yashirin honeypot maydoni. |
-| CSRF | O'zgartiruvchi so'rovlarda `Origin`/`Referer` same-origin bo'lishi shart. |
-| Kirish validatsiyasi | Body ≤ 8 KB; nazorat va ko'rinmas belgilar tozalanadi; ismda kamida bitta harf; telefon O'zbekiston operator kodi bo'yicha tekshiriladi; `targetInterest` va `source` faqat ruxsat etilgan qiymatlardan. |
-| Sarlavhalar | `nosniff`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, prod'da HSTS; `/admin` va `/api` — `no-store` + `noindex`. |
-
-> **Muhim (proksi orqasida deploy):** nginx yoki Cloudflare ortida ishlatsangiz
-> `TRUSTED_IP_HEADER` ni **albatta** o'rnating (`x-real-ip` / `cf-connecting-ip`).
-> Usiz proksi sarlavhalariga ishonilmaydi va IP bo'yicha cheklov o'rniga umumiy
-> chegara ishlaydi. Vercel'da kerak emas — avtomatik aniqlanadi.
-
-> **Muhim:** production'da `ADMIN_PASSWORD` **majburiy**. O'rnatilmasa `/api/leads/auth` `503` qaytaradi va admin paneliga kirib bo'lmaydi (default parol faqat `NODE_ENV=development` da ishlaydi).
-
-### Xavfsizlik va RBAC (Davomat va Ustozlar tizimi)
-
-| Himoya / Qoida | Tafsilot |
-|---|---|
-| Rolga asoslangan kirish (RBAC) | **Admin**: barcha guruhlar, o'quvchilar va davomat jurnallariga to'liq huquq (CRUD).<br>**Ustoz**: faqat o'ziga biriktirilgan guruhlar, ularning o'quvchilari va davomatiga ruxsat. Boshqa ustozning ma'lumotlariga so'rov yuborilsa `403 Forbidden` qaytadi. |
-| Ochiq ro'yxatni yashirish (Enumeration Protection) | `GET /api/teachers/auth` anonim foydalanuvchilarga ustozlar ro'yxatini yoki telefon raqamlarini bermaydi (faqat autentifikatsiya qilingan admin yoki ustoz o'z ma'lumotlarini oladi). |
-| Hisobni egallashdan himoya (Account Takeover) | Mavjud parolni almashtirishda eski parol (`oldPassword`) majburiy va scrypt hash bilan tekshiriladi; paroli hali o'rnatilmagan boshlang'ich hisobda telefon tasdig'i kerak (admin reset qila oladi). |
-| Ustoz Sessiyasi & Token | HMAC-SHA256 bilan imzolangan token (`Bearer <token>` sarlavhasi yoki HttpOnly cookie). Telegram WebApp muhitida ham `window.Telegram.WebApp.initData` orqali xavfsiz tasdiqlanadi. |
-| Telegram Webhook Himoyasi | Telegram'dan kelayotgan barcha webhook so'rovlari `X-Telegram-Bot-Api-Secret-Token` headeri bilan tekshiriladi (`TELEGRAM_WEBHOOK_SECRET`). |
-| Rate Limiting | `login`, `register` va `set-password` harakatlari uchun IP-ga asoslangan asinxron rate-limit qo'llangan. |
-
-## Testlar va CI
-
-```bash
-npm test          # vitest (auth, attendanceAuth, leadStore, rate-limit, telefon, API route'lar — 122 ta test)
-npm run typecheck # tsc --noEmit
-npm run lint      # eslint (0 xato, 0 ogohlantirish)
-```
-
-GitHub Actions (`.github/workflows/ci.yml`): lint → typecheck → test → build → e2e.
-
-## Ma'lumotlar manbasi
-
-- `src/data/ecosystemData.ts` — sayt kontentining yagona manbasi (kurslar, FAQ, natijalar, galereya, kontaktlar).
-- `data_mastery_algoritm.md` — **haqiqiy arxiv faktlar bazasi** (2022–2026 telegram arxivi asosida). Saytga yangi ma'lumot qo'shishdan oldin shu hujjat bilan solishtiring; telefon raqamlar, ustozlar va statistika **shu manbaga muvofiq** bo'lishi kerak.
-
-## Muhit o'zgaruvchilari (`.env.local`)
-
-```bash
-TELEGRAM_BOT_TOKEN=...           # @BotFather orqali olinadi
-TELEGRAM_CHAT_ID=...             # xabar boradigan chat/guruh ID si
-TELEGRAM_WEBHOOK_SECRET=...      # Telegram webhook xavfsizlik tokeni (production'da majburiy)
-TELEGRAM_ADMIN_IDS=...            # bot adminlarining Telegram user ID lari (vergul bilan)
-ADMIN_PASSWORD=...               # /admin paroli — production'da MAJBURIY
-ADMIN_SESSION_SECRET=...         # admin sessiya imzosi (openssl rand -hex 32)
-TEACHER_SESSION_SECRET=...       # ustoz sessiya imzosi (openssl rand -hex 32)
-TRUSTED_IP_HEADER=...            # proksi orqasida: x-real-ip yoki cf-connecting-ip
-NEXT_PUBLIC_SITE_URL=...         # https://sizning-domen.uz (SEO metadataBase uchun)
-
-# Saqlash — variant A (serverless/Vercel uchun tavsiya):
-UPSTASH_REDIS_REST_URL=...
-UPSTASH_REDIS_REST_TOKEN=...
-LEADS_REDIS_KEY=algoritm:leads       # ixtiyoriy
-TEACHERS_REDIS_KEY=algoritm:teachers # ixtiyoriy
-
-# Saqlash — variant B (lokal/VPS):
-LEADS_FILE=...                       # ixtiyoriy — arizalar fayli manzili
-TEACHERS_FILE=...                    # ixtiyoriy — ustozlar fayli manzili
-ATTENDANCE_FILE=...                  # ixtiyoriy — davomat fayli manzili
-```
-
-
-To'liq ro'yxat va izohlar: [`.env.example`](.env.example).
-
-## Struktura (qisqacha)
-
-```
-src/
-├── app/                 # sahifalar + API route'lar
-│   ├── api/leads/       # arizalar CRUD + auth + logout
-│   └── */layout.tsx     # har sahifa uchun SEO metadata
-├── components/          # UI komponentlari (client)
-├── data/ecosystemData.ts# kontent bazasi
-├── lib/                 # leads.ts (tip+klient), leadStore.ts (redis|fayl saqlash),
-│                        # adminAuth.ts (HMAC sessiya), rateLimit.ts, telegram.ts
-tests/                   # vitest testlari
-```
-
-## Eslatmalar
-
-- Rasmlar `public/` da statik. Ishlatilmagan ortiqcha arxiv fayllari tozalangan va repozitoriya hajmi optimallashtirilgan.
-- Rasmlar `loading="lazy"` / `decoding="async"` bilan yuklanadi; hero'ning birinchi slaydi `loading="eager"` + `fetchPriority="high"`. `/images` va `/videos` uchun `max-age=86400, stale-while-revalidate=604800` (immutable emas — fayl nomlarida hash yo'q). Rasmni almashtirsangiz eng ko'pi bilan bir kunda yangilanadi; darhol kerak bo'lsa fayl nomiga versiya qo'shing (`slide_1.v2.jpg`). Next'ning `/_next/static` chiqishi hash'langan, unga 1 yillik `immutable` qo'llanadi.
-- ⚠️ **Yirik videolar:** `public/videos/` da **131 MB** video bor (eng kattasi 33.5 MB). Har `git clone` shuncha tortadi va mobil foydalanuvchi ustoz videosini ochganda o'nlab MB sarflaydi. Modal'da `preload="metadata"` + poster ishlatiladi (video faqat ochilganda yuklanadi), lekin **eng to'g'ri yechim** — Cloudflare Stream / Mux / Vercel Blob ga ko'chirish yoki `ffmpeg -crf 28 -vf scale=-2:720` bilan qayta kodlash.
-- Hero slayd rasmlari 1024px kenglikda — katta monitorlarda cho'ziladi. 1920px manbalar tavsiya etiladi.
+- `npm run dev` — Dasturchi rejimida ishga tushirish
+- `npm run build` — Production uchun loyihani yig'ish
+- `npm run start` — Tayyor loyihani ishga tushirish
+- `npm test` — Testlarni tekshirish
+- `npm run lint` — Kod sifatini tekshirish
